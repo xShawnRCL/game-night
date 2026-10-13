@@ -87,7 +87,7 @@ main{padding-top:10px;display:flex;flex-direction:column;gap:18px}
 .cardhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 
 /* pawns */
-.pawn{display:inline-block;width:14px;height:14px;margin-right:8px;border-radius:50%;background:var(--pc);border:2px solid var(--edge);vertical-align:-1px}
+.pawn{display:inline-block;width:19px;height:19px;margin-right:6px;vertical-align:-4px;overflow:visible;flex:none}
 
 /* setup */
 .plist,.glist,.slist{list-style:none;margin:0;padding:0}
@@ -232,7 +232,7 @@ body.view .btn:not([data-act="trophy"]):not([data-act="ptrophy"]){display:none}
 <div class="wrap">
   <header>
     <div class="brand">
-      <svg class="meeple" width="58" height="58" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.600 39c-3.100-1-4.200-4.100-2.200-7C12 25.600 18.400 21.400 26.100 19.400c-1.700-1.600-2.700-3.600-2.700-6.200C23.400 8.600 26.800 5 32 5z" fill="var(--c-coral)" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/></svg>
+      <svg class="meeple" width="58" height="58" viewBox="0 0 64 64" aria-hidden="true"><g stroke="#3B3540" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><g transform="rotate(-45 32 32)"><path d="M32 3 L38 10 V36 H26 V10 Z" fill="#7CC6F5"/><rect x="17" y="36" width="30" height="6" rx="2" fill="#FFD84D"/><rect x="29" y="42" width="6" height="11" rx="2" fill="#FF8A78"/><circle cx="32" cy="57" r="4" fill="#FFD84D"/></g><g transform="rotate(45 32 32)"><path d="M32 3 L38 10 V36 H26 V10 Z" fill="#FF8A78"/><rect x="17" y="36" width="30" height="6" rx="2" fill="#FFD84D"/><rect x="29" y="42" width="6" height="11" rx="2" fill="#7CC6F5"/><circle cx="32" cy="57" r="4" fill="#FFD84D"/></g></g></svg>
       <div><h1>Game Night <span class="hl">Gauntlet</span></h1><p class="tagline">Family board game championship</p></div>
     </div>
     <p class="sub" id="sub"></p>
@@ -281,7 +281,7 @@ function fresh(){
   return {v:1,t:0,seq:1,pseq:7,tid:null,
     players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),
     games:DEFAULT_GAMES.map(g=>({...g})),
-    finalists:3,headStart:0.5,nightHours:3,winnerStays:true,heavyLast:true,bkNights:0,
+    finalists:3,headStart:0.5,nightHours:3,winnerStays:true,order:'smart',gv:1,bkNights:0,
     started:false,rounds:[],tiebreaks:[],finale:[],archive:[]};
 }
 /* How n players split across tables for a game with seat range min..max. */
@@ -351,10 +351,27 @@ function redrawRound(S,rid){
   r.tables=seat.tables.map(t=>({ids:t,places:{}})); r.byes=seat.byes; return true;
 }
 function redrawAll(S){let n=0;for(const r of S.rounds) if(roundUnscored(r)&&redrawRound(S,r.id)) n++;return n;}
+/* How many points a game can swing: heavier games and luckier games move the standings more. */
+const excitement=g=>g.weight*(2+(g.luck||3));
+function orderGames(list,mode){
+  list=list.slice();
+  if(mode==='list') return list;
+  const idx=new Map(list.map((g,i)=>[g,i]));
+  if(mode==='weight') return list.sort((a,b)=>a.weight-b.weight||idx.get(a)-idx.get(b));
+  list.sort((a,b)=>excitement(a)-excitement(b)||idx.get(a)-idx.get(b));
+  /* rotate: break up back-to-back 2-player games so fewer people wait, keeping the biggest game last */
+  for(let i=1;i<list.length-1;i++){
+    if(list[i].max===2&&list[i-1].max===2){
+      let j=i+1;while(j<list.length-1&&list[j].max===2) j++;
+      if(j<list.length-1){const [g]=list.splice(j,1);list.splice(i,0,g);}
+    }
+  }
+  return list;
+}
 function buildRounds(S){
   S.rounds=[];S.tiebreaks=[];S.finale=[];delete S.finishedAt;
   let list=S.games.filter(g=>g.on);
-  if(S.heavyLast!==false) list=list.map((g,i)=>({g,i})).sort((a,b)=>a.g.weight-b.g.weight||a.i-b.i).map(x=>x.g);
+  list=orderGames(list,S.order);
   for(const g of list) addRound(S,g.id);
   S.started=S.rounds.length>0;
   if(S.started) S.tid='t'+Date.now();
@@ -474,600 +491,668 @@ function trophyData(S){
   let best=null;
   for(const rd of S.rounds){const v=me.per[rd.id]; if(v!==undefined&&(!best||v>best.v)){const g=gameOf(S,rd.gameId);best={v:r1(v),game:g?g.name:''};}}
   const first=S.finale[0], last=S.finale[S.finale.length-1], fg=gameOf(S,first.gameId);
+  const played=[],seenG=new Set();
+  for(const rd of S.rounds){if(!rd.tables.some(t=>t.ids.includes(champ))) continue;const gg=gameOf(S,rd.gameId);if(gg&&!seenG.has(gg.name)){seenG.add(gg.name);played.push(gg.name);}}
+  if(fg) played.push('Final: '+fg.name);
+  const hs=String(S.tid||S.finishedAt||'x');let cw=0;for(let i=0;i<hs.length;i++) cw=(cw*31+hs.charCodeAt(i))>>>0;
   let fin;
   if(S.headStart>0) fin=finalScores(S,first).map(x=>({name:nm(x.id),place:x.place,seed:x.seed,base:r1(x.base),bonus:r1(x.bonus),total:r1(x.total)}));
   else fin=last.ids.slice().sort((a,b)=>last.places[a]-last.places[b]).map(id=>({name:nm(id),place:last.places[id],seed:first.ids.indexOf(id)+1}));
   const names=[...new Set(S.rounds.map(r=>{const g=gameOf(S,r.gameId);return g?g.name:'';}))];
   return {title:'Game Night Gauntlet',date:S.finishedAt||Date.now(),
     champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
-    best,finalGame:fg?fg.name:'',scored:S.headStart>0,final:fin,
+    played,cw:cw%6,best,finalGame:fg?fg.name:'',scored:S.headStart>0,final:fin,
     standings:rows.map(r=>({name:r.name,pts:r.pts,rank:r.rank,color:pcol(r.id),champ:r.id===champ})),
     rounds:S.rounds.length,players:S.players.length,games:names.length};
 }
 /* Saved tournaments pick up settings and games added later. */
 function ensureDefaults(S){
-  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.winnerStays===undefined) S.winnerStays=true; if(S.heavyLast===undefined) S.heavyLast=true; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5;
+  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.winnerStays===undefined) S.winnerStays=true; if(S.order===undefined) S.order=S.heavyLast===false?'list':'smart'; delete S.heavyLast; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5;
   S.games.forEach(g=>{if(!g.copies) g.copies=1;});
-  DEFAULT_GAMES.forEach((d,i)=>{
-    if(S.games.some(g=>g.id===d.id)) return;
-    const prev=i>0?S.games.findIndex(g=>g.id===DEFAULT_GAMES[i-1].id):-1;
-    const copy={...d};
-    if(prev>=0) S.games.splice(prev+1,0,copy); else S.games.push(copy);
-  });
+  if(!S.gv){
+    S.gv=1;
+    DEFAULT_GAMES.forEach((d,i)=>{
+      if(S.games.some(g=>g.id===d.id)) return;
+      const prev=i>0?S.games.findIndex(g=>g.id===DEFAULT_GAMES[i-1].id):-1;
+      const copy={...d};
+      if(prev>=0) S.games.splice(prev+1,0,copy); else S.games.push(copy);
+    });
+  }
   return S;
 }
 /*LOGIC-END*/
 
 
 /* ---------- game catalog (approximate play times, player counts and suggested weights) ---------- */
-const CATALOG_RAW=`Chess|2|2|40|3|1
-Checkers|2|2|20|1|1
-Monopoly|2|8|120|3|4
-Risk|2|6|120|3|3
-Clue|3|6|45|2|3
-Scrabble|2|4|60|2|3
-Yahtzee|2|10|30|1|5
-Backgammon|2|2|30|2|3
-Connect Four|2|2|10|1|1
-Battleship|2|2|30|1|3
-Sorry!|2|4|30|1|4
-Trouble|2|4|25|1|5
-Candy Land|2|4|20|1|5
-Chutes and Ladders|2|4|20|1|5
-The Game of Life|2|6|60|1|5
-Trivial Pursuit|2|6|60|2|3
-Pictionary|3|12|45|1|3
-Boggle|2|8|15|1|2
-Mastermind|2|2|20|1|1
-Stratego|2|2|45|2|2
-Othello|2|2|25|2|1
-Go|2|2|60|3|1
-Dominoes|2|4|30|1|3
-Mexican Train|2|8|60|1|4
-Rummikub|2|4|45|2|3
-Qwirkle|2|4|45|1|3
-Blokus|2|4|25|2|1
-Sequence|2|12|30|1|3
-Phase 10|2|6|45|2|4
-Skip-Bo|2|6|30|1|4
-Uno|2|10|30|1|4
-Uno Flip|2|10|30|1|4
-Uno Attack|2|10|30|1|5
-Uno All Wild|2|10|20|1|4
-Uno Dos|2|4|20|1|4
-Dutch Blitz|2|4|15|1|3
-Spot It!|2|8|15|1|2
-Jenga|2|8|15|1|3
-Kerplunk|2|4|15|1|3
-Connect 4 Shots|2|2|10|1|2
-Operation|2|6|20|1|3
-Hungry Hungry Hippos|2|4|10|1|3
-Mouse Trap|2|4|30|1|4
-Guess Who?|2|2|15|1|2
-Perfection|2|2|10|1|3
-Twister|2|6|15|1|4
-Cranium|4|12|60|1|3
-Taboo|4|10|30|1|3
-Scattergories|2|6|30|1|3
-Balderdash|2|6|45|1|3
-Apples to Apples|4|10|30|1|4
-Cards Against Humanity|4|12|45|1|4
-Telestrations|4|8|30|1|3
-Catchphrase|4|10|30|1|3
-Headbanz|2|6|20|1|3
-Charades|4|12|30|1|2
-Heads Up!|3|10|15|1|3
-Codenames|4|8|20|1|2
-Codenames Duet|2|2|15|1|2
-Just One|3|7|20|1|2
-Wavelength|2|12|35|1|3
-Decrypto|3|8|30|1|2
-Concept|4|12|40|1|2
-Dixit|3|6|30|1|3
-Cluedo Master Detective|3|8|60|2|3
-Rummy|2|6|30|1|4
-Gin Rummy|2|2|20|1|3
-Canasta|2|6|60|2|3
-Hearts|3|6|30|1|3
-Spades|4|4|45|2|3
-Euchre|4|4|30|2|3
-Bridge|4|4|60|3|2
-Cribbage|2|4|30|1|3
-Pinochle|2|4|45|2|3
-Poker|2|10|60|2|4
-Blackjack|2|7|30|1|5
-Crazy Eights|2|7|15|1|4
-Go Fish|2|6|10|1|5
-Old Maid|2|8|10|1|5
-War|2|2|20|1|5
-Spit|2|2|10|1|3
-Speed|2|2|10|1|3
-Egyptian Rat Screw|2|8|15|1|3
-Golf (card game)|2|6|30|1|4
-Oh Hell!|3|7|45|2|3
-Whist|4|4|45|2|3
-Rook|4|4|45|2|3
-Skat|3|3|45|2|3
-Pitch|2|10|30|2|3
-Hand and Foot|2|6|90|2|3
-Nertz|2|6|20|1|3
-Scopa|2|4|20|1|3
-Uno Teams|4|4|30|1|4
-Uno 99|2|6|20|1|3
-Uno Golf|2|6|30|1|4
-Uno Flex|2|10|30|1|4
-Flip 7|3|12|20|1|5
-Exploding Kittens|2|5|15|1|5
-Exploding Kittens Party Pack|2|10|15|1|5
-Throw Throw Burrito|2|6|15|1|4
-Taco Cat Goat Cheese Pizza|2|8|10|1|4
-Catan|3|4|75|2|3
-Catan: Seafarers|3|4|90|2|3
-Catan: Cities & Knights|3|4|120|3|3
-Catan Junior|2|4|30|1|4
-Starfarers of Catan|3|4|120|3|3
-Ticket to Ride|2|5|60|2|3
-Ticket to Ride: Europe|2|5|60|2|3
-Ticket to Ride: Nordic Countries|2|3|40|2|3
-Ticket to Ride: First Journey|2|4|30|1|3
-Ticket to Ride: Rails & Sails|2|5|75|2|3
-Carcassonne|2|5|40|2|3
-Carcassonne: Hunters and Gatherers|2|5|35|2|3
-Carcassonne: South Seas|2|5|40|2|3
-Carcassonne: Inns & Cathedrals|2|6|45|2|3
-Kingdomino|2|4|20|1|2
-Queendomino|2|4|30|2|3
-Azul|2|4|40|2|2
-Azul: Summer Pavilion|2|4|40|2|2
-Azul: Stained Glass of Sintra|2|4|45|2|2
-Splendor|2|4|30|2|2
-Sushi Go!|2|5|15|1|3
-Sushi Go Party!|2|8|20|1|3
-7 Wonders|2|7|40|2|2
-7 Wonders Duel|2|2|30|2|2
-Lords of Waterdeep|2|5|90|2|2
-Agricola|2|5|120|3|2
-Agricola: Family Edition|2|4|60|2|2
-Puerto Rico|3|5|120|3|2
-San Juan|2|4|40|2|3
-Power Grid|2|6|120|3|2
-Stone Age|2|4|60|2|3
-Small World|2|5|60|2|2
-Small World Underground|2|5|60|2|2
-Dominion|2|4|30|2|3
-Dominion: Intrigue|2|4|30|2|3
-Race for the Galaxy|2|4|40|2|3
-Red7|2|4|10|1|2
-Love Letter|2|4|20|1|4
-Coup|2|6|15|1|3
-Skull|3|6|15|1|2
-Sheriff of Nottingham|3|5|60|2|3
-Scotland Yard|3|6|45|2|2
-Fury of Dracula|2|4|150|3|3
-Mr. Jack|2|2|30|2|2
-King of Tokyo|2|6|30|1|4
-King of Tokyo Duel|2|2|20|1|4
-King of New York|2|6|40|2|4
-Machi Koro|2|4|30|1|4
-Machi Koro 2|2|5|30|1|4
-Cascadia|2|4|40|2|3
-Wingspan|2|5|60|2|3
-Everdell|2|4|80|3|2
-Root|2|4|90|3|2
-Terraforming Mars|2|5|120|3|3
-Brass: Birmingham|2|4|120|3|2
-Scythe|2|5|115|3|2
-Viticulture|2|6|90|3|3
-Tzolk'in|2|4|90|3|1
-Caylus|2|5|90|3|1
-Alhambra|2|6|60|2|3
-Istanbul|2|5|60|2|3
-Yokohama|2|4|90|3|2
-Targi|2|2|60|2|2
-Jaipur|2|2|30|1|3
-Lost Cities|2|2|30|1|3
-Hive|2|2|20|2|1
-Santorini|2|4|20|2|1
-Patchwork|2|2|30|2|2
-Cartographers|2|12|35|1|3
-Bärenpark|2|4|45|2|2
-Isle of Skye|2|5|40|2|2
-Ethnos|2|6|60|2|3
-Century: Spice Road|2|5|40|2|2
-Century: Golem Edition|2|5|45|2|2
-Hanamikoji|2|2|15|1|3
-The Quest for El Dorado|2|4|60|2|3
-Rivals for Catan|2|2|60|2|3
-Dungeon Lords|2|4|90|3|2
-Dixit Odyssey|3|12|30|1|3
-Lords of Vegas|2|4|60|2|4
-Tokaido|2|5|45|1|2
-Between Two Cities|3|7|20|1|2
-Fresco|2|4|90|2|2
-Takenoko|2|4|45|2|3
-Bohnanza|2|7|45|2|3
-Acquire|2|6|90|3|3
-Sagrada|2|4|40|2|3
-Zombie Dice|2|12|15|1|5
-Munchkin|3|6|90|2|5
-Smash Up|2|4|45|2|3
-Star Realms|2|2|20|2|3
-Ascension|2|4|30|2|3
-Ticket to Ride: Asia|2|5|60|2|3
-Ticket to Ride: Germany|2|5|60|2|3
-Ticket to Ride: UK|2|5|60|2|3
-Ticket to Ride: Switzerland|2|3|45|2|3
-Ticket to Ride: Africa|2|5|60|2|3
-Ticket to Ride: Japan|2|5|60|2|3
-Ticket to Ride: New York|2|4|20|1|3
-Ticket to Ride: London|2|4|20|1|3
-Ticket to Ride: Amsterdam|2|4|20|1|3
-Ticket to Ride: San Francisco|2|4|20|1|3
-Carcassonne: The Castle|2|2|35|2|3
-Carcassonne: Amazonas|2|5|45|2|3
-Carcassonne: Safari|2|5|45|2|3
-Carcassonne: Star Wars|2|2|35|2|3
-Carcassonne: Big Box|2|6|45|2|3
-Catan: Traders & Barbarians|3|4|90|3|3
-Catan: Explorers & Pirates|3|4|90|2|3
-Catan: Dice Game|2|4|20|1|5
-Catan Card Game|2|2|60|2|3
-Dominion: Seaside|2|4|30|2|3
-Dominion: Prosperity|2|4|35|2|3
-Dominion: Alchemy|2|4|30|2|3
-Dominion: Hinterlands|2|4|30|2|3
-Dominion: Dark Ages|2|4|35|2|3
-Dominion: Adventures|2|4|35|2|3
-Dominion: Empires|2|4|35|2|3
-Dominion: Renaissance|2|4|35|2|3
-Thunderstone|2|5|60|2|3
-Clank!|2|4|60|2|3
-Clank!: A Deck-Building Adventure|2|4|60|2|3
-Quacks of Quedlinburg|2|4|45|2|4
-Welcome To...|2|12|30|1|3
-Railroad Ink|2|6|20|1|4
-Roll for the Galaxy|2|5|45|2|4
-Sagrada: The Great Facades|2|4|45|2|3
-Qwixx|2|5|15|1|4
-Kingdomino Duel|2|2|15|1|2
-Dragonwood|2|4|20|1|3
-Fluxx|2|6|20|1|5
-Zombie Fluxx|2|6|20|1|5
-Star Fluxx|2|6|20|1|5
-Pirate Fluxx|2|6|20|1|5
-Monty Python Fluxx|2|6|20|1|5
-Tsuro|2|8|15|1|3
-Tsuro of the Seas|2|8|20|1|3
-Bananagrams|2|8|15|1|3
-Rory's Story Cubes|2|12|15|1|3
-Rack-O|2|4|20|1|4
-Pass the Pigs|2|8|15|1|5
-Farkle|2|8|20|1|5
-Liar's Dice|2|6|20|1|4
-Perudo|2|6|20|1|4
-Cover Your Assets|2|6|20|1|3
-No Thanks!|3|7|20|1|3
-Port Royal|2|5|25|1|4
-Biblios|2|4|30|1|3
-Citadels|2|8|40|2|3
-Libertalia|2|6|45|2|3
-Sheep & Thief|2|5|40|1|3
-Chinatown|3|5|60|2|3
-Can't Stop|2|4|30|1|4
-Incan Gold|3|8|30|1|4
-Diamant|3|8|30|1|4
-Qwirkle Cube|2|4|20|1|3
-Rush Hour|2|2|20|1|1
-Gobblet Gobblers|2|2|10|1|1
-Quoridor|2|4|20|1|1
-Quarto|2|2|20|1|1
-Pente|2|2|30|1|1
-Mancala|2|2|20|1|1
-Nine Men's Morris|2|2|20|1|1
-Chinese Checkers|2|6|30|1|1
-Halma|2|4|45|1|1
-Fox and Geese|2|2|20|1|1
-Hex|2|2|20|2|1
-Tak|2|2|30|2|1
-Onitama|2|2|20|1|1
-Yinsh|2|2|45|2|1
-Gipf|2|2|45|2|1
-Dvonn|2|2|45|2|1
-Tzaar|2|2|30|2|1
-Lines of Action|2|2|30|2|1
-Abalone|2|2|30|1|1
-Reversi|2|2|25|2|1
-Draughts|2|2|30|1|1
-Shogi|2|2|60|3|1
-Xiangqi|2|2|60|3|1
-Fanorona|2|2|30|1|1
-Bagh-Chal|2|2|20|1|1
-Azul: Queen's Garden|2|4|40|2|2
-Calico|2|4|40|2|3
-Photosynthesis|2|4|60|2|2
-Parks|2|5|60|2|3
-Arboretum|2|4|30|2|3
-Planet|2|4|30|1|3
-Sprawlopolis|2|4|20|1|3
-Harmonies|2|4|30|1|3
-Earth|2|5|40|2|3
-Ark Nova|2|4|150|3|2
-Wyrmspan|2|5|75|2|3
-Heat: Pedal to the Metal|2|6|60|2|3
-Flamme Rouge|2|4|45|2|3
-Downforce|2|6|30|1|3
-Formula D|2|10|90|2|4
-Camel Up|2|8|30|1|5
-Thunder Alley|3|8|60|2|3
-Rolling Heights|2|4|35|2|3
-Villainous|2|6|60|2|3
-The Resistance|5|10|30|1|2
-Secret Hitler|5|10|45|1|3
-Avalon|5|10|30|1|2
-One Night Ultimate Werewolf|3|10|10|1|3
-Ultimate Werewolf|5|12|30|1|3
-Mafia|6|12|30|1|3
-Spyfall|3|12|15|1|2
-Two Rooms and a Boom|6|12|20|1|3
-Blood on the Clocktower|5|12|90|3|2
-Wits & Wagers|3|7|30|1|3
-Quiplash Board|3|8|20|1|3
-Say Anything|3|8|30|1|3
-Hues and Cues|3|10|30|1|3
-Time's Up!|4|12|45|1|3
-Anomia|3|6|15|1|3
-Wordsmith|2|6|20|1|3
-Bananagrams Duel|2|2|10|1|3
-Upwords|2|4|40|1|2
-Words With Friends Board|2|4|40|1|3
-Boggle Junior|2|4|10|1|2
-Scrabble Slam|2|4|10|1|3
-Quiddler|2|8|30|1|3
-Alhambra: The Dice Game|2|6|30|1|4
-Roll Through the Ages|2|4|30|1|4
-Yahtzee Free for All|2|4|20|1|5
-Boss Monster|2|4|30|2|3
-Munchkin Quest|3|4|90|2|4
-Epic Spell Wars|2|6|30|1|5
-Gloom|2|4|45|1|3
-Lunch Money|2|6|30|1|3
-Cheese|2|4|30|1|3
-Tapple|2|8|10|1|3
-Dobble|2|8|15|1|2
-Kakerlakenpoker|2|6|20|1|3
-Cockroach Poker|2|6|20|1|3
-Sleeping Queens|2|5|20|1|4
-Rat-a-Tat Cat|2|6|20|1|4
-Slamwich|2|8|15|1|3
-Bears vs Babies|2|8|20|1|4
-Unstable Unicorns|2|8|45|1|5
-Here to Slay|2|6|45|2|4
-Joking Hazard|3|10|30|1|4
-What Do You Meme?|3|12|40|1|4
-Superfight|3|10|30|1|3
-Happy Salmon|3|12|5|1|2
-Yeti in My Spaghetti|2|6|10|1|3
-Brain Games|2|8|20|1|2
-Blurble|3|12|15|1|3
-Gubs|2|4|10|1|3
-Bandu|2|4|15|1|2
-Elefun|2|4|15|1|3
-Don't Break the Ice|2|4|10|1|3
-Pop the Pig|2|6|10|1|4
-Lucky Ducks|2|4|10|1|4
-Dino Hunt Dice|2|4|15|1|4
-Eye Found It|2|4|20|1|2
-Rhino Hero|2|5|10|1|3
-Rhino Hero: Super Battle|2|4|15|1|3
-Animal Upon Animal|2|4|15|1|3
-Cat Tower|2|4|20|1|2
-Villa Paletti|2|4|30|1|2
-Bausack|2|4|20|1|3
-Ubongo|2|4|25|1|3
-Katamino|2|2|15|1|1
-Mighty Bugs|2|4|20|1|2
-Block Party|2|4|20|1|2
-Blokus Trigon|2|4|25|2|1
-Blokus Duo|2|2|15|1|1
-Ingenious|2|4|45|2|2
-Hive Pocket|2|2|20|2|1
-Pylos|2|2|20|1|1
-Shobu|2|2|20|2|1
-Santorini: Golden Fleece|2|4|25|2|2
-Lost Ruins of Arnak|2|4|90|3|3
-Dune: Imperium|2|4|120|3|3
-Ra|2|5|60|2|3
-Lords of Xidit|2|5|75|2|3
-Mombasa|2|4|120|3|2
-Great Western Trail|2|4|120|3|2
-Russian Railroads|2|4|90|3|1
-7 Wonders: Architects|2|7|25|1|2
-7 Wonders: Cities|2|8|45|2|2
-Alchemists|2|4|120|3|2
-Amun-Re|3|5|90|3|2
-Antike|2|6|120|3|1
-Archaeology: The Card Game|2|5|20|1|4
-Aquarius|2|5|20|1|3
-Axis & Allies|2|5|240|3|3
-Battle Line|2|2|30|2|3
-Blood Rage|2|4|90|3|2
-Bohemian Villages|2|4|30|1|2
-Bruges|2|4|60|2|3
-Camel Cup|2|8|30|1|5
-Can't Stop Express|2|4|20|1|4
-Carson City|2|5|90|3|2
-Cash 'n Guns|4|8|30|1|3
-Cathedral|2|2|20|1|1
-Cities: Skylines|2|4|60|2|3
-Coloretto|2|5|20|1|3
-Colt Express|2|6|40|2|4
-Concordia|2|5|100|3|1
-Cosmic Encounter|3|5|60|2|4
-Crokinole|2|4|30|1|2
-Cuba Libre|2|4|180|3|2
-Dungeon Petz|2|4|90|3|2
-Eclipse|2|6|180|3|3
-Elfenland|2|6|60|2|3
-Escape from the Aliens in Outer Space|2|8|45|1|3
-Fields of Arle|2|2|120|3|1
-Finca|2|4|40|2|2
-Forbidden Stars|2|4|240|3|3
-Formula One|2|6|60|2|3
-Galaxy Trucker|2|4|60|2|4
-Gizmos|2|4|40|2|2
-Glass Road|2|4|60|2|1
-Glen More|2|5|60|2|2
-Golem Arcana|2|2|90|3|2
-Guilds of London|2|5|60|2|2
-Heroscape|2|4|60|2|3
-Hoity Toity|2|5|60|2|3
-Hotel Samoa|2|5|45|2|2
-Imperial|2|6|120|3|1
-In the Year of the Dragon|2|5|90|3|2
-Jamaica|2|6|30|1|4
-Kahuna|2|2|20|1|2
-Keyflower|2|6|90|3|2
-Khet|2|2|20|1|1
-La Granja|2|4|90|3|2
-Last Will|2|5|60|2|2
-Letters from Whitechapel|2|6|90|3|2
-Liberté|2|4|90|3|2
-Lost Cities Rivals|2|2|30|1|3
-Machiavelli|3|6|90|3|3
-Manhattan|2|4|60|2|2
-Marrakech|2|4|30|1|3
-Maharaja|2|5|60|2|2
-Mexica|2|4|60|2|2
-Midgard|2|4|60|2|2
-Modern Art|3|5|45|2|3
-Mondo|2|4|30|1|3
-Monopoly Deal|2|5|15|1|4
-Mystic Vale|2|4|45|2|3
-Nations|2|5|100|3|3
-Netrunner|2|2|45|3|3
-Notre Dame|2|5|60|2|2
-Ora et Labora|2|4|120|3|1
-Orleans|2|4|90|3|3
-Paths of Glory|2|2|240|3|3
-Pax Pamir|2|5|90|3|2
-Pickomino|2|7|20|1|4
-Pillars of the Earth|2|4|90|3|3
-Pirate's Cove|2|4|60|2|4
-Power Struggle|2|4|60|2|3
-Pret-a-Porter|2|4|60|2|3
-Pyramid of Pengqueen|2|2|20|1|2
-Qin|2|4|45|2|2
-Quarriors!|2|4|30|1|4
-Race to the Treasure|2|4|20|1|2
-Ricochet Robots|2|10|30|1|2
-Roll Player|2|4|75|2|3
-Saboteur|3|10|30|1|3
-Samurai|2|4|30|2|2
-Scoville|2|5|60|2|3
-Seasons|2|4|60|2|4
-Snow Tails|2|4|30|1|3
-Spirits of the Forest|2|4|40|2|3
-Star Wars: Rebellion|2|4|240|3|3
-Stockpile|2|5|45|2|3
-Survive: Escape from Atlantis!|2|4|60|2|4
-Taj Mahal|3|5|60|2|3
-Tales of the Arabian Nights|2|6|90|2|5
-Terra Mystica|2|5|120|3|1
-Thebes|2|4|90|2|3
-The Castles of Burgundy|2|4|90|3|3
-The Downfall of Pompeii|2|4|45|1|3
-The Pillars of the Earth Builders|2|4|60|2|3
-The Settlers of Zarahemla|3|4|120|3|3
-Thunderstone Quest|2|5|75|2|3
-Trains|2|4|45|2|3
-Twilight Imperium|3|6|480|3|3
-Vegas Showdown|2|5|60|2|3
-Vinhos|2|5|120|3|2
-Walnut Grove|2|4|60|2|2
-War of the Ring|2|4|180|3|3
-Wasteland Express|2|5|90|3|3
-Wiz-War|2|4|45|1|5
-Xia|3|5|180|3|3
-Yedo|2|5|90|3|3
-Zooloretto|2|5|45|1|3
-Kingdom Builder|2|5|45|2|3
-Tiny Towns|2|6|45|2|3
-Imhotep|2|4|40|2|3
-Karuba|2|6|40|1|3
-Draftosaurus|2|5|15|1|3
-Azul: Master Chocolatier|2|4|45|2|2
-Cubitos|2|4|40|2|4
-Clever (Ganz schön clever)|2|4|30|1|4
-Twice as Clever|2|4|30|1|4
-Forest Shuffle|2|5|40|2|3
-Cubirds|2|5|20|1|3
-Faraway|2|6|20|1|3
-Next Station London|2|4|20|1|3
-Nidavellir|2|5|50|2|2
-Kingsburg|2|5|90|2|4
-Splendor Duel|2|2|30|2|2
-Century: Eastern Wonders|2|4|45|2|2
-Space Base|2|5|60|2|4
-Tiny Epic Galaxies|2|5|35|2|3
-Sushi Roll|2|5|20|1|4
-Point Salad|2|6|20|1|3
-Mah-jong|4|4|90|2|4
-Bunco|4|12|30|1|5
-Kismet|2|8|30|1|5
-Aggravation|2|6|40|1|5
-Parcheesi|2|4|60|1|4
-Ludo|2|4|30|1|5
-Snakes and Ladders|2|6|20|1|5
-Tic-Tac-Toe|2|2|5|1|1
-Dots and Boxes|2|4|10|1|1
-Memory|2|6|15|1|2
-Bingo|2|12|30|1|5
-Pie Face|2|4|10|1|4
-Don't Wake Daddy|2|4|10|1|4
-Jumanji|2|4|30|1|5
-Scrabble Junior|2|4|20|1|3
-Monopoly Junior|2|4|20|1|4
-Clue Jr.|2|4|20|1|3
-Sequence for Kids|2|4|15|1|3
-Mille Bornes|2|6|45|1|4
-Rummikub Twist|2|4|45|2|3
-Settlers of America|3|4|120|3|3
-Thurn and Taxis|2|4|60|2|3
-Wits and Wagers Family|3|7|20|1|3
-Telestrations After Dark|4|8|30|1|3
-Spot It! Junior|2|6|10|1|2
-Ghost Blitz|2|8|15|1|3
-Jungle Speed|2|10|15|1|3
-Toc Toc Woodman|2|4|15|1|3
-Beez|2|4|20|1|3
-Hey That's My Fish!|2|4|20|1|2
-Penguin Party|2|4|15|1|3
-Click Clack Lumberjack|2|4|15|1|3
-Rummy 500|2|8|45|1|3
-Contract Bridge Party|4|4|60|3|2
-Oh Pshaw|2|6|45|1|3
-Sorry! Revenge|2|4|30|1|4
-Trouble Chaos|2|4|20|1|5
-Yahtzee Duel|2|2|20|1|5
-Battleship Card Game|2|2|20|1|3
-Risk Legacy|3|5|120|3|3
-Clue: The Office|3|6|45|2|3
-Monopoly Builder|2|6|60|2|4
-Monopoly Cheaters Edition|2|6|60|2|5
-Scrabble Duplicate|2|4|60|2|1
-Uno Show 'em No Mercy|2|10|30|1|5
-Uno Wild Twists|2|10|30|1|4
-Uno Minimalista|2|10|20|1|4
-Phase 10 Dice|2|6|30|1|4
-Skyjo|2|8|25|1|4
-Take 5|2|10|45|1|4
-6 nimmt!|2|10|45|1|4
-Tichu|4|4|60|2|3
-Frankenstein's Bag of Bits|2|4|20|1|3`;
+const CATALOG_RAW=`Chess|2|2|40|3|1|
+Checkers|2|2|20|1|1|
+Monopoly|2|8|120|3|4|
+Risk|2|6|120|3|3|
+Clue|3|6|45|2|3|
+Scrabble|2|4|60|2|3|
+Yahtzee|2|10|30|1|5|dice paper pencil
+Backgammon|2|2|30|2|3|
+Connect Four|2|2|10|1|1|
+Battleship|2|2|30|1|3|paper pencil
+Sorry!|2|4|30|1|4|
+Trouble|2|4|25|1|5|
+Candy Land|2|4|20|1|5|
+Chutes and Ladders|2|4|20|1|5|
+The Game of Life|2|6|60|1|5|
+Trivial Pursuit|2|6|60|2|3|party
+Pictionary|3|12|45|1|3|paper party pencil
+Boggle|2|8|15|1|2|paper pencil
+Mastermind|2|2|20|1|1|paper pencil
+Stratego|2|2|45|2|2|
+Othello|2|2|25|2|1|
+Go|2|2|60|3|1|
+Dominoes|2|4|30|1|3|
+Mexican Train|2|8|60|1|4|
+Rummikub|2|4|45|2|3|
+Qwirkle|2|4|45|1|3|
+Blokus|2|4|25|2|1|
+Sequence|2|12|30|1|3|
+Phase 10|2|6|45|2|4|cards
+Skip-Bo|2|6|30|1|4|cards
+Uno|2|10|30|1|4|cards
+Uno Flip|2|10|30|1|4|cards
+Uno Attack|2|10|30|1|5|cards
+Uno All Wild|2|10|20|1|4|cards
+Uno Dos|2|4|20|1|4|cards
+Dutch Blitz|2|4|15|1|3|cards
+Spot It!|2|8|15|1|2|
+Jenga|2|8|15|1|3|
+Kerplunk|2|4|15|1|3|
+Connect 4 Shots|2|2|10|1|2|
+Operation|2|6|20|1|3|
+Hungry Hungry Hippos|2|4|10|1|3|
+Mouse Trap|2|4|30|1|4|
+Guess Who?|2|2|15|1|2|
+Perfection|2|2|10|1|3|
+Twister|2|6|15|1|4|party
+Cranium|4|12|60|1|3|party
+Taboo|4|10|30|1|3|party
+Scattergories|2|6|30|1|3|paper party pencil
+Balderdash|2|6|45|1|3|paper party pencil
+Apples to Apples|4|10|30|1|4|party
+Cards Against Humanity|4|12|45|1|4|party
+Telestrations|4|8|30|1|3|paper party pencil
+Catchphrase|4|10|30|1|3|party
+Headbanz|2|6|20|1|3|party
+Charades|4|12|30|1|2|party
+Heads Up!|3|10|15|1|3|party
+Codenames|4|8|20|1|2|party
+Codenames Duet|2|2|15|1|2|
+Just One|3|7|20|1|2|party
+Wavelength|2|12|35|1|3|party
+Decrypto|3|8|30|1|2|party
+Concept|4|12|40|1|2|party
+Dixit|3|6|30|1|3|party
+Cluedo Master Detective|3|8|60|2|3|
+Rummy|2|6|30|1|4|cards
+Gin Rummy|2|2|20|1|3|cards
+Canasta|2|6|60|2|3|cards
+Hearts|3|6|30|1|3|cards
+Spades|4|4|45|2|3|cards
+Euchre|4|4|30|2|3|cards
+Bridge|4|4|60|3|2|cards
+Cribbage|2|4|30|1|3|cards
+Pinochle|2|4|45|2|3|cards
+Poker|2|10|60|2|4|cards
+Blackjack|2|7|30|1|5|cards
+Crazy Eights|2|7|15|1|4|cards
+Go Fish|2|6|10|1|5|cards
+Old Maid|2|8|10|1|5|cards
+War|2|2|20|1|5|cards
+Spit|2|2|10|1|3|cards
+Speed|2|2|10|1|3|cards
+Egyptian Rat Screw|2|8|15|1|3|cards
+Golf (card game)|2|6|30|1|4|cards
+Oh Hell!|3|7|45|2|3|cards
+Whist|4|4|45|2|3|cards
+Rook|4|4|45|2|3|cards
+Skat|3|3|45|2|3|cards
+Pitch|2|10|30|2|3|cards
+Hand and Foot|2|6|90|2|3|cards
+Nertz|2|6|20|1|3|cards
+Scopa|2|4|20|1|3|cards
+Uno Teams|4|4|30|1|4|cards
+Uno 99|2|6|20|1|3|cards
+Uno Golf|2|6|30|1|4|cards
+Uno Flex|2|10|30|1|4|cards
+Flip 7|3|12|20|1|5|cards
+Exploding Kittens|2|5|15|1|5|cards
+Exploding Kittens Party Pack|2|10|15|1|5|
+Throw Throw Burrito|2|6|15|1|4|cards
+Taco Cat Goat Cheese Pizza|2|8|10|1|4|cards
+Catan|3|4|75|2|3|
+Catan: Seafarers|3|4|90|2|3|
+Catan: Cities & Knights|3|4|120|3|3|
+Catan Junior|2|4|30|1|4|
+Starfarers of Catan|3|4|120|3|3|
+Ticket to Ride|2|5|60|2|3|
+Ticket to Ride: Europe|2|5|60|2|3|
+Ticket to Ride: Nordic Countries|2|3|40|2|3|
+Ticket to Ride: First Journey|2|4|30|1|3|
+Ticket to Ride: Rails & Sails|2|5|75|2|3|
+Carcassonne|2|5|40|2|3|
+Carcassonne: Hunters and Gatherers|2|5|35|2|3|
+Carcassonne: South Seas|2|5|40|2|3|
+Carcassonne: Inns & Cathedrals|2|6|45|2|3|
+Kingdomino|2|4|20|1|2|
+Queendomino|2|4|30|2|3|
+Azul|2|4|40|2|2|
+Azul: Summer Pavilion|2|4|40|2|2|
+Azul: Stained Glass of Sintra|2|4|45|2|2|
+Splendor|2|4|30|2|2|
+Sushi Go!|2|5|15|1|3|cards
+Sushi Go Party!|2|8|20|1|3|cards
+7 Wonders|2|7|40|2|2|
+7 Wonders Duel|2|2|30|2|2|
+Lords of Waterdeep|2|5|90|2|2|
+Agricola|2|5|120|3|2|
+Agricola: Family Edition|2|4|60|2|2|
+Puerto Rico|3|5|120|3|2|
+San Juan|2|4|40|2|3|
+Power Grid|2|6|120|3|2|
+Stone Age|2|4|60|2|3|
+Small World|2|5|60|2|2|
+Small World Underground|2|5|60|2|2|
+Dominion|2|4|30|2|3|
+Dominion: Intrigue|2|4|30|2|3|
+Race for the Galaxy|2|4|40|2|3|
+Red7|2|4|10|1|2|cards
+Love Letter|2|4|20|1|4|cards
+Coup|2|6|15|1|3|cards
+Skull|3|6|15|1|2|cards
+Sheriff of Nottingham|3|5|60|2|3|
+Scotland Yard|3|6|45|2|2|
+Fury of Dracula|2|4|150|3|3|
+Mr. Jack|2|2|30|2|2|
+King of Tokyo|2|6|30|1|4|
+King of Tokyo Duel|2|2|20|1|4|
+King of New York|2|6|40|2|4|
+Machi Koro|2|4|30|1|4|
+Machi Koro 2|2|5|30|1|4|
+Cascadia|2|4|40|2|3|
+Wingspan|2|5|60|2|3|
+Everdell|2|4|80|3|2|
+Root|2|4|90|3|2|
+Terraforming Mars|2|5|120|3|3|
+Brass: Birmingham|2|4|120|3|2|
+Scythe|2|5|115|3|2|
+Viticulture|2|6|90|3|3|
+Tzolk'in|2|4|90|3|1|
+Caylus|2|5|90|3|1|
+Alhambra|2|6|60|2|3|
+Istanbul|2|5|60|2|3|
+Yokohama|2|4|90|3|2|
+Targi|2|2|60|2|2|
+Jaipur|2|2|30|1|3|
+Lost Cities|2|2|30|1|3|cards
+Hive|2|2|20|2|1|
+Santorini|2|4|20|2|1|
+Patchwork|2|2|30|2|2|
+Cartographers|2|12|35|1|3|paper pencil
+Bärenpark|2|4|45|2|2|
+Isle of Skye|2|5|40|2|2|
+Ethnos|2|6|60|2|3|
+Century: Spice Road|2|5|40|2|2|
+Century: Golem Edition|2|5|45|2|2|
+Hanamikoji|2|2|15|1|3|cards
+The Quest for El Dorado|2|4|60|2|3|
+Rivals for Catan|2|2|60|2|3|
+Dungeon Lords|2|4|90|3|2|
+Dixit Odyssey|3|12|30|1|3|
+Lords of Vegas|2|4|60|2|4|
+Tokaido|2|5|45|1|2|
+Between Two Cities|3|7|20|1|2|
+Fresco|2|4|90|2|2|
+Takenoko|2|4|45|2|3|
+Bohnanza|2|7|45|2|3|
+Acquire|2|6|90|3|3|
+Sagrada|2|4|40|2|3|dice
+Zombie Dice|2|12|15|1|5|dice
+Munchkin|3|6|90|2|5|cards
+Smash Up|2|4|45|2|3|
+Star Realms|2|2|20|2|3|
+Ascension|2|4|30|2|3|
+Ticket to Ride: Asia|2|5|60|2|3|
+Ticket to Ride: Germany|2|5|60|2|3|
+Ticket to Ride: UK|2|5|60|2|3|
+Ticket to Ride: Switzerland|2|3|45|2|3|
+Ticket to Ride: Africa|2|5|60|2|3|
+Ticket to Ride: Japan|2|5|60|2|3|
+Ticket to Ride: New York|2|4|20|1|3|
+Ticket to Ride: London|2|4|20|1|3|
+Ticket to Ride: Amsterdam|2|4|20|1|3|
+Ticket to Ride: San Francisco|2|4|20|1|3|
+Carcassonne: The Castle|2|2|35|2|3|
+Carcassonne: Amazonas|2|5|45|2|3|
+Carcassonne: Safari|2|5|45|2|3|
+Carcassonne: Star Wars|2|2|35|2|3|
+Carcassonne: Big Box|2|6|45|2|3|
+Catan: Traders & Barbarians|3|4|90|3|3|
+Catan: Explorers & Pirates|3|4|90|2|3|
+Catan: Dice Game|2|4|20|1|5|dice
+Catan Card Game|2|2|60|2|3|
+Dominion: Seaside|2|4|30|2|3|
+Dominion: Prosperity|2|4|35|2|3|
+Dominion: Alchemy|2|4|30|2|3|
+Dominion: Hinterlands|2|4|30|2|3|
+Dominion: Dark Ages|2|4|35|2|3|
+Dominion: Adventures|2|4|35|2|3|
+Dominion: Empires|2|4|35|2|3|
+Dominion: Renaissance|2|4|35|2|3|
+Thunderstone|2|5|60|2|3|
+Clank!|2|4|60|2|3|
+Clank!: A Deck-Building Adventure|2|4|60|2|3|
+Quacks of Quedlinburg|2|4|45|2|4|
+Welcome To...|2|12|30|1|3|paper pencil
+Railroad Ink|2|6|20|1|4|dice paper pencil
+Roll for the Galaxy|2|5|45|2|4|dice
+Sagrada: The Great Facades|2|4|45|2|3|dice
+Qwixx|2|5|15|1|4|dice paper pencil
+Kingdomino Duel|2|2|15|1|2|
+Dragonwood|2|4|20|1|3|
+Fluxx|2|6|20|1|5|cards
+Zombie Fluxx|2|6|20|1|5|
+Star Fluxx|2|6|20|1|5|
+Pirate Fluxx|2|6|20|1|5|
+Monty Python Fluxx|2|6|20|1|5|
+Tsuro|2|8|15|1|3|
+Tsuro of the Seas|2|8|20|1|3|
+Bananagrams|2|8|15|1|3|paper pencil
+Rory's Story Cubes|2|12|15|1|3|
+Rack-O|2|4|20|1|4|
+Pass the Pigs|2|8|15|1|5|dice
+Farkle|2|8|20|1|5|dice
+Liar's Dice|2|6|20|1|4|dice
+Perudo|2|6|20|1|4|dice
+Cover Your Assets|2|6|20|1|3|
+No Thanks!|3|7|20|1|3|
+Port Royal|2|5|25|1|4|
+Biblios|2|4|30|1|3|
+Citadels|2|8|40|2|3|
+Libertalia|2|6|45|2|3|
+Sheep & Thief|2|5|40|1|3|
+Chinatown|3|5|60|2|3|
+Can't Stop|2|4|30|1|4|dice
+Incan Gold|3|8|30|1|4|dice
+Diamant|3|8|30|1|4|dice
+Qwirkle Cube|2|4|20|1|3|
+Rush Hour|2|2|20|1|1|
+Gobblet Gobblers|2|2|10|1|1|
+Quoridor|2|4|20|1|1|
+Quarto|2|2|20|1|1|
+Pente|2|2|30|1|1|
+Mancala|2|2|20|1|1|
+Nine Men's Morris|2|2|20|1|1|
+Chinese Checkers|2|6|30|1|1|
+Halma|2|4|45|1|1|
+Fox and Geese|2|2|20|1|1|
+Hex|2|2|20|2|1|
+Tak|2|2|30|2|1|
+Onitama|2|2|20|1|1|
+Yinsh|2|2|45|2|1|
+Gipf|2|2|45|2|1|
+Dvonn|2|2|45|2|1|
+Tzaar|2|2|30|2|1|
+Lines of Action|2|2|30|2|1|
+Abalone|2|2|30|1|1|
+Reversi|2|2|25|2|1|
+Draughts|2|2|30|1|1|
+Shogi|2|2|60|3|1|
+Xiangqi|2|2|60|3|1|
+Fanorona|2|2|30|1|1|
+Bagh-Chal|2|2|20|1|1|
+Azul: Queen's Garden|2|4|40|2|2|
+Calico|2|4|40|2|3|
+Photosynthesis|2|4|60|2|2|
+Parks|2|5|60|2|3|
+Arboretum|2|4|30|2|3|
+Planet|2|4|30|1|3|
+Sprawlopolis|2|4|20|1|3|
+Harmonies|2|4|30|1|3|
+Earth|2|5|40|2|3|
+Ark Nova|2|4|150|3|2|
+Wyrmspan|2|5|75|2|3|
+Heat: Pedal to the Metal|2|6|60|2|3|
+Flamme Rouge|2|4|45|2|3|
+Downforce|2|6|30|1|3|
+Formula D|2|10|90|2|4|
+Camel Up|2|8|30|1|5|dice
+Thunder Alley|3|8|60|2|3|
+Rolling Heights|2|4|35|2|3|
+Villainous|2|6|60|2|3|
+The Resistance|5|10|30|1|2|party
+Secret Hitler|5|10|45|1|3|party
+Avalon|5|10|30|1|2|party
+One Night Ultimate Werewolf|3|10|10|1|3|party
+Ultimate Werewolf|5|12|30|1|3|party
+Mafia|6|12|30|1|3|party
+Spyfall|3|12|15|1|2|party
+Two Rooms and a Boom|6|12|20|1|3|party
+Blood on the Clocktower|5|12|90|3|2|party
+Wits & Wagers|3|7|30|1|3|party
+Quiplash Board|3|8|20|1|3|party
+Say Anything|3|8|30|1|3|party
+Hues and Cues|3|10|30|1|3|party
+Time's Up!|4|12|45|1|3|party
+Anomia|3|6|15|1|3|party
+Wordsmith|2|6|20|1|3|
+Bananagrams Duel|2|2|10|1|3|
+Upwords|2|4|40|1|2|
+Words With Friends Board|2|4|40|1|3|
+Boggle Junior|2|4|10|1|2|
+Scrabble Slam|2|4|10|1|3|
+Quiddler|2|8|30|1|3|
+Alhambra: The Dice Game|2|6|30|1|4|dice
+Roll Through the Ages|2|4|30|1|4|dice
+Yahtzee Free for All|2|4|20|1|5|dice
+Boss Monster|2|4|30|2|3|
+Munchkin Quest|3|4|90|2|4|
+Epic Spell Wars|2|6|30|1|5|
+Gloom|2|4|45|1|3|
+Lunch Money|2|6|30|1|3|
+Cheese|2|4|30|1|3|
+Tapple|2|8|10|1|3|
+Dobble|2|8|15|1|2|
+Kakerlakenpoker|2|6|20|1|3|cards
+Cockroach Poker|2|6|20|1|3|cards
+Sleeping Queens|2|5|20|1|4|cards
+Rat-a-Tat Cat|2|6|20|1|4|cards
+Slamwich|2|8|15|1|3|
+Bears vs Babies|2|8|20|1|4|
+Unstable Unicorns|2|8|45|1|5|cards
+Here to Slay|2|6|45|2|4|cards
+Joking Hazard|3|10|30|1|4|party
+What Do You Meme?|3|12|40|1|4|party
+Superfight|3|10|30|1|3|party
+Happy Salmon|3|12|5|1|2|party
+Yeti in My Spaghetti|2|6|10|1|3|
+Brain Games|2|8|20|1|2|
+Blurble|3|12|15|1|3|
+Gubs|2|4|10|1|3|
+Bandu|2|4|15|1|2|
+Elefun|2|4|15|1|3|
+Don't Break the Ice|2|4|10|1|3|
+Pop the Pig|2|6|10|1|4|
+Lucky Ducks|2|4|10|1|4|
+Dino Hunt Dice|2|4|15|1|4|dice
+Eye Found It|2|4|20|1|2|
+Rhino Hero|2|5|10|1|3|
+Rhino Hero: Super Battle|2|4|15|1|3|
+Animal Upon Animal|2|4|15|1|3|
+Cat Tower|2|4|20|1|2|
+Villa Paletti|2|4|30|1|2|
+Bausack|2|4|20|1|3|
+Ubongo|2|4|25|1|3|
+Katamino|2|2|15|1|1|
+Mighty Bugs|2|4|20|1|2|
+Block Party|2|4|20|1|2|
+Blokus Trigon|2|4|25|2|1|
+Blokus Duo|2|2|15|1|1|
+Ingenious|2|4|45|2|2|
+Hive Pocket|2|2|20|2|1|
+Pylos|2|2|20|1|1|
+Shobu|2|2|20|2|1|
+Santorini: Golden Fleece|2|4|25|2|2|
+Lost Ruins of Arnak|2|4|90|3|3|
+Dune: Imperium|2|4|120|3|3|
+Ra|2|5|60|2|3|
+Lords of Xidit|2|5|75|2|3|
+Mombasa|2|4|120|3|2|
+Great Western Trail|2|4|120|3|2|
+Russian Railroads|2|4|90|3|1|
+7 Wonders: Architects|2|7|25|1|2|
+7 Wonders: Cities|2|8|45|2|2|
+Alchemists|2|4|120|3|2|
+Amun-Re|3|5|90|3|2|
+Antike|2|6|120|3|1|
+Archaeology: The Card Game|2|5|20|1|4|
+Aquarius|2|5|20|1|3|
+Axis & Allies|2|5|240|3|3|
+Battle Line|2|2|30|2|3|cards
+Blood Rage|2|4|90|3|2|
+Bohemian Villages|2|4|30|1|2|
+Bruges|2|4|60|2|3|
+Camel Cup|2|8|30|1|5|dice
+Can't Stop Express|2|4|20|1|4|dice
+Carson City|2|5|90|3|2|
+Cash 'n Guns|4|8|30|1|3|
+Cathedral|2|2|20|1|1|
+Cities: Skylines|2|4|60|2|3|
+Coloretto|2|5|20|1|3|
+Colt Express|2|6|40|2|4|
+Concordia|2|5|100|3|1|
+Cosmic Encounter|3|5|60|2|4|
+Crokinole|2|4|30|1|2|
+Cuba Libre|2|4|180|3|2|
+Dungeon Petz|2|4|90|3|2|
+Eclipse|2|6|180|3|3|
+Elfenland|2|6|60|2|3|
+Escape from the Aliens in Outer Space|2|8|45|1|3|
+Fields of Arle|2|2|120|3|1|
+Finca|2|4|40|2|2|
+Forbidden Stars|2|4|240|3|3|
+Formula One|2|6|60|2|3|
+Galaxy Trucker|2|4|60|2|4|
+Gizmos|2|4|40|2|2|
+Glass Road|2|4|60|2|1|
+Glen More|2|5|60|2|2|
+Golem Arcana|2|2|90|3|2|
+Guilds of London|2|5|60|2|2|
+Heroscape|2|4|60|2|3|
+Hoity Toity|2|5|60|2|3|
+Hotel Samoa|2|5|45|2|2|
+Imperial|2|6|120|3|1|
+In the Year of the Dragon|2|5|90|3|2|
+Jamaica|2|6|30|1|4|
+Kahuna|2|2|20|1|2|
+Keyflower|2|6|90|3|2|
+Khet|2|2|20|1|1|
+La Granja|2|4|90|3|2|
+Last Will|2|5|60|2|2|
+Letters from Whitechapel|2|6|90|3|2|
+Liberté|2|4|90|3|2|
+Lost Cities Rivals|2|2|30|1|3|
+Machiavelli|3|6|90|3|3|
+Manhattan|2|4|60|2|2|
+Marrakech|2|4|30|1|3|
+Maharaja|2|5|60|2|2|
+Mexica|2|4|60|2|2|
+Midgard|2|4|60|2|2|
+Modern Art|3|5|45|2|3|
+Mondo|2|4|30|1|3|
+Monopoly Deal|2|5|15|1|4|
+Mystic Vale|2|4|45|2|3|
+Nations|2|5|100|3|3|
+Netrunner|2|2|45|3|3|
+Notre Dame|2|5|60|2|2|
+Ora et Labora|2|4|120|3|1|
+Orleans|2|4|90|3|3|
+Paths of Glory|2|2|240|3|3|
+Pax Pamir|2|5|90|3|2|
+Pickomino|2|7|20|1|4|dice
+Pillars of the Earth|2|4|90|3|3|
+Pirate's Cove|2|4|60|2|4|
+Power Struggle|2|4|60|2|3|
+Pret-a-Porter|2|4|60|2|3|
+Pyramid of Pengqueen|2|2|20|1|2|
+Qin|2|4|45|2|2|
+Quarriors!|2|4|30|1|4|dice
+Race to the Treasure|2|4|20|1|2|
+Ricochet Robots|2|10|30|1|2|
+Roll Player|2|4|75|2|3|dice
+Saboteur|3|10|30|1|3|
+Samurai|2|4|30|2|2|
+Scoville|2|5|60|2|3|
+Seasons|2|4|60|2|4|
+Snow Tails|2|4|30|1|3|
+Spirits of the Forest|2|4|40|2|3|
+Star Wars: Rebellion|2|4|240|3|3|
+Stockpile|2|5|45|2|3|
+Survive: Escape from Atlantis!|2|4|60|2|4|
+Taj Mahal|3|5|60|2|3|
+Tales of the Arabian Nights|2|6|90|2|5|
+Terra Mystica|2|5|120|3|1|
+Thebes|2|4|90|2|3|
+The Castles of Burgundy|2|4|90|3|3|
+The Downfall of Pompeii|2|4|45|1|3|
+The Pillars of the Earth Builders|2|4|60|2|3|
+The Settlers of Zarahemla|3|4|120|3|3|
+Thunderstone Quest|2|5|75|2|3|
+Trains|2|4|45|2|3|
+Twilight Imperium|3|6|480|3|3|
+Vegas Showdown|2|5|60|2|3|
+Vinhos|2|5|120|3|2|
+Walnut Grove|2|4|60|2|2|
+War of the Ring|2|4|180|3|3|
+Wasteland Express|2|5|90|3|3|
+Wiz-War|2|4|45|1|5|
+Xia|3|5|180|3|3|
+Yedo|2|5|90|3|3|
+Zooloretto|2|5|45|1|3|
+Kingdom Builder|2|5|45|2|3|
+Tiny Towns|2|6|45|2|3|
+Imhotep|2|4|40|2|3|
+Karuba|2|6|40|1|3|
+Draftosaurus|2|5|15|1|3|
+Azul: Master Chocolatier|2|4|45|2|2|
+Cubitos|2|4|40|2|4|
+Clever (Ganz schön clever)|2|4|30|1|4|dice paper pencil
+Twice as Clever|2|4|30|1|4|dice paper pencil
+Forest Shuffle|2|5|40|2|3|
+Cubirds|2|5|20|1|3|
+Faraway|2|6|20|1|3|
+Next Station London|2|4|20|1|3|
+Nidavellir|2|5|50|2|2|
+Kingsburg|2|5|90|2|4|
+Splendor Duel|2|2|30|2|2|
+Century: Eastern Wonders|2|4|45|2|2|
+Space Base|2|5|60|2|4|
+Tiny Epic Galaxies|2|5|35|2|3|
+Sushi Roll|2|5|20|1|4|
+Point Salad|2|6|20|1|3|
+Mah-jong|4|4|90|2|4|
+Bunco|4|12|30|1|5|dice
+Kismet|2|8|30|1|5|dice paper pencil
+Aggravation|2|6|40|1|5|
+Parcheesi|2|4|60|1|4|
+Ludo|2|4|30|1|5|
+Snakes and Ladders|2|6|20|1|5|
+Tic-Tac-Toe|2|2|5|1|1|paper pencil
+Dots and Boxes|2|4|10|1|1|paper pencil
+Memory|2|6|15|1|2|
+Bingo|2|12|30|1|5|
+Pie Face|2|4|10|1|4|
+Don't Wake Daddy|2|4|10|1|4|
+Jumanji|2|4|30|1|5|
+Scrabble Junior|2|4|20|1|3|
+Monopoly Junior|2|4|20|1|4|
+Clue Jr.|2|4|20|1|3|
+Sequence for Kids|2|4|15|1|3|
+Mille Bornes|2|6|45|1|4|cards
+Rummikub Twist|2|4|45|2|3|
+Settlers of America|3|4|120|3|3|
+Thurn and Taxis|2|4|60|2|3|
+Wits and Wagers Family|3|7|20|1|3|
+Telestrations After Dark|4|8|30|1|3|
+Spot It! Junior|2|6|10|1|2|
+Ghost Blitz|2|8|15|1|3|
+Jungle Speed|2|10|15|1|3|
+Toc Toc Woodman|2|4|15|1|3|
+Beez|2|4|20|1|3|
+Hey That's My Fish!|2|4|20|1|2|
+Penguin Party|2|4|15|1|3|
+Click Clack Lumberjack|2|4|15|1|3|
+Rummy 500|2|8|45|1|3|cards
+Contract Bridge Party|4|4|60|3|2|
+Oh Pshaw|2|6|45|1|3|
+Sorry! Revenge|2|4|30|1|4|
+Trouble Chaos|2|4|20|1|5|
+Yahtzee Duel|2|2|20|1|5|dice
+Battleship Card Game|2|2|20|1|3|
+Risk Legacy|3|5|120|3|3|
+Clue: The Office|3|6|45|2|3|
+Monopoly Builder|2|6|60|2|4|
+Monopoly Cheaters Edition|2|6|60|2|5|
+Scrabble Duplicate|2|4|60|2|1|
+Uno Show 'em No Mercy|2|10|30|1|5|
+Uno Wild Twists|2|10|30|1|4|
+Uno Minimalista|2|10|20|1|4|
+Phase 10 Dice|2|6|30|1|4|
+Skyjo|2|8|25|1|4|cards
+Take 5|2|10|45|1|4|cards
+6 nimmt!|2|10|45|1|4|cards
+Tichu|4|4|60|2|3|cards
+Frankenstein's Bag of Bits|2|4|20|1|3|
+Hangman|2|8|10|1|2|paper pencil word
+Sprouts|2|2|15|1|1|paper pencil
+Paper Battleship|2|2|30|1|3|paper pencil
+Sim (paper game)|2|2|10|1|1|paper pencil
+Tutti Frutti (Stop)|2|12|20|1|3|paper party pencil word
+Name Place Animal Thing|2|12|20|1|3|paper party pencil word
+Categories|3|12|20|1|3|paper party pencil word
+Bulls and Cows|2|2|15|1|1|paper pencil
+Consequences|3|12|20|1|4|paper party pencil
+Exquisite Corpse|3|12|20|1|4|drawing paper party pencil
+Mad Gab|2|12|20|1|3|party word
+Fictionary|3|12|30|1|3|paper party pencil word
+Ghost (word game)|3|8|15|1|2|party word
+Contact (word game)|3|8|20|1|2|party word
+20 Questions|2|12|15|1|2|party word
+Gartic Phone|4|12|20|1|3|drawing paper party
+Drawful|3|12|25|1|3|drawing paper party
+Pit (card game)|3|8|30|1|4|cards party
+Spoons|3|12|15|1|4|cards party
+Slapjack|2|6|10|1|4|cards
+BS (Cheat)|3|10|20|1|3|cards party
+President (Scum)|4|8|30|1|3|cards
+Kings Corner|2|4|25|1|3|cards
+Shithead (Idiot)|2|6|30|1|3|cards
+Pounce|2|6|15|1|3|cards
+Snap|2|6|10|1|5|cards
+Beggar My Neighbour|2|2|20|1|5|cards
+Casino (card game)|2|4|25|1|3|cards
+Ride the Bus|3|8|10|1|5|cards party
+500 (card game)|2|4|45|2|3|cards
+Sheepshead|3|5|45|2|3|cards
+Michigan Rummy|3|8|30|1|4|cards
+Kemps|4|4|20|1|3|cards
+Liverpool Rummy|2|6|60|2|3|cards
+Chase the Ace|3|12|10|1|5|cards party
+Pig (dice game)|2|8|10|1|5|dice
+Cee-lo|2|8|15|1|5|dice
+Left Right Center|3|12|15|1|5|dice party
+Shut the Box|2|4|15|1|4|dice
+Ship Captain Crew|2|8|10|1|5|dice party
+Beetle (dice game)|2|8|20|1|5|dice paper
+Knucklebones|2|2|15|1|3|dice
+Yacht|2|8|20|1|5|dice paper
+Balut|2|4|20|1|5|dice paper
+Tenzi|2|8|5|1|3|dice party
+Mexico (dice game)|2|8|15|1|5|dice party
+Poker Dice|2|6|15|1|5|dice
+Martian Dice|2|6|20|1|4|dice
+Qwinto|2|6|15|1|4|dice paper
+Cthulhu Dice|2|6|10|1|5|dice
+Dice Town|2|5|30|1|4|dice
+Trivia Night|2|12|45|1|2|party trivia
+Name That Tune|2|12|30|1|2|music party trivia
+Minute to Win It|2|12|30|1|3|active party
+Musical Chairs|4|12|15|1|4|active party
+Sardines|4|12|30|1|2|active party
+Telephone Pictionary|4|12|30|1|3|drawing paper party
+Rock Paper Scissors Bracket|2|12|10|1|5|party quick
+Paper Football|2|2|10|1|2|paper party
+Cootie|2|4|20|1|5|kids
+Hi Ho Cherry-O|2|4|15|1|5|kids`;
 let CATALOG=null;
 const normName=s=>s.toLowerCase().replace(/['\u2019]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
 function catalog(){
-  if(!CATALOG) CATALOG=CATALOG_RAW.trim().split('\n').map(l=>{const [n,a,b,m,w,lk]=l.split('|');return {n,min:+a,max:+b,mins:+m,w:+w,luck:+lk,k:normName(n)};});
+  if(!CATALOG) CATALOG=CATALOG_RAW.trim().split('\n').map(l=>{const [n,a,b,m,w,lk,kw]=l.split('|');return {n,min:+a,max:+b,mins:+m,w:+w,luck:+lk,k:normName(n),kw:kw||''};});
   return CATALOG;
 }
 function catSearch(q){
@@ -1075,11 +1160,12 @@ function catSearch(q){
   const toks=q.split(' '), out=[];
   for(const g of catalog()){
     let sc=0;
-    if(g.k.startsWith(q)) sc=3; else if((' '+g.k).includes(' '+q)) sc=2; else if(g.k.includes(q)||toks.every(x=>g.k.includes(x))) sc=1;
+    const hay=g.k+' '+g.kw;
+    if(g.k.startsWith(q)) sc=3; else if((' '+g.k).includes(' '+q)) sc=2; else if(g.k.includes(q)||toks.every(x=>hay.includes(x))) sc=1;
     if(sc) out.push([sc,g]);
   }
   out.sort((a,b)=>b[0]-a[0]||a[1].n.length-b[1].n.length);
-  return out.slice(0,8).map(x=>x[1]);
+  return out.slice(0,12).map(x=>x[1]);
 }
 
 const VIEW=/[?&]view(&|=|$)/.test(location.search);
@@ -1091,7 +1177,7 @@ const app=document.getElementById('app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pname=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
 const dots=l=>'●'.repeat(l)+'○'.repeat(5-l);
-const pdot=id=>`<i class="pawn" style="--pc:${pcol(id)}"></i>`;
+const pdot=id=>`<svg class="pawn" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${pcol(id)}" stroke="var(--edge)" stroke-width="5" stroke-linejoin="round"/></svg>`;
 const BR=['var(--c-coral)','var(--c-blue)','var(--c-yellow)','var(--c-green)','var(--c-purple)','var(--c-orange)'];
 const MEEPLE_D='M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.6 39c-3.1-1-4.2-4.1-2.2-7C12 25.6 18.4 21.4 26.1 19.4c-1.7-1.6-2.7-3.6-2.7-6.2C23.4 8.6 26.8 5 32 5z';
 const meeple=(c,s)=>`<svg class="meeple" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${c}" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/></svg>`;
@@ -1218,7 +1304,7 @@ function viewSetup(){
   const players=S.players.map((p,i)=>`<li class="prow2"><span class="pnum mono">${i+1}</span><input class="inp" id="pn-${p.id}" value="${esc(p.name)}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name">${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>`).join('');
   const fopts=[];for(let k=2;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
   const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
-  const ws=S.winnerStays!==false;
+  const ws=S.winnerStays!==false, ord=S.order||'smart';
   let total=0,valid=0,skipped=[],sit=[]; const minsList=[];
   const games=S.games.map((g,i)=>{
     const d=describeLayout(n,g,ws);
@@ -1230,10 +1316,10 @@ function viewSetup(){
       <div class="gplan${d.ok?'':' bad'}">${esc(d.text)}${d.ok?` · about ${hm(rm)} a round`:''}</div>
       <div class="gctl"><div class="seg" role="group" aria-label="Weight">${wts}</div>
       <div class="cp" role="group" aria-label="Copies of ${esc(g.name)}"><span class="mono">copies</span><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|-1" aria-label="Fewer copies"${copiesOf(g)<=1?' disabled':''}>−</button><b class="mono">${copiesOf(g)}</b><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|1" aria-label="More copies"${copiesOf(g)>=6?' disabled':''}>+</button></div>
-      <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button>`}${g.custom&&!locked?`<button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}">Delete</button>`:''}</div></div></li>`;
+      <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button>`}${!locked?`<button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}" aria-label="Delete ${esc(g.name)}">Delete</button>`:''}</div></div></li>`;
   }).join('');
   const addForm=locked?'':`<details class="add"><summary>Add a game</summary>
-    <label class="fld wide cats"><span>Search ${catalog().length} popular family games</span><input class="inp" id="cat-q" type="search" placeholder="Try Catan, Azul or Sushi Go" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="fld wide cats"><span>Search ${catalog().length} family games, including dice, cards and pen-and-paper</span><input class="inp" id="cat-q" type="search" placeholder="Try Catan, Azul or Sushi Go" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <div id="cat-res" class="catres" role="listbox" aria-label="Matching games"></div>
     <p class="hint" id="cat-note">Pick a match to fill the boxes below, change anything that doesn't fit your copy, then add it. Or type your own.</p>
     <div class="addgrid">
@@ -1247,15 +1333,15 @@ function viewSetup(){
   const rules=locked?'':`<section class="card"><div class="cardhead"><h2 class="chip c-coral">Round rules</h2></div>
     <div class="cardhead"><h3>Odd player in a 2-player game</h3><div class="seg" role="group" aria-label="Odd player in a 2-player game"><button type="button" aria-pressed="${ws}" data-act="ws" data-a="1">Winner stays</button><button type="button" aria-pressed="${!ws}" data-act="ws" data-a="0">Sit out</button></div></div>
     <p class="muted">${ws?'With an odd number of players, three of them share one table in a 2-player game. Two play, the winner stays on against whoever sat out, and the first to 2 wins takes 1st. Everyone plays and nobody gets free points. It takes about three games of time.':'The odd player sits out and gets half marks, the same as an average result. The draw rotates who sits out.'}</p>
-    <div class="cardhead"><h3>Order of the games</h3><div class="seg" role="group" aria-label="Order of the games"><button type="button" aria-pressed="${S.heavyLast!==false}" data-act="hl" data-a="1">Big games last</button><button type="button" aria-pressed="${S.heavyLast===false}" data-act="hl" data-a="0">List order</button></div></div>
-    <p class="muted">${S.heavyLast!==false?'Rounds run ×1 games first, then ×2, then ×3, so the leaderboard can still swing in the last rounds. The standings stay visible the whole time. The arrows in the list reorder games of the same weight.':'Rounds follow the game list below, top to bottom. Use the arrows to reorder it.'}</p></section>`;
+    <div class="cardhead"><h3>Order of the games</h3><div class="seg" role="group" aria-label="Order of the games"><button type="button" aria-pressed="${ord==='smart'}" data-act="ord" data-a="smart">Smart</button><button type="button" aria-pressed="${ord==='weight'}" data-act="ord" data-a="weight">Big last</button><button type="button" aria-pressed="${ord==='list'}" data-act="ord" data-a="list">List</button></div></div>
+    <p class="muted">${ord==='smart'?'Smart order builds toward the games that can swing the most points (heavy and luck-driven ones), and spreads 2-player games between group games so fewer people wait. The standings stay visible the whole time.':ord==='weight'?'Rounds run ×1 games first, then ×2, then ×3. The standings stay visible the whole time. The arrows reorder games of the same weight.':'Rounds follow the game list below, top to bottom. Use the arrows to reorder it.'}</p></section>`;
   const nh=[2,3,4,5,6].map(h=>`<button type="button" aria-pressed="${(S.nightHours||3)===h}" data-act="nh" data-a="${h}">${h}</button>`).join('');
   const nights=planNights(minsList,S.nightHours||3);
   const plan=locked
     ?`<div class="card"><div><h2>Rounds are built</h2><p class="muted">Players and the game list are locked. Weights, copies and game night length can still change. Add a round from the Rounds tab.</p></div>
       <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div>
       <p><button type="button" class="btn danger${ui.confirm==='reset'?' armed':''}" data-act="reset">${ui.confirm==='reset'?'Tap again to start over':'Start over'}</button></p>
-      <p class="muted">${phaseOf(S)==='champion'?'A finished tournament is saved to History first.':'Starting over before a champion is crowned erases the results.'}</p></div>`
+      <p class="muted">${phaseOf(S)==='champion'?'A finished tournament is saved to History first.':'Starting over before a champion is crowned erases the results.'} The game list goes back to the original staples. Copies you set are kept, and games you added stay in the list switched off.</p></div>`
     :`<div class="card"><div class="plan"><div><strong class="mono">${valid} rounds</strong><p class="muted">About ${hm(total)} of play, so ${nights.length} game night${nights.length===1?'':'s'} of ${S.nightHours||3} hours.</p></div>
       <button type="button" class="btn primary" data-act="build"${valid?'':' disabled'}>Build rounds</button></div>
       <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div>
@@ -1379,10 +1465,10 @@ function viewFinale(){
     const line=scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
     out=`<div class="card gold champ">${meeple(pcol(w),72)}<div class="txt"><span class="lbl">Ultimate Board Gamer</span><span class="name">${esc(pname(w))}</span><p>${esc(line)}</p></div></div>
       <div class="card" id="trophy-card"><div class="cardhead"><h2 class="chip c-yellow">Keepsake trophy</h2><span class="muted">Prints on half a letter page, 8.5 × 5.5 in</span></div>
-        <img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}" hidden>
-        <div class="rfoot"><button type="button" class="btn primary" data-act="trophy" data-a="pdf">Save PDF</button><button type="button" class="btn" data-act="trophy" data-a="png">Save image</button></div>
-        <p class="muted" id="dl-msg">If saving is not offered here, press and hold the picture to save it.</p></div>
-      <div class="card"${VIEW?' hidden':''}><h3>Done with this tournament?</h3><p class="muted">Saves it to History with its trophy and clears the rounds. Players and games stay.</p><p><button type="button" class="btn" data-act="newt">Start a new tournament</button></p></div>`+out;
+        <img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}. Tap to save to Photos." data-act="photo" role="button" tabindex="0" style="cursor:pointer" hidden>
+        <div class="rfoot"><button type="button" class="btn primary" data-act="trophy" data-a="pdf">Save PDF</button><button type="button" class="btn" data-act="trophy" data-a="png">Save image</button><button type="button" class="btn" data-act="trophy" data-a="phone">Phone image</button></div><p class="hint">Phone image is a tall version sized for iPhone screens, handy for sharing in chats.</p>
+        <p class="muted" id="dl-msg">Tap the picture to save it to Photos. If that is not offered here, press and hold it instead.</p></div>
+      <div class="card"${VIEW?' hidden':''}><h3>Done with this tournament?</h3><p class="muted">Saves it to History with its trophy and clears the rounds. Players stay, and the game list goes back to the original staples.</p><p><button type="button" class="btn" data-act="newt">Start a new tournament</button></p></div>`+out;
   }
   if(S.finale.length){
     S.finale.forEach((f,i)=>{
@@ -1418,7 +1504,7 @@ function viewHistory(){
   const past=S.archive.length?S.archive.map((a,i)=>{const T=a.data;return `<article class="card gold past"><div class="cardhead"><div><span class="lbl mono">${esc(dstr(T.date))}</span><h3>${esc(T.champ.name)} won</h3></div>${meeple(T.champ.color,44)}</div>
       <p>${esc(T.finalGame)} final · ${T.players} players · ${T.rounds} rounds</p>
       <p class="mono small">${T.standings.map(s=>s.rank+' '+esc(s.name)+' '+fmt(s.pts)).join(' · ')}</p>
-      <div class="rfoot"><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|pdf">Trophy PDF</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|png">Trophy image</button></div></article>`;}).join(''):`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
+      <div class="rfoot"><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|pdf">Trophy PDF</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|png">Trophy image</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|phone">Phone image</button></div></article>`;}).join(''):`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
   return `<section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
 function histCard(tag,g,ts,tables,w,byes){
@@ -1428,6 +1514,42 @@ function histCard(tag,g,ts,tables,w,byes){
 }
 
 /*TROPHY-START*/
+const CROWN_D='M104 378 L76 170 L188 262 L256 128 L324 262 L436 170 L408 378 Z';
+const CROWNC=['#FFD84D','#FF8A78','#7CC6F5','#7ED9A6','#C4A8F7','#FFB05C'];
+const crownColor=T=>{let i=(T.cw||0)%CROWNC.length;if(CROWNC[i]===T.champ.color)i=(i+1)%CROWNC.length;return CROWNC[i];};
+function drawMeeple(x,px,py,size,color,lw){x.save();x.translate(px,py);x.scale(size/64,size/64);const p=new Path2D(MEEPLE_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);x.restore();}
+function drawCrown(x,px,py,size,color,lw){x.save();x.translate(px,py);x.scale(size/512,size/512);const p=new Path2D(CROWN_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);x.restore();}
+function drawChamp(x,px,py,size,T){
+  drawMeeple(x,px,py,size,T.champ.color,3.4);
+  const cs=size*0.5;
+  drawCrown(x,px+size/2-cs*(256/512),py+size*0.11-cs*(378/512),cs,crownColor(T),24);
+}
+function playedLines(x,T,maxW,maxLines){
+  const names=(T.played&&T.played.length)?T.played:[];
+  if(!names.length) return [];
+  const lines=[];let cur='',used=0;
+  for(let i=0;i<names.length;i++){
+    const part=(cur?' · ':'')+names[i];
+    if(x.measureText(cur+part).width>maxW&&cur){
+      lines.push(cur);cur='';
+      if(lines.length>=maxLines){break;}
+      cur=names[i];
+    }else cur+=part;
+    used=i+1;
+  }
+  if(lines.length<maxLines&&cur){lines.push(cur);used=names.length;}
+  if(used<names.length){
+    let last=lines[lines.length-1],more=' · +'+(names.length-used)+' more';
+    while(x.measureText(last+more).width>maxW&&last.includes(' · ')) last=last.slice(0,last.lastIndexOf(' · '));
+    const left=names.length-(last.split(' · ').length+(lines.length-1<0?0:lines.slice(0,-1).reduce((a,l)=>a+l.split(' · ').length,0)));
+    lines[lines.length-1]=last+' · +'+left+' more';
+  }
+  return lines;
+}
+function trophyStats(T){
+  const fin0=T.final.find(f=>f.place===1)||T.final[0];
+  return [['TOTAL POINTS',T.champ.pts.toFixed(1),'qualifying rounds'],['ROUND WINS',String(T.champ.wins),'of '+T.champ.played+' rounds played'],['QUALIFYING RANK','#'+T.champ.rank,'of '+T.players+' players'],['BEST ROUND',T.best?'+'+T.best.v.toFixed(1):'-',T.best?T.best.game:''],T.scored?['FINAL SCORE',(T.final.find(f=>f.name===T.champ.name)||fin0).total.toFixed(1),'head start included']:['THE FINAL','1st','at '+T.finalGame]];
+}
 /* An 8.5 x 5.5 inch page drawn at 300 dpi. */
 async function drawTrophy(T){
   const W=2550,H=1650,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
@@ -1453,8 +1575,7 @@ async function drawTrophy(T){
   rr(144,312,lw+24,66,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.fillText(lbl,156,360);spacing(0);
   const ns=fit(T.champ.name,'800',D,1130,230,90);font('800',ns,D);x.fillStyle=ink;x.fillText(T.champ.name,150,600);
   const fs=fit('Won the final at '+T.finalGame,'500',B,1130,56,34);font('500',fs,B);x.fillStyle=muted;x.fillText('Won the final at '+T.finalGame,150,690);
-  x.save();x.translate(150,740);x.scale(380/64,380/64);const mp=new Path2D('M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.6 39c-3.1-1-4.2-4.1-2.2-7C12 25.6 18.4 21.4 26.1 19.4c-1.7-1.6-2.7-3.6-2.7-6.2C23.4 8.6 26.8 5 32 5z');
-  x.fillStyle=T.champ.color;x.fill(mp);x.lineWidth=3;x.lineJoin='round';x.strokeStyle=edge;x.stroke(mp);x.restore();
+  drawChamp(x,150,770,340,T);
   /* the final */
   spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText('THE FINAL',600,770);spacing(0);
   const fl=T.final.slice(0,4);fl.forEach((f,i)=>{const y=822+i*84;
@@ -1469,20 +1590,76 @@ async function drawTrophy(T){
     if(s.champ){rr(1400,y+4,1000,rh-8,16);x.fillStyle='#FFF1B8';x.fill();}
     x.beginPath();x.arc(1420+r,mid,r,0,Math.PI*2);x.fillStyle=s.rank===1?'#FFD84D':s.rank===2?'#7CC6F5':s.rank===3?'#FF8A78':'#FFFFFF';x.fill();x.lineWidth=5;x.strokeStyle=edge;x.stroke();
     x.fillStyle=ink;font('800',Math.round(rh*0.34),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(s.rank),1420+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
-    x.beginPath();x.arc(1420+2*r+34,mid,rh*0.15,0,Math.PI*2);x.fillStyle=s.color;x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
-    const sz=fit(s.name,'700',B,560,Math.round(rh*0.5),24);font('700',sz,B);x.fillStyle=ink;x.fillText(s.name,1420+2*r+34+rh*0.15+20,mid+sz*0.34);
+    const mz=rh*0.52,mcx=1420+2*r+34;drawMeeple(x,mcx-mz/2,mid-mz/2,mz,s.color,5);
+    const sz=fit(s.name,'700',B,560,Math.round(rh*0.5),24);font('700',sz,B);x.fillStyle=ink;x.fillText(s.name,mcx+mz/2+16,mid+sz*0.34);
     font('700',Math.round(rh*0.44),M);x.textAlign='right';x.fillText(s.pts.toFixed(1),2380,mid+rh*0.15);x.textAlign='left';
     if(i<nn-1){x.setLineDash([10,10]);x.lineWidth=3;x.strokeStyle='#D8CCB4';x.beginPath();x.moveTo(1410,y+rh);x.lineTo(2390,y+rh);x.stroke();x.setLineDash([]);}});
   /* stats */
-  const fin0=T.final.find(f=>f.place===1)||T.final[0];
-  const stats=[['TOTAL POINTS',T.champ.pts.toFixed(1),'qualifying rounds'],['ROUND WINS',String(T.champ.wins),'of '+T.champ.played+' rounds played'],['QUALIFYING RANK','#'+T.champ.rank,'of '+T.players+' players'],['BEST ROUND',T.best?'+'+T.best.v.toFixed(1):'-',T.best?T.best.game:''],T.scored?['FINAL SCORE',(T.final.find(f=>f.name===T.champ.name)||fin0).total.toFixed(1),'head start included']:['THE FINAL','1st','at '+T.finalGame]];
+  const stats=trophyStats(T);
   const bw=(2250-4*24)/5;
-  stats.forEach((s,i)=>{const bx=150+i*(bw+24),by=1190;rr(bx,by,bw,280,24);x.fillStyle='#FFFFFF';x.fill();x.lineWidth=6;x.strokeStyle=edge;x.stroke();
+  stats.forEach((s,i)=>{const bx=150+i*(bw+24),by=1160;rr(bx,by,bw,262,24);x.fillStyle='#FFFFFF';x.fill();x.lineWidth=6;x.strokeStyle=edge;x.stroke();
     rr(bx+18,by+18,bw-36,54,14);x.fillStyle=BRC[(i+1)%6];x.fill();
     x.fillStyle=ink;spacing(3);font('700',30,M);x.textAlign='center';x.textBaseline='middle';x.fillText(s[0],bx+bw/2,by+46);spacing(0);
-    const vs=fit(s[1],'800',D,bw-50,118,60);font('800',vs,D);x.fillText(s[1],bx+bw/2,by+160);
-    const ss=fit(s[2],'500',B,bw-40,34,22);font('500',ss,B);x.fillStyle=muted;x.fillText(s[2],bx+bw/2,by+238);x.textAlign='left';x.textBaseline='alphabetic';});
-  x.fillStyle=muted;font('500',34,M);x.textAlign='center';x.fillText(T.players+' players · '+T.rounds+' rounds · '+T.games+' games',W/2,1548);x.textAlign='left';
+    const vs=fit(s[1],'800',D,bw-50,118,60);font('800',vs,D);x.fillText(s[1],bx+bw/2,by+150);
+    const ss=fit(s[2],'500',B,bw-40,34,22);font('500',ss,B);x.fillStyle=muted;x.fillText(s[2],bx+bw/2,by+226);x.textAlign='left';x.textBaseline='alphabetic';});
+  /* games played, small background info */
+  spacing(4);font('700',26,M);x.fillStyle=muted;x.fillText('GAMES PLAYED  ·  '+T.players+' PLAYERS  ·  '+T.rounds+' ROUNDS',150,1468);spacing(0);
+  font('500',27,B);playedLines(x,T,2250,3).forEach((ln,i)=>{x.fillStyle=muted;x.fillText(ln,150,1506+i*35);});
+  return c;
+}
+
+/* A tall version, 1170 x 2532, sized for iPhone screens and for sharing in chats. */
+async function drawTrophyPhone(T){
+  const W=1170,H=2532,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  try{await Promise.all(['800 100px "Bricolage Grotesque"','500 40px "DM Sans"','700 40px "JetBrains Mono"'].map(f=>document.fonts.load(f)));}catch(e){}
+  const D='"Bricolage Grotesque","Segoe UI",system-ui,sans-serif',B='"DM Sans","Segoe UI",system-ui,sans-serif',M='"JetBrains Mono",ui-monospace,Menlo,monospace';
+  const ink='#2D2A32',edge='#3B3540',muted='#5F584D',beige='#F6F0E2',BRC=['#FF8A78','#7CC6F5','#FFD84D','#7ED9A6','#C4A8F7','#FFB05C'];
+  const rr=(a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();};
+  const spacing=px=>{if('letterSpacing' in x)x.letterSpacing=px+'px';};
+  const font=(wt,size,fam)=>{x.font=wt+' '+size+'px '+fam;};
+  const fit=(txt,wt,fam,max,start,min)=>{let s=start;font(wt,s,fam);while(x.measureText(txt).width>max&&s>min){s-=4;font(wt,s,fam);}return s;};
+  const ordn=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]);
+  const ctr=(txt,y)=>{x.textAlign='center';x.fillText(txt,W/2,y);x.textAlign='left';};
+  x.fillStyle='#FFFFFF';x.fillRect(0,0,W,H);
+  rr(36,36,W-72,H-72,80);x.fillStyle=beige;x.fill();x.lineWidth=10;x.strokeStyle=edge;x.stroke();
+  /* board track */
+  const n=T.rounds+1,gap=10,tw=Math.min(56,Math.floor((W-300-(n-1)*gap)/n)),tot=n*tw+(n-1)*gap;let tx=(W-tot)/2;
+  for(let i=0;i<n;i++){const fin=i===n-1;rr(tx,104,tw,fin?56:42,10);x.fillStyle=fin?'#FFD84D':BRC[i%6];x.fill();x.lineWidth=5;x.strokeStyle=edge;x.stroke();
+    if(fin){x.fillStyle=edge;font('700',34,B);x.textAlign='center';x.textBaseline='middle';x.fillText('★',tx+tw/2,132);x.textBaseline='alphabetic';x.textAlign='left';}tx+=tw+gap;}
+  spacing(6);font('800',54,D);x.fillStyle=ink;ctr(T.title.toUpperCase(),246);spacing(0);
+  font('700',34,M);x.fillStyle=muted;ctr(dstr(T.date),298);
+  spacing(8);font('700',40,M);const lbl='ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
+  rr((W-lw)/2-18,340,lw+36,64,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.textAlign='center';x.fillText(lbl,W/2+4,386);x.textAlign='left';spacing(0);
+  drawChamp(x,(W-430)/2,520,430,T);
+  const ns=fit(T.champ.name,'800',D,W-200,210,90);font('800',ns,D);x.fillStyle=ink;ctr(T.champ.name,1120);
+  const sub='Won the final at '+T.finalGame;const fs=fit(sub,'500',B,W-200,50,32);font('500',fs,B);x.fillStyle=muted;ctr(sub,1186);
+  /* stats */
+  const stats=trophyStats(T),bw=(W-200-30)/2,bh=190;
+  stats.forEach((s,i)=>{
+    const row=Math.floor(i/2),full=i===4,bx=full?100:100+(i%2)*(bw+30),by=1250+row*214,w=full?W-200:bw;
+    rr(bx,by,w,bh,24);x.fillStyle='#FFFFFF';x.fill();x.lineWidth=6;x.strokeStyle=edge;x.stroke();
+    rr(bx+16,by+14,w-32,48,14);x.fillStyle=BRC[(i+1)%6];x.fill();
+    x.fillStyle=ink;spacing(3);font('700',28,M);x.textAlign='center';x.textBaseline='middle';x.fillText(s[0],bx+w/2,by+39);spacing(0);
+    const vs=fit(s[1],'800',D,w-50,96,52);font('800',vs,D);x.fillText(s[1],bx+w/2,by+110);
+    const ss=fit(s[2],'500',B,w-40,30,20);font('500',ss,B);x.fillStyle=muted;x.fillText(s[2],bx+w/2,by+166);x.textAlign='left';x.textBaseline='alphabetic';});
+  /* the final and the qualifying standings, side by side */
+  spacing(4);font('700',28,M);x.fillStyle=muted;x.fillText('THE FINAL',100,1928);x.fillText('STANDINGS',620,1928);spacing(0);
+  const fl=T.final.slice(0,4),nn=T.standings.length,p=Math.min(60,Math.floor(330/Math.max(nn,fl.length)));
+  fl.forEach((f,i)=>{const y=1950+i*p,mid=y+p/2,r=p*0.36;
+    x.beginPath();x.arc(100+r,mid,r,0,Math.PI*2);x.fillStyle=BRC[(f.place-1+2)%6];x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
+    x.fillStyle=ink;font('800',Math.round(p*0.4),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(f.place),100+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
+    const sz=fit(f.name,'700',B,250,Math.round(p*0.5),20);font('700',sz,B);x.fillText(f.name,100+2*r+16,mid+sz*0.34);
+    font('700',Math.round(p*0.44),M);x.textAlign='right';x.fillText(T.scored?f.total.toFixed(1):ordn(f.place),540,mid+p*0.15);x.textAlign='left';});
+  T.standings.forEach((s,i)=>{const y=1950+i*p,mid=y+p/2,r=p*0.36;
+    if(s.champ){rr(606,y+2,464,p-4,12);x.fillStyle='#FFF1B8';x.fill();}
+    x.beginPath();x.arc(620+r,mid,r,0,Math.PI*2);x.fillStyle=s.rank===1?'#FFD84D':s.rank===2?'#7CC6F5':s.rank===3?'#FF8A78':'#FFFFFF';x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
+    x.fillStyle=ink;font('800',Math.round(p*0.4),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(s.rank),620+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
+    const mz=p*0.5,mcx=620+2*r+26;drawMeeple(x,mcx-mz/2,mid-mz/2,mz,s.color,5);
+    const sz=fit(s.name,'700',B,190,Math.round(p*0.5),18);font('700',sz,B);x.fillStyle=ink;x.fillText(s.name,mcx+mz/2+12,mid+sz*0.34);
+    font('700',Math.round(p*0.42),M);x.textAlign='right';x.fillText(s.pts.toFixed(1),1060,mid+p*0.15);x.textAlign='left';});
+  /* games played, small background info */
+  spacing(4);font('700',24,M);x.fillStyle=muted;x.fillText('GAMES PLAYED  ·  '+T.players+' PLAYERS  ·  '+T.rounds+' ROUNDS',100,2348);spacing(0);
+  font('500',26,B);playedLines(x,T,W-200,3).forEach((ln,i)=>{x.fillStyle=muted;x.fillText(ln,100,2388+i*34);});
   return c;
 }
 /*TROPHY-END*/
@@ -1506,6 +1683,7 @@ async function saveTrophy(T,kind,msgId){
     }
     const base='game-night-gauntlet-'+slug(T.champ.name);
     if(kind==='pdf') await dl.save({filename:base+'.pdf',data:await trophyPdf(T)});
+    else if(kind==='phone'){const c=await drawTrophyPhone(T);const blob=await new Promise(r=>c.toBlob(r,'image/png'));await dl.save({filename:base+'-phone.png',data:blob});}
     else{const c=await drawTrophy(T);const blob=await new Promise(r=>c.toBlob(r,'image/png'));await dl.save({filename:base+'.png',data:blob});}
     say('Saved.');
   }catch(e){
@@ -1513,6 +1691,21 @@ async function saveTrophy(T,kind,msgId){
     say(e&&e.message==='nopdf'?'The PDF tool did not load. Try Save image instead.':'Could not save that. Try the other format.');
   }
 }
+async function photoSave(){
+  const say=t=>{const el=document.getElementById('dl-msg');if(el)el.textContent=t;};
+  const T=trophyData(S); if(!T) return;
+  try{
+    const c=await drawTrophyPhone(T);
+    const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+    const file=new File([blob],'game-night-gauntlet-'+slug(T.champ.name)+'.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'Game Night Gauntlet'});say('Choose Save Image in the share sheet to put it in Photos.');return;}
+      catch(e){if(e&&e.name==='AbortError'){say('');return;}}
+    }
+  }catch(e){}
+  saveTrophy(T,'phone','dl-msg');
+}
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target&&e.target.id==='trophy-img'){e.preventDefault();photoSave();}});
 function afterRender(){
   const im=document.getElementById('trophy-img');
   if(im&&S.started&&phaseOf(S)==='champion'){
@@ -1558,7 +1751,11 @@ function startOver(){
   const T=S.started?trophyData(S):null, arch=S.archive.slice();
   if(T) arch.unshift({id:S.tid||('a'+Date.now()),data:T});
   const f=fresh();
-  f.players=S.players;f.pseq=S.pseq;f.games=S.games;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.heavyLast=S.heavyLast;f.archive=arch.slice(0,50);
+  const own={};S.games.forEach(g=>{own[g.id]=g.copies;});
+  const staples=DEFAULT_GAMES.map(g=>({...g,copies:Math.max(1,own[g.id]||1)}));
+  const extras=S.games.filter(g=>g.custom).map(g=>({...g,on:false}));
+  f.games=staples.concat(extras);
+  f.players=S.players;f.pseq=S.pseq;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.order=S.order;f.archive=arch.slice(0,50);
   S=f;ui.open={};ui.confirm=null;ui.view=T?'history':'setup';ui.touched=true;ui.top=true;ui.tkey=null;ui.turl=null;
 }
 function act(name,a,el){
@@ -1571,7 +1768,7 @@ function act(name,a,el){
     case 'hs':S.headStart=+a[0];touch();break;
     case 'nh':S.nightHours=+a[0];touch();break;
     case 'ws':S.winnerStays=a[0]==='1';touch();break;
-    case 'hl':S.heavyLast=a[0]==='1';touch();break;
+    case 'ord':S.order=a[0];touch();break;
     case 'bklater':ui.bkLater=nightMarks();break;
     case 'bkup':exportBackup().then(()=>{toast('Backup saved.');render();}).catch(e=>{if(e&&e.code==='declined')return;toast('Could not save the backup. Try again.');});return false;
     case 'gweight':{const g=gameOf(S,a[0]);if(g){g.weight=+a[1];touch();}break;}
@@ -1621,6 +1818,7 @@ function act(name,a,el){
       const last=S.finale[S.finale.length-1];if(!last||!tableDone(last)) break;
       S.finale.push({id:'f'+(S.seq++),gameId:document.getElementById('rm-game').value,ids:winnersOf(last),places:{}});touch();break;
     }
+    case 'photo':{photoSave();return false;}
     case 'trophy':{const T=trophyData(S);if(T)saveTrophy(T,a[0],'dl-msg');return false;}
     case 'ptrophy':{const e=S.archive[+a[0]];if(e)saveTrophy(e.data,a[1],'dl-msg2');return false;}
   }
