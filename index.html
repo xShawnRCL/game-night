@@ -1,0 +1,1151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Game Night Gauntlet</title>
+<meta name="theme-color" content="#F6F0E2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gauntlet">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one narrow column styled like a game-box insert. Beige table, chunky outlined cards, bright pawn colors as highlights. */
+:root{
+  --bg:#F6F0E2; --surface:#FDFAF2; --raise:#FFFFFF; --ink:#2D2A32; --muted:#5F584D;
+  --edge:#3B3540; --line:#E3D9C2; --shadow:#3B3540; --on-bright:#2D2A32; --good:#1F7A4D;
+  --c-yellow:#FFD84D; --c-coral:#FF8A78; --c-blue:#7CC6F5; --c-green:#7ED9A6; --c-purple:#C4A8F7; --c-orange:#FFB05C; --c-pink:#F7A8CF;
+  --warn-bg:#FFE1DA; --warn-ink:#A7311F;
+  color-scheme:light;
+  --f-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --f-body:'DM Sans','Segoe UI',system-ui,sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--f-body);padding-inline:16px;padding-block:20px 64px;-webkit-text-size-adjust:100%}
+.wrap{max-width:760px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:14px}
+.meeple{flex:none;display:block;overflow:visible}
+h1{font:800 clamp(2.2rem,10vw,3.4rem)/0.92 var(--f-display);letter-spacing:-0.03em;margin:0;text-wrap:balance}
+h1 .hl{background:linear-gradient(transparent 60%,var(--c-yellow) 60%);padding-inline:2px}
+.tagline{margin-top:6px;font-weight:700;color:var(--muted)}
+h2{font:700 1.25rem/1.15 var(--f-display);letter-spacing:-0.01em;margin:0;text-wrap:balance}
+h2.chip{display:inline-block;padding:3px 14px;border:2px solid var(--edge);border-radius:999px;box-shadow:0 2px 0 var(--shadow);color:var(--on-bright);font-size:1.1rem}
+.c-blue{background:var(--c-blue)}.c-yellow{background:var(--c-yellow)}.c-green{background:var(--c-green)}.c-coral{background:var(--c-coral)}.c-purple{background:var(--c-purple)}
+h3{font:700 1rem/1.2 var(--f-display);margin:0}
+p{margin:0}
+.sub{margin-top:10px;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.hint{color:var(--muted);font-size:.9rem;max-width:62ch}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--c-blue);outline-offset:2px}
+
+/* board track */
+.road{display:flex;gap:4px;align-items:center;margin-top:16px;padding-top:4px}
+.road i{flex:1;min-width:6px;height:18px;border-radius:6px;background:var(--surface);border:2px solid var(--line)}
+.road i.done{background:var(--sc);border-color:var(--edge)}
+.road i.cur{background:var(--raise);border-color:var(--edge);transform:translateY(-3px);box-shadow:0 3px 0 var(--shadow)}
+.road i.fin{flex:0 0 30px;height:26px;border-radius:8px;border-color:var(--edge);position:relative}
+.road i.fin::after{content:"★";position:absolute;inset:0;display:grid;place-items:center;font-size:.85rem;font-style:normal;color:var(--edge)}
+.road i.fin.done{background:var(--c-yellow)}
+.roadlbl{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
+
+/* tabs */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:6px;margin-top:14px;padding-block:10px;background:var(--bg)}
+.tab{flex:1;min-width:0;padding:9px 4px;border:2px solid transparent;border-radius:12px;background:transparent;font-weight:700;font-size:.92rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab[aria-current="page"]{color:var(--on-bright);border-color:var(--edge);box-shadow:0 3px 0 var(--shadow)}
+.t-setup[aria-current="page"]{background:var(--c-blue)}
+.t-rounds[aria-current="page"]{background:var(--c-green)}
+.t-standings[aria-current="page"]{background:var(--c-yellow)}
+.t-finale[aria-current="page"]{background:var(--c-coral)}
+main{padding-top:10px;display:flex;flex-direction:column;gap:18px}
+
+/* buttons and fields */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border:2px solid var(--edge);border-radius:12px;background:var(--raise);font-weight:700;box-shadow:0 3px 0 var(--shadow)}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--shadow)}
+.btn.primary{background:var(--c-yellow);color:var(--on-bright)}
+.btn.danger{background:var(--raise);color:var(--warn-ink)}
+.btn.danger.armed{background:var(--c-coral);color:var(--on-bright)}
+.btn.ghost{background:transparent;box-shadow:none;border-color:var(--line);color:var(--muted)}
+.btn.sm{padding:5px 11px;font-size:.85rem;border-radius:10px;box-shadow:0 2px 0 var(--shadow)}
+.btn.ghost.sm{box-shadow:none}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.inp,.sel{width:100%;min-width:0;padding:9px 11px;border:2px solid var(--edge);border-radius:10px;background:var(--raise);color:var(--ink);font:inherit}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld>span{font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+
+/* cards */
+.card{background:var(--surface);border:2px solid var(--edge);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 4px 0 var(--shadow)}
+.card.flat{padding:0;gap:0;overflow:hidden}
+.card.warn{background:var(--warn-bg)}
+.card.gold{background:var(--c-yellow);color:var(--on-bright)}
+.card.gold .muted{color:var(--on-bright)}
+.cardhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+
+/* pawns */
+.pawn{display:inline-block;width:14px;height:14px;margin-right:8px;border-radius:50%;background:var(--pc);border:2px solid var(--edge);vertical-align:-1px}
+
+/* setup */
+.plist,.glist,.slist{list-style:none;margin:0;padding:0}
+.plist{display:flex;flex-direction:column;gap:8px}
+.prow2{display:flex;align-items:center;gap:8px}
+.pnum{width:1.6rem;color:var(--muted);text-align:right}
+.seg{display:inline-flex;border:2px solid var(--edge);border-radius:10px;overflow:hidden;background:var(--raise)}
+.seg button{padding:6px 12px;border:0;border-right:2px solid var(--edge);background:transparent;font-weight:700;font-family:var(--f-mono)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--c-yellow);color:var(--on-bright)}
+.glist{display:flex;flex-direction:column}
+.game{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-top:2px dashed var(--line)}
+.game:first-child{border-top:0}
+.game.off .gname,.game.off .gmeta{opacity:.5}
+.gname{display:flex;align-items:center;gap:10px;font-weight:700;min-width:0}
+.gname input{width:20px;height:20px;accent-color:var(--c-green);flex:none}
+.gname span{min-width:0;overflow-wrap:anywhere}
+.gmeta{grid-column:1;font-size:.8rem;color:var(--muted);padding-left:30px}
+.gplan{grid-column:1;font-size:.85rem;padding-left:30px}
+.gplan.bad{color:var(--warn-ink);font-weight:700}
+.gctl{grid-column:2;grid-row:1 / span 3;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.mv{display:flex;gap:4px}
+.wt{display:inline-block;padding:1px 8px;border:2px solid var(--edge);border-radius:8px;background:var(--c-green);color:var(--on-bright);font:700 .8rem var(--f-mono);box-shadow:0 2px 0 var(--shadow)}
+.wt.w2{background:var(--c-blue)}.wt.w3{background:var(--c-coral)}
+details.add summary{cursor:pointer;font-weight:700}
+.addgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:12px}
+.addgrid .fld.wide{grid-column:1 / -1}
+.plan{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.plan strong{font:800 1.6rem var(--f-display)}
+
+/* rounds */
+.round{background:var(--surface);border:2px solid var(--edge);border-radius:16px;overflow:hidden;box-shadow:0 4px 0 var(--shadow)}
+.round.cur{background:var(--raise)}
+.rh{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;background:transparent;text-align:left}
+.rn{flex:none;display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:2px solid var(--edge);background:var(--c-blue);color:var(--on-bright);font:800 1rem var(--f-display);box-shadow:0 2px 0 var(--shadow)}
+.rn.s0{background:var(--c-coral)}.rn.s1{background:var(--c-blue)}.rn.s2{background:var(--c-yellow)}.rn.s3{background:var(--c-green)}.rn.s4{background:var(--c-purple)}.rn.s5{background:var(--c-orange)}
+.rt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.rt b{font:700 1.1rem/1.2 var(--f-display);overflow-wrap:anywhere}
+.rt small{color:var(--muted);font-size:.82rem}
+.rt small.done{color:var(--good);font-weight:700}
+.chev{flex:none;width:9px;height:9px;border-right:3px solid var(--edge);border-bottom:3px solid var(--edge);transform:rotate(45deg);margin:0 4px 3px 2px}
+.round.open .chev{transform:rotate(-135deg);margin-bottom:-3px}
+.rb{padding:0 14px 16px;display:flex;flex-direction:column;gap:14px}
+.tb{display:flex;flex-direction:column;border:2px solid var(--edge);border-radius:12px;background:var(--raise);overflow:hidden}
+.tbh{padding:6px 12px;background:var(--c-blue);color:var(--on-bright);font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-bottom:2px solid var(--edge)}
+.pr{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-top:2px dashed var(--line)}
+.tb>.pr:first-child,.tbh+.pr{border-top:0}
+.pn{min-width:0;display:flex;flex-direction:column}
+.nm{font-weight:700;overflow-wrap:anywhere;line-height:1.25}
+.pp{font-size:.8rem;color:var(--good);font-weight:700;padding-left:22px}
+.chips{display:flex;gap:3px;flex:none}
+.pl{width:36px;height:36px;padding:0;border:2px solid var(--line);border-radius:10px;background:var(--surface);font:700 .95rem var(--f-mono);color:var(--muted)}
+.pl.on{border-color:var(--edge);color:var(--on-bright);background:var(--c-pink);box-shadow:0 2px 0 var(--shadow)}
+.pl.on.p1{background:var(--c-yellow)}.pl.on.p2{background:var(--c-blue)}.pl.on.p3{background:var(--c-coral)}.pl.on.p4{background:var(--c-green)}.pl.on.p5{background:var(--c-purple)}.pl.on.p6{background:var(--c-orange)}
+.bye{font-size:.88rem;color:var(--muted)}
+.rfoot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+
+/* standings */
+.slist{display:flex;flex-direction:column}
+.shead,.srow{display:grid;grid-template-columns:30px minmax(0,1fr) 3.6rem 2.4rem 2.4rem;gap:8px;align-items:center;padding:10px 14px}
+.shead{font-size:.72rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding-block:8px;background:var(--bg);border-bottom:2px solid var(--edge)}
+.shead span:nth-child(n+3),.srow>span:nth-child(n+3){text-align:right}
+.srow{border-top:2px dashed var(--line)}
+.shead+.srow{border-top:0}
+.rk{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;border:2px solid var(--line);font:800 .95rem var(--f-display);color:var(--muted)}
+.rk.r1{background:var(--c-yellow);border-color:var(--edge);color:var(--on-bright)}
+.rk.r2{background:var(--c-blue);border-color:var(--edge);color:var(--on-bright)}
+.rk.r3{background:var(--c-coral);border-color:var(--edge);color:var(--on-bright)}
+.who{display:flex;flex-direction:column;gap:5px;min-width:0}
+.bar{height:7px;border-radius:4px;background:var(--line);overflow:hidden;display:block}
+.bar i{display:block;height:100%;border-radius:4px}
+.pts{font-weight:700;font-size:1.05rem}
+.mini{color:var(--muted);font-size:.9rem}
+.cutline{display:flex;align-items:center;gap:10px;padding:6px 14px;font-size:.75rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--on-bright);background:var(--c-yellow);border-block:2px solid var(--edge)}
+.cutline::before,.cutline::after{content:"";flex:1;border-top:2px dashed var(--edge)}
+.tag{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;border:2px solid var(--edge);background:var(--c-coral);color:var(--on-bright);font:700 .68rem var(--f-mono);letter-spacing:.04em;vertical-align:middle}
+.scroll{overflow-x:auto;border:2px solid var(--edge);border-radius:12px;background:var(--raise)}
+.mx{border-collapse:collapse;width:100%;font-size:.85rem}
+.mx th,.mx td{padding:8px 10px;text-align:right;white-space:nowrap;border-top:2px dashed var(--line)}
+.mx thead th{border-top:0;background:var(--bg);font-weight:700;color:var(--muted)}
+.mx th:first-child,.mx td:first-child{text-align:left;position:sticky;left:0;background:var(--raise)}
+.mx thead th:first-child{background:var(--bg)}
+.mx small{display:block;color:var(--good);font-family:var(--f-mono)}
+.mx td.none{color:var(--muted)}
+
+/* finale */
+.cand{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:2px dashed var(--line)}
+.cand:first-child{border-top:0}
+.cand .info{min-width:0;display:flex;flex-direction:column;gap:2px}
+.cand .info b{overflow-wrap:anywhere}
+.cand small{color:var(--muted)}
+.badge{display:inline-block;margin-left:6px;padding:0 7px;border-radius:6px;background:var(--c-green);color:var(--on-bright);border:2px solid var(--edge);font:700 .68rem var(--f-mono);letter-spacing:.04em;text-transform:uppercase;vertical-align:middle}
+.seeds{display:flex;flex-wrap:wrap;gap:8px}
+.seed{display:flex;align-items:center;padding:5px 12px;border:2px solid var(--edge);border-radius:999px;background:var(--raise);font-weight:700}
+.seed .mono{color:var(--muted);margin-right:8px;font-weight:700}
+.champ{display:flex;flex-direction:row;align-items:center;gap:16px}
+.champ .txt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.champ .lbl{font:700 .8rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
+.champ .name{font:800 clamp(2.2rem,11vw,3.6rem)/0.95 var(--f-display);letter-spacing:-0.03em;overflow-wrap:anywhere}
+.foot{margin-top:28px;font-size:.8rem;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.pl,.btn,.tab{transition:background-color .12s,transform .08s}}
+@media (max-width:420px){.shead,.srow{grid-template-columns:30px minmax(0,1fr) 3.2rem 2rem 2rem;gap:6px;padding-inline:10px}.meeple{width:46px;height:46px}}
+
+/* v6 additions */
+.night{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:18px 0 8px}
+.night .muted{font-size:.88rem}
+.cp{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.85rem}
+.cp button{width:28px;height:28px;border:2px solid var(--edge);border-radius:8px;background:var(--raise);font-weight:800;line-height:1}
+.stack{display:flex;flex-direction:column;gap:12px}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hl2{display:flex;align-items:center;gap:8px}
+.hp{flex:none;width:1.6em;font-family:var(--f-mono);font-weight:700}
+.pp2{margin-left:auto;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.tbh2{font-weight:700;font-size:.85rem;color:var(--muted);margin-top:4px}
+.trophy{display:block;width:100%;height:auto;border:2px solid var(--edge);border-radius:12px;background:#fff;box-shadow:0 4px 0 var(--shadow)}
+.small{font-size:.85rem}
+.tab{font-size:.85rem}
+.t-history[aria-current="page"]{background:var(--c-purple)}
+
+/* GitHub Pages build */
+body.view [data-act]{pointer-events:none}
+body.view [data-act="tab"],body.view [data-act="open"],body.view [data-act="trophy"],body.view [data-act="ptrophy"]{pointer-events:auto}
+body.view .btn:not([data-act="trophy"]):not([data-act="ptrophy"]){display:none}
+.share .fld{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:.85rem;margin-top:10px}
+.share .chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:700;font-size:.9rem}
+.share .chk input{width:20px;height:20px}
+.share .linkbox{margin-top:6px;padding:8px 10px;border:2px dashed var(--line);border-radius:10px;word-break:break-all;font-size:.8rem;background:var(--raise)}
+.share h3{margin-top:18px}
+.share .rfoot{margin-top:10px;justify-content:flex-start}
+.share .hint{margin-top:8px}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <svg class="meeple" width="58" height="58" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.600 39c-3.100-1-4.200-4.100-2.200-7C12 25.600 18.400 21.400 26.100 19.400c-1.700-1.600-2.700-3.600-2.700-6.200C23.400 8.600 26.800 5 32 5z" fill="var(--c-coral)" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/></svg>
+      <div><h1>Game Night <span class="hl">Gauntlet</span></h1><p class="tagline">Family board game championship</p></div>
+    </div>
+    <p class="sub" id="sub"></p>
+    <div id="roadwrap"></div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <main id="app"></main>
+  <p class="foot" id="status">Saved on this device.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+/*LOGIC-START*/
+const MINP=3, MAXP=12, FINAL_W=2;
+const DEFAULT_GAMES=[
+  {id:'ek',name:'Exploding Kittens',short:'EK',min:2,max:5,weight:1,mins:15,luck:5,on:true},
+  {id:'kotd',name:'King of Tokyo Duel',short:'KoTD',min:2,max:2,weight:1,mins:20,luck:4,on:true},
+  {id:'carc',name:'Carcassonne',short:'Carc',min:2,max:5,weight:2,mins:35,luck:2,on:true},
+  {id:'kot',name:'King of Tokyo',short:'KoT',min:2,max:6,weight:1,mins:30,luck:4,on:true},
+  {id:'7w',name:'7 Wonders',short:'7W',min:3,max:7,weight:2,mins:40,luck:2,on:true},
+  {id:'ttr',name:'Ticket to Ride',short:'TtR',min:2,max:5,weight:2,mins:50,luck:3,on:true},
+  {id:'skipbo',name:'Skip-Bo',short:'Skip',min:2,max:6,weight:1,mins:25,luck:4,on:true},
+  {id:'uno',name:'Uno',short:'Uno',min:2,max:10,weight:1,mins:20,luck:5,on:true},
+  {id:'unoteams',name:'Uno Teams',short:'UnoT',min:4,max:4,weight:1,mins:20,luck:4,on:false},
+  {id:'unogolf',name:'Uno Golf',short:'UnoG',min:2,max:6,weight:1,mins:25,luck:4,on:false},
+  {id:'unoflip',name:'Uno Flip',short:'UnoF',min:2,max:10,weight:1,mins:20,luck:5,on:false},
+  {id:'uno99',name:'Uno 99',short:'U99',min:2,max:6,weight:1,mins:20,luck:4,on:false},
+  {id:'unoflex',name:'Uno Flex',short:'UnoX',min:2,max:10,weight:1,mins:20,luck:5,on:false},
+  {id:'unowild',name:'Uno All Wild',short:'UnoW',min:2,max:10,weight:1,mins:20,luck:5,on:false},
+  {id:'unodos',name:'Uno Dos',short:'Dos',min:2,max:4,weight:1,mins:15,luck:4,on:false},
+  {id:'flip7',name:'Flip 7',short:'F7',min:3,max:18,weight:1,mins:20,luck:5,on:false},
+  {id:'mono',name:'Monopoly',short:'Mono',min:2,max:6,weight:3,mins:90,luck:3,on:false},
+  {id:'blokus',name:'Blokus',short:'Blok',min:2,max:4,weight:2,mins:25,luck:1,on:true},
+  {id:'chess',name:'Chess',short:'Chess',min:2,max:2,weight:2,mins:30,luck:0,on:true},
+  {id:'checkers',name:'Checkers',short:'Chkrs',min:2,max:2,weight:1,mins:15,luck:0,on:true},
+  {id:'risk',name:'Risk',short:'Risk',min:2,max:6,weight:3,mins:90,luck:4,on:false},
+  {id:'clue',name:'Clue',short:'Clue',min:3,max:6,weight:2,mins:45,luck:3,on:true}
+].map(g=>({copies:1,...g}));
+const PAWN=['#FF8A78','#7CC6F5','#FFD84D','#7ED9A6','#C4A8F7','#FFB05C','#F7A8CF','#5FD3C6','#B9DB6A','#9FA9F7','#F5A98B','#86D3EB'];
+const pcol=id=>PAWN[((parseInt(String(id).slice(1),10)||1)-1)%PAWN.length];
+const r1=x=>Math.round(x*10)/10;
+const fmt=x=>r1(x).toFixed(1);
+const ord=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function fresh(){
+  return {v:1,t:0,seq:1,pseq:7,tid:null,
+    players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),
+    games:DEFAULT_GAMES.map(g=>({...g})),
+    finalists:3,headStart:0.5,nightHours:3,
+    started:false,rounds:[],tiebreaks:[],finale:[],archive:[]};
+}
+/* How n players split across tables for a game with seat range min..max. */
+function layout(n,min,max){
+  if(n<min) return null;
+  let k=Math.ceil(n/max), seated=n;
+  if(n<k*min){k=k-1;seated=Math.min(n,k*max);}
+  if(k<1) return null;
+  const base=Math.floor(seated/k), extra=seated%k, sizes=[];
+  for(let i=0;i<k;i++) sizes.push(base+(i<extra?1:0));
+  return {sizes,byes:n-seated};
+}
+function describeLayout(n,g){
+  const L=layout(n,g.min,g.max);
+  if(!L) return {ok:false,k:0,text:'Needs at least '+g.min+' players, so it is skipped'};
+  const k=L.sizes.length; let t;
+  if(g.min===2&&g.max===2) t=k===1?'1 head-to-head match':k+' head-to-head matches';
+  else if(k===1) t='One table of '+L.sizes[0];
+  else{const u=[...new Set(L.sizes)]; t=u.length===1?k+' tables of '+u[0]:k+' tables ('+L.sizes.join(' + ')+')';}
+  if(L.byes) t+=' · '+L.byes+(L.byes>1?' sit':' sits')+' out';
+  return {ok:true,k,text:t};
+}
+function pk(a,b){return a<b?a+'|'+b:b+'|'+a;}
+/* Seat players, spreading byes evenly and avoiding repeat opponents. */
+function seatRound(ids,g,pairCount,byeCount){
+  const L=layout(ids.length,g.min,g.max); if(!L) return null;
+  let pool=shuffle(ids.slice()), byes=[];
+  if(L.byes>0){
+    pool.sort((a,b)=>(byeCount[a]||0)-(byeCount[b]||0));
+    byes=pool.slice(0,L.byes); pool=pool.filter(x=>!byes.includes(x));
+  }
+  let best=null,bestCost=Infinity;
+  for(let t=0;t<250;t++){
+    const order=shuffle(pool.slice()), tables=[]; let i=0;
+    for(const s of L.sizes){tables.push(order.slice(i,i+s));i+=s;}
+    let cost=0;
+    for(const tb of tables)for(let a=0;a<tb.length;a++)for(let b=a+1;b<tb.length;b++){const c=pairCount[pk(tb[a],tb[b])]||0;cost+=c*c+c;}
+    if(cost<bestCost){bestCost=cost;best=tables;if(cost===0)break;}
+  }
+  return {tables:best,byes};
+}
+function gameOf(S,id){return S.games.find(g=>g.id===id);}
+function historyOf(S,skipId){
+  const pairCount={}, byeCount={};
+  for(const r of S.rounds){
+    if(r.id===skipId) continue;
+    for(const t of r.tables)for(let a=0;a<t.ids.length;a++)for(let b=a+1;b<t.ids.length;b++){const k=pk(t.ids[a],t.ids[b]);pairCount[k]=(pairCount[k]||0)+1;}
+    for(const b of r.byes) byeCount[b]=(byeCount[b]||0)+1;
+  }
+  return {pairCount,byeCount};
+}
+function addRound(S,gameId){
+  const g=gameOf(S,gameId); if(!g) return false;
+  const h=historyOf(S,null);
+  const seat=seatRound(S.players.map(p=>p.id),g,h.pairCount,h.byeCount); if(!seat) return false;
+  S.rounds.push({id:'r'+(S.seq++),gameId,tables:seat.tables.map(t=>({ids:t,places:{}})),byes:seat.byes});
+  return true;
+}
+const roundUnscored=r=>!r.tables.some(t=>Object.keys(t.places).length>0);
+/* Re-deal seats for a round nobody has scored yet, balanced against the other rounds. */
+function redrawRound(S,rid){
+  const r=S.rounds.find(x=>x.id===rid); if(!r||!roundUnscored(r)) return false;
+  const g=gameOf(S,r.gameId), h=historyOf(S,rid);
+  const seat=seatRound(S.players.map(p=>p.id),g,h.pairCount,h.byeCount); if(!seat) return false;
+  r.tables=seat.tables.map(t=>({ids:t,places:{}})); r.byes=seat.byes; return true;
+}
+function redrawAll(S){let n=0;for(const r of S.rounds) if(roundUnscored(r)&&redrawRound(S,r.id)) n++;return n;}
+function buildRounds(S){
+  S.rounds=[];S.tiebreaks=[];S.finale=[];delete S.finishedAt;
+  for(const g of S.games) if(g.on) addRound(S,g.id);
+  S.started=S.rounds.length>0;
+  if(S.started) S.tid='t'+Date.now();
+  return S.rounds.length;
+}
+/* Placement points on a 0-10 scale: first gets 10, last gets 0, ties share the average.
+   Tables under 6 are eased toward the 5-point middle so their spread of results matches a full table. */
+function tablePoints(ids,places,raw){
+  const n=ids.length; if(n<2||!ids.every(id=>places[id]>0)) return null;
+  const sorted=ids.slice().sort((a,b)=>places[a]-places[b]), pts={}; let i=0;
+  const sc=(raw||n>=6)?1:Math.sqrt((100*7/60)/(100*(n+1)/(12*(n-1))));
+  while(i<n){
+    let j=i; while(j+1<n&&places[sorted[j+1]]===places[sorted[i]]) j++;
+    let sum=0; for(let k=i;k<=j;k++) sum+=10*(n-1-k)/(n-1);
+    const avg=5+(sum/(j-i+1)-5)*sc; for(let k=i;k<=j;k++) pts[sorted[k]]=avg;
+    i=j+1;
+  }
+  return pts;
+}
+const tableDone=t=>t.ids.length>0&&t.ids.every(id=>t.places[id]>0);
+const roundDone=r=>r.tables.length>0&&r.tables.every(tableDone);
+function winnersOf(e){const best=Math.min(...e.ids.map(i=>e.places[i]));return e.ids.filter(i=>e.places[i]===best);}
+function computeStandings(S){
+  const rows=S.players.map(p=>({id:p.id,name:p.name,raw:0,wins:0,played:0,byes:0,per:{}})), by={};
+  rows.forEach(r=>by[r.id]=r);
+  for(const rd of S.rounds){
+    const g=gameOf(S,rd.gameId), w=g?g.weight:1;
+    for(const t of rd.tables){
+      const pts=tablePoints(t.ids,t.places); if(!pts) continue;
+      for(const id of t.ids){const row=by[id]; if(!row) continue; const v=pts[id]*w; row.raw+=v; row.per[rd.id]=v; row.played++; if(t.places[id]===1) row.wins++;}
+    }
+    if(roundDone(rd)) for(const id of rd.byes){const row=by[id]; if(!row) continue; const v=5*w; row.raw+=v; row.per[rd.id]=v; row.byes++;}
+  }
+  rows.forEach(r=>r.pts=r1(r.raw));
+  rows.sort((a,b)=>b.pts-a.pts||b.wins-a.wins||a.name.localeCompare(b.name));
+  rows.forEach(r=>{r.rank=1+rows.filter(o=>o.pts>r.pts).length;});
+  return rows;
+}
+/* Who reaches the final. A tie across the cut line needs playoff games. */
+function resolveCut(rows,cut,tbs){
+  if(rows.length<=cut) return {finalists:rows.map(r=>r.id),pending:null,group:null};
+  const lastPts=rows[cut-1].pts;
+  if(lastPts!==rows[cut].pts) return {finalists:rows.slice(0,cut).map(r=>r.id),pending:null,group:null};
+  const group=rows.filter(r=>r.pts===lastPts).map(r=>r.id);
+  const first=rows.findIndex(r=>r.pts===lastPts);
+  const sure=rows.slice(0,first).map(r=>r.id);
+  let spots=cut-first, remaining=group.slice(); const adv=[];
+  for(const tb of tbs){
+    if(spots<=0||!remaining.length) break;
+    if(tb.ids.length!==remaining.length||!tb.ids.every(i=>remaining.includes(i))) continue;
+    if(!tableDone(tb)) return {finalists:null,pending:{ids:remaining,spots,tb},group};
+    const places=[...new Set(tb.ids.map(i=>tb.places[i]))].sort((a,b)=>a-b); let next=null;
+    for(const pl of places){
+      const g=tb.ids.filter(i=>tb.places[i]===pl);
+      if(spots<=0) break;
+      if(g.length<=spots){adv.push(...g);spots-=g.length;}else{next=g;break;}
+    }
+    remaining=next||[];
+  }
+  if(spots>0&&remaining.length) return {finalists:null,pending:{ids:remaining,spots,tb:null},group};
+  return {finalists:sure.concat(adv),pending:null,group};
+}
+/* Game nights: with one copy of a game its tables take turns. */
+const copiesOf=g=>Math.max(1,g.copies||1);
+const roundMinutes=(g,tables)=>Math.ceil(tables/copiesOf(g))*g.mins;
+function planNights(mins,hours){
+  const cap=hours*60, nights=[]; let cur=null;
+  mins.forEach((m,i)=>{
+    if(!cur||(cur.mins+m>cap&&cur.count>0)){cur={from:i,count:0,mins:0};nights.push(cur);}
+    cur.count++;cur.mins+=m;
+  });
+  return nights;
+}
+/* The final: places pay points, and qualifying rank can add a head start (q places per seed step). */
+function finalBonuses(m,q){const g=10*FINAL_W/(m-1);return Array.from({length:m},(_,s)=>q*g*(m-1-s));}
+function finalScores(S,e){
+  if(!tableDone(e)) return null;
+  const pts=tablePoints(e.ids,e.places,true), b=finalBonuses(e.ids.length,S.headStart||0);
+  const rows=e.ids.map((id,s)=>{const base=pts[id]*FINAL_W;return {id,seed:s+1,place:e.places[id],base,bonus:b[s],total:Math.round((base+b[s])*100)/100};});
+  rows.sort((a,z)=>z.total-a.total||a.seed-z.seed);
+  return rows;
+}
+function finalWinner(S){
+  if(!S.finale.length) return null;
+  if(S.headStart>0){const sc=finalScores(S,S.finale[0]);return sc?sc[0].id:null;}
+  const last=S.finale[S.finale.length-1]; if(!tableDone(last)) return null;
+  const w=winnersOf(last); return w.length===1?w[0]:null;
+}
+function perms(a){if(a.length<=1)return [a.slice()];const o=[];a.forEach((x,i)=>{perms(a.slice(0,i).concat(a.slice(i+1))).forEach(p=>o.push([x].concat(p)));});return o;}
+/* For each seed, the lowest finishing place that can still win the title. */
+function headStartReach(m,q){
+  const b=finalBonuses(m,q), res=Array(m).fill(0);
+  perms([...Array(m).keys()]).forEach(order=>{
+    let bw=-1,bt=-1;
+    order.forEach((seed,k)=>{const t=Math.round((10*FINAL_W*(m-1-k)/(m-1)+b[seed])*100)/100;if(t>bt||(t===bt&&seed<bw)){bt=t;bw=seed;}});
+    res[bw]=Math.max(res[bw],order.indexOf(bw)+1);
+  });
+  return res;
+}
+function phaseOf(S){
+  if(!S.started) return 'setup';
+  if(S.rounds.some(r=>!roundDone(r))) return 'qual';
+  const c=resolveCut(computeStandings(S),S.finalists,S.tiebreaks);
+  if(c.pending) return 'tie';
+  if(!S.finale.length) return 'pickfinal';
+  const last=S.finale[S.finale.length-1];
+  if(!tableDone(last)) return 'final';
+  if(S.headStart>0) return 'champion';
+  return winnersOf(last).length===1?'champion':'rematch';
+}
+function fitsOneTable(g,m){const L=layout(m,g.min,g.max);return !!L&&L.sizes.length===1&&L.byes===0;}
+/* Everything the printable trophy needs, kept small so past tournaments can store it. */
+function trophyData(S){
+  const champ=finalWinner(S); if(!champ) return null;
+  const rows=computeStandings(S), me=rows.find(r=>r.id===champ);
+  const nm=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
+  let best=null;
+  for(const rd of S.rounds){const v=me.per[rd.id]; if(v!==undefined&&(!best||v>best.v)){const g=gameOf(S,rd.gameId);best={v:r1(v),game:g?g.name:''};}}
+  const first=S.finale[0], last=S.finale[S.finale.length-1], fg=gameOf(S,first.gameId);
+  let fin;
+  if(S.headStart>0) fin=finalScores(S,first).map(x=>({name:nm(x.id),place:x.place,seed:x.seed,base:r1(x.base),bonus:r1(x.bonus),total:r1(x.total)}));
+  else fin=last.ids.slice().sort((a,b)=>last.places[a]-last.places[b]).map(id=>({name:nm(id),place:last.places[id],seed:first.ids.indexOf(id)+1}));
+  const names=[...new Set(S.rounds.map(r=>{const g=gameOf(S,r.gameId);return g?g.name:'';}))];
+  return {title:'Game Night Gauntlet',date:S.finishedAt||Date.now(),
+    champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
+    best,finalGame:fg?fg.name:'',scored:S.headStart>0,final:fin,
+    standings:rows.map(r=>({name:r.name,pts:r.pts,rank:r.rank,color:pcol(r.id),champ:r.id===champ})),
+    rounds:S.rounds.length,players:S.players.length,games:names.length};
+}
+/* Saved tournaments pick up settings and games added later. */
+function ensureDefaults(S){
+  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.headStart===undefined) S.headStart=0.5;
+  S.games.forEach(g=>{if(!g.copies) g.copies=1;});
+  DEFAULT_GAMES.forEach((d,i)=>{
+    if(S.games.some(g=>g.id===d.id)) return;
+    const prev=i>0?S.games.findIndex(g=>g.id===DEFAULT_GAMES[i-1].id):-1;
+    const copy={...d};
+    if(prev>=0) S.games.splice(prev+1,0,copy); else S.games.push(copy);
+  });
+  return S;
+}
+/*LOGIC-END*/
+
+const VIEW=/[?&]view(&|=|$)/.test(location.search);
+const KEY='ubg-v1';
+function load(){if(VIEW)return fresh();try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return ensureDefaults(o);}}catch(e){}return fresh();}
+let S=load();
+const ui={view:VIEW?'standings':S.started?'rounds':'setup',open:{},confirm:null,scrollTo:null,top:false,tkey:null,turl:null};
+const app=document.getElementById('app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pname=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
+const dots=l=>'●'.repeat(l)+'○'.repeat(5-l);
+const pdot=id=>`<i class="pawn" style="--pc:${pcol(id)}"></i>`;
+const BR=['var(--c-coral)','var(--c-blue)','var(--c-yellow)','var(--c-green)','var(--c-purple)','var(--c-orange)'];
+const MEEPLE_D='M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.6 39c-3.1-1-4.2-4.1-2.2-7C12 25.6 18.4 21.4 26.1 19.4c-1.7-1.6-2.7-3.6-2.7-6.2C23.4 8.6 26.8 5 32 5z';
+const meeple=(c,s)=>`<svg class="meeple" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${c}" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/></svg>`;
+const hm=m=>m>=60?Math.floor(m/60)+'h'+(m%60?' '+(m%60)+'m':''):m+' min';
+const dstr=(ts,withTime)=>{try{return new Date(ts).toLocaleString('en-US',withTime?{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}:{year:'numeric',month:'long',day:'numeric'});}catch(e){return '';}};
+
+/* ---------- saving: this device always, shared page store when available ---------- */
+let docRef=null,writing=false,dirty=false,timer=null;
+function setStatus(s){
+  const el=document.getElementById('status');if(!el) return;
+  if(VIEW){el.textContent=viewMsg||'Loading…';return;}
+  const base=s==='synced'?'Saved to this page. Anyone you share it with sees the same tournament.':'Saved on this device.';
+  el.textContent=base+(ghNote?' '+ghNote:'');
+}
+function touch(){
+  if(VIEW) return;
+  if(S.started&&phaseOf(S)==='champion'){if(!S.finishedAt) S.finishedAt=Date.now();} else delete S.finishedAt;
+  S.t=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+  ghSchedule();
+  if(docRef){dirty=true;clearTimeout(timer);timer=setTimeout(flush,500);}
+}
+async function flush(){
+  if(writing||!docRef||!dirty) return;
+  writing=true;dirty=false;
+  try{await docRef.set({json:JSON.stringify(S),t:S.t});setStatus('synced');}catch(e){setStatus('local');}
+  writing=false;
+  if(dirty){clearTimeout(timer);timer=setTimeout(flush,500);}
+}
+async function initDb(){
+  try{
+    const db=await (window.claude&&window.claude.use?window.claude.use('db'):null);
+    if(!db) return;
+    docRef=db.doc('tournament/main');
+    docRef.onSnapshot(snap=>{
+      if(snap.metadata&&snap.metadata.hasPendingWrites) return;
+      if(!snap.exists){if(S.t>0){dirty=true;flush();}return;}
+      const d=snap.data(); if(!d||!d.json) return;
+      if(d.t>S.t){
+        try{
+          const o=JSON.parse(d.json);
+          if(o&&o.v===1){S=ensureDefaults(o);try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} if(!ui.touched) ui.view=S.started?'rounds':'setup'; renderSafe();}
+        }catch(e){}
+      }else if(d.t<S.t){dirty=true;clearTimeout(timer);timer=setTimeout(flush,300);}
+      setStatus('synced');
+    },()=>setStatus('local'));
+  }catch(e){}
+}
+
+/* ---------- shared view pieces ---------- */
+function empty(title,text,btn){
+  return `<div class="card"><h2>${esc(title)}</h2><p class="muted">${esc(text)}</p>${btn||''}</div>`;
+}
+function chips(kind,eid,ti,t,pid){
+  let h='';
+  for(let k=1;k<=t.ids.length;k++){
+    const on=t.places[pid]===k;
+    h+=`<button type="button" class="pl p${k}${on?' on':''}" aria-pressed="${on}" aria-label="${esc(pname(pid))} finishes ${k}" data-act="place" data-a="${kind}|${eid}|${ti}|${pid}|${k}">${k}</button>`;
+  }
+  return h;
+}
+function tableBlock(kind,eid,ti,t,w,label,subs){
+  const pts=w?tablePoints(t.ids,t.places):null;
+  const rows=t.ids.map(pid=>`<div class="pr"><div class="pn"><span class="nm">${pdot(pid)}${esc(pname(pid))}</span>${pts?`<span class="pp mono">+${fmt(pts[pid]*w)}</span>`:(subs&&subs[pid]?`<span class="pp mono">${esc(subs[pid])}</span>`:'')}</div><div class="chips">${chips(kind,eid,ti,t,pid)}</div></div>`).join('');
+  return `<div class="tb">${label?`<div class="tbh">${label}</div>`:''}${rows}</div>`;
+}
+function hasPlaces(e){return Object.keys(e.places).length>0;}
+function nightsOf(){
+  const mins=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return roundMinutes(g,r.tables.length);});
+  return {mins,nights:planNights(mins,S.nightHours||3)};
+}
+const HS_OPTS=[[0,'Off'],[0.5,'Medium'],[1,'Large']];
+function headStartText(m,q){
+  if(q<=0) return 'Clean slate: the final game alone decides the champion. A tie for first means a rematch.';
+  const b=finalBonuses(m,q), reach=headStartReach(m,q);
+  const starts=b.map((v,i)=>'seed '+(i+1)+' +'+fmt(v)).join(', ');
+  const worst=reach.map((p,i)=>'seed '+(i+1)+' '+(p<1?'none':ord(p))).join(', ');
+  return `The final pays ${Array.from({length:m},(_,k)=>fmt(10*FINAL_W*(m-1-k)/(m-1))).join(' / ')} points for 1st to last, and qualifying rank adds a head start (${starts}). Lowest finish that can still win: ${worst}. Ties go to the higher seed.`;
+}
+
+/* ---------- setup ---------- */
+function viewSetup(){
+  const n=S.players.length, locked=S.started, maxF=Math.min(4,n-1);
+  if(S.finalists>maxF) S.finalists=maxF;
+  const players=S.players.map((p,i)=>`<li class="prow2"><span class="pnum mono">${i+1}</span><input class="inp" id="pn-${p.id}" value="${esc(p.name)}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name">${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>`).join('');
+  const fopts=[];for(let k=2;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
+  const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
+  let total=0,valid=0,skipped=[],sit=[]; const minsList=[];
+  const games=S.games.map((g,i)=>{
+    const d=describeLayout(n,g);
+    if(g.on&&d.ok){const rm=roundMinutes(g,d.k);total+=rm;minsList.push(rm);valid++;const LL=layout(n,g.min,g.max);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
+    const wts=[1,2,3].map(w=>`<button type="button" aria-pressed="${g.weight===w}" data-act="gweight" data-a="${g.id}|${w}" aria-label="${esc(g.name)} weight ${w}">×${w}</button>`).join('');
+    const rm=d.ok?roundMinutes(g,d.k):0;
+    return `<li class="game${g.on?'':' off'}"><label class="gname"><input type="checkbox" data-act="gtoggle" data-a="${g.id}"${g.on?' checked':''}${locked?' disabled':''}><span>${esc(g.name)}</span></label>
+      <div class="gmeta mono">${g.min===g.max?g.min:g.min+'–'+g.max} players · ${g.mins} min a game · luck ${dots(g.luck)}</div>
+      <div class="gplan${d.ok?'':' bad'}">${esc(d.text)}${d.ok?` · about ${hm(rm)} a round`:''}</div>
+      <div class="gctl"><div class="seg" role="group" aria-label="Weight">${wts}</div>
+      <div class="cp" role="group" aria-label="Copies of ${esc(g.name)}"><span class="mono">copies</span><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|-1" aria-label="Fewer copies"${copiesOf(g)<=1?' disabled':''}>−</button><b class="mono">${copiesOf(g)}</b><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|1" aria-label="More copies"${copiesOf(g)>=6?' disabled':''}>+</button></div>
+      <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button>`}${g.custom&&!locked?`<button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}">Delete</button>`:''}</div></div></li>`;
+  }).join('');
+  const addForm=locked?'':`<details class="add"><summary>Add a game</summary>
+    <div class="addgrid">
+      <label class="fld wide"><span>Name</span><input class="inp" id="ng-name" maxlength="30" placeholder="Uno Flip"></label>
+      <label class="fld"><span>Min players</span><input class="inp" id="ng-min" type="number" min="2" max="12" value="2"></label>
+      <label class="fld"><span>Max players</span><input class="inp" id="ng-max" type="number" min="2" max="12" value="4"></label>
+      <label class="fld"><span>Minutes</span><input class="inp" id="ng-mins" type="number" min="5" max="240" value="30"></label>
+      <label class="fld"><span>Copies</span><input class="inp" id="ng-copies" type="number" min="1" max="6" value="1"></label>
+      <label class="fld"><span>Weight</span><select class="sel" id="ng-w"><option value="1">×1 light</option><option value="2">×2 medium</option><option value="3">×3 heavy</option></select></label>
+    </div><p style="margin-top:12px"><button type="button" class="btn" data-act="addgame">Add to list</button></p></details>`;
+  const nh=[2,3,4,5,6].map(h=>`<button type="button" aria-pressed="${(S.nightHours||3)===h}" data-act="nh" data-a="${h}">${h}</button>`).join('');
+  const nights=planNights(minsList,S.nightHours||3);
+  const plan=locked
+    ?`<div class="card"><div><h2>Rounds are built</h2><p class="muted">Players and the game list are locked. Weights, copies and game night length can still change. Add a round from the Rounds tab.</p></div>
+      <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div>
+      <p><button type="button" class="btn danger${ui.confirm==='reset'?' armed':''}" data-act="reset">${ui.confirm==='reset'?'Tap again to start over':'Start over'}</button></p>
+      <p class="muted">${phaseOf(S)==='champion'?'A finished tournament is saved to History first.':'Starting over before a champion is crowned erases the results.'}</p></div>`
+    :`<div class="card"><div class="plan"><div><strong class="mono">${valid} rounds</strong><p class="muted">About ${hm(total)} of play, so ${nights.length} game night${nights.length===1?'':'s'} of ${S.nightHours||3} hours.</p></div>
+      <button type="button" class="btn primary" data-act="build"${valid?'':' disabled'}>Build rounds</button></div>
+      <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div>
+      <p class="muted">Games with one copy take turns, so three Chess matches run one after another. Raise the copies if you own more than one.</p>
+      ${skipped.length?`<p class="muted">Skipped for ${n} players: ${esc(skipped.join(', '))}.</p>`:''}
+      ${sit.length?`<p class="muted">With ${n} players, ${esc(sit.join(', '))} can't seat everyone, so someone sits out each time. The draw picks them at random, and nobody sits out twice until everyone has sat out once. A sit-out earns half marks, the same as an average result.</p>`:''}</div>`;
+  return `<section class="card"><div class="cardhead"><h2 class="chip c-blue">Players</h2><span class="muted mono">${n} of ${MAXP}</span></div>
+    <ul class="plist">${players}</ul>
+    ${locked||n>=MAXP?'':`<p><button type="button" class="btn" data-act="addplayer">Add a player</button></p>`}</section>
+  <section class="card"><div class="cardhead"><h2 class="chip c-yellow">Finalists</h2>
+    <div class="seg" role="group" aria-label="Number of finalists">${fopts.join('')}</div></div>
+    <p class="muted">After the last round, the top ${S.finalists} play one final game. A tie at the cut line gets a playoff.</p>
+    <div class="cardhead"><h3>Head start in the final</h3><div class="seg" role="group" aria-label="Head start in the final">${hsb}</div></div>
+    <p class="muted">${esc(headStartText(S.finalists,S.headStart||0))}</p></section>
+  <section class="card"><div class="cardhead"><h2 class="chip c-green">Games</h2><span class="muted">Weight multiplies placement points</span></div>
+    <ul class="glist">${games}</ul>${addForm}</section>
+  ${plan}`;
+}
+
+/* ---------- rounds ---------- */
+function viewRounds(){
+  if(!S.started) return empty('No rounds yet','Pick players and games in Setup, then build the rounds.',`<p><button type="button" class="btn primary" data-act="tab" data-a="setup">Go to setup</button></p>`);
+  const cur=S.rounds.findIndex(r=>!roundDone(r));
+  const {mins,nights}=nightsOf();
+  const nightAt={}; nights.forEach((nt,k)=>nightAt[nt.from]={k,nt});
+  const cards=S.rounds.map((r,i)=>{
+    const g=gameOf(S,r.gameId), done=roundDone(r);
+    const open=ui.open[r.id]!==undefined?ui.open[r.id]:i===cur;
+    const tdone=r.tables.filter(tableDone).length;
+    let sub;
+    if(done){const w=[];r.tables.forEach(t=>t.ids.forEach(id=>{if(t.places[id]===1)w.push(pname(id));}));sub=`<small class="done">Won by ${esc(w.join(' · '))}</small>`;}
+    else sub=`<small>${tdone?tdone+' of '+r.tables.length+' scored':(i===cur?'In play':'Up next')} · about ${hm(mins[i])}</small>`;
+    let body='';
+    if(open){
+      const k=r.tables.length, copies=copiesOf(g);
+      body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,g.min===2&&g.max===2?'Match '+(ti+1):(k>1?'Table '+(ti+1):''))).join('')}
+        ${r.byes.length?`<p class="bye">Sitting out: ${esc(r.byes.map(pname).join(', '))}. ${done?'Each gets +'+fmt(5*g.weight)+', half marks, the same as an average result.':'They get half marks when the round finishes, the same as an average result.'}</p>`:''}
+        ${!S.finale.length&&!r.tables.some(hasPlaces)?`<div class="rfoot">${(r.tables.length>1||r.byes.length)?`<button type="button" class="btn sm" data-act="redraw" data-a="${r.id}">Re-draw seats</button>`:''}<button type="button" class="btn sm ghost" data-act="delround" data-a="${r.id}">Remove this round</button></div>`:''}</div>`;
+    }
+    const nh=nightAt[i]?`<div class="night"><h3 class="chip c-purple">Night ${nightAt[i].k+1}</h3><span class="muted">${nightAt[i].nt.count} round${nightAt[i].nt.count>1?'s':''}, about ${hm(nightAt[i].nt.mins)}</span></div>`:'';
+    return `${nh}<article class="round${open?' open':''}${i===cur?' cur':''}" id="rd-${r.id}"><button type="button" class="rh" data-act="open" data-a="${r.id}" aria-expanded="${open}">
+      <span class="rn s${i%6}">${i+1}</span><span class="rt"><b>${esc(g.name)}</b>${sub}</span><span class="wt w${g.weight}">×${g.weight}</span><span class="chev"></span></button>${body}</article>`;
+  }).join('');
+  const choices=S.games.filter(g=>layout(S.players.length,g.min,g.max)).map(g=>`<option value="${g.id}">${esc(g.name)} (×${g.weight})</option>`).join('');
+  const add=S.finale.length?'':`<details class="card add"><summary>Add a round</summary><div class="addgrid"><label class="fld wide"><span>Game</span><select class="sel" id="ar-game">${choices}</select></label></div>
+    <p style="margin-top:12px"><button type="button" class="btn" data-act="addround">Add to the end</button></p></details>`;
+  const redrawable=S.finale.length?0:S.rounds.filter(r=>roundUnscored(r)&&(r.tables.length>1||r.byes.length)).length;
+  const totalMin=mins.reduce((a,b)=>a+b,0);
+  return `<p class="hint">${S.rounds.length} rounds, about ${hm(totalMin)} in all, split into ${nights.length} game night${nights.length===1?'':'s'} of ${S.nightHours||3} hours. Games with one copy take turns. Tap each player's finishing place. Yellow is first. The same number twice is a tie. First place earns about 10 points and last earns 0, then the game's weight multiplies it. Small tables are eased toward the middle so a 2-player match can't swing the board more than a 6-player game. Seats are drawn at random, and the draw avoids repeat opponents and rotates sit-outs.</p>${redrawable?`<p><button type="button" class="btn" data-act="redrawall">Re-draw all unscored rounds</button></p>`:''}${cards}${add}`;
+}
+
+/* ---------- standings ---------- */
+function viewStandings(){
+  if(!S.started) return empty('Standings begin with round one','Build the rounds in Setup first.',`<p><button type="button" class="btn primary" data-act="tab" data-a="setup">Go to setup</button></p>`);
+  const rows=computeStandings(S), ph=phaseOf(S), cut=resolveCut(rows,S.finalists,S.tiebreaks);
+  const fin=new Set(cut.finalists||[]), tied=new Set(ph==='tie'&&cut.group?cut.group:[]);
+  const max=Math.max(1,...rows.map(r=>r.pts));
+  let list='';
+  rows.forEach((r,i)=>{
+    list+=`<li class="srow${r.rank===1&&r.pts>0?' lead':''}${fin.has(r.id)&&ph!=='qual'?' fin':''}"><span class="rk r${Math.min(r.rank,4)} mono">${r.rank}</span>
+      <span class="who"><span class="nm">${pdot(r.id)}${esc(r.name)}${tied.has(r.id)?'<span class="tag">TIED</span>':''}</span><span class="bar"><i style="width:${(r.pts/max*100).toFixed(1)}%;background:${pcol(r.id)}"></i></span></span>
+      <span class="pts mono">${fmt(r.pts)}</span><span class="mini mono">${r.wins}</span><span class="mini mono">${r.played}</span></li>`;
+    if(i===S.finalists-1&&rows.length>S.finalists) list+=`<li class="cutline" role="presentation"><span>Finale cut · top ${S.finalists}</span></li>`;
+  });
+  const hdr=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return `<th title="${esc(g.name)}">${esc(g.short||g.name.slice(0,5))}<small>×${g.weight}</small></th>`;}).join('');
+  const body=rows.map(r=>`<tr><td>${esc(r.name)}</td>${S.rounds.map(rd=>r.per[rd.id]!==undefined?`<td class="mono">${fmt(r.per[rd.id])}</td>`:`<td class="mono none">–</td>`).join('')}<td class="mono"><b>${fmt(r.pts)}</b></td></tr>`).join('');
+  const note=ph==='tie'?`<div class="card warn"><h3>Tie at the cut line</h3><p>${esc(cut.group.map(pname).join(', '))} finished level on points. A playoff decides who gets the last ${cut.pending.spots===1?'spot':cut.pending.spots+' spots'} in the final.</p><p><button type="button" class="btn" data-act="tab" data-a="finale">Go to the playoff</button></p></div>`:'';
+  return `${note}<section class="card flat"><ul class="slist"><li class="shead" role="presentation"><span>#</span><span>Player</span><span>Pts</span><span>Wins</span><span>Played</span></li>${list}</ul></section>
+    <section class="card"><h3>Round by round</h3><div class="scroll"><table class="mx"><thead><tr><th>Player</th>${hdr}<th>Total</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+}
+
+/* ---------- finale ---------- */
+function gameOptions(m){return S.games.filter(g=>fitsOneTable(g,m)).sort((a,b)=>a.mins-b.mins);}
+function viewFinale(){
+  if(!S.started) return empty('The final comes after the rounds','Build the rounds in Setup first.',`<p><button type="button" class="btn primary" data-act="tab" data-a="setup">Go to setup</button></p>`);
+  const rows=computeStandings(S), ph=phaseOf(S), cut=resolveCut(rows,S.finalists,S.tiebreaks);
+  let out='';
+  if(ph==='qual'){
+    const left=S.rounds.filter(r=>!roundDone(r)).length;
+    out+=`<div class="card"><h2>Finale unlocks after the last round</h2><p class="muted">${left} round${left>1?'s':''} to go. Right now the top ${S.finalists} are:</p>
+      <div class="seeds">${rows.slice(0,S.finalists).map((r,i)=>`<span class="seed"><span class="mono">#${i+1}</span>${pdot(r.id)}${esc(r.name)}</span>`).join('')}</div></div>`;
+  }
+  if(ph==='tie'){
+    const p=cut.pending;
+    out+=`<div class="card warn"><h2>Playoff for the last spot${p.spots>1?'s':''}</h2>
+      <p>${esc(p.ids.map(pname).join(', '))} are level on points. ${p.spots===1?'One of them':p.spots+' of them'} reach the final.</p></div>`;
+    if(p.tb){
+      const g=gameOf(S,p.tb.gameId);
+      out+=`<div class="card"><div class="cardhead"><h3>${esc(g?g.name:'Playoff')}</h3>${hasPlaces(p.tb)?'':`<button type="button" class="btn sm ghost" data-act="tbundo" data-a="${p.tb.id}">Change game</button>`}</div>${tableBlock('t',p.tb.id,0,p.tb,0,'')}</div>`;
+    }else{
+      const opts=gameOptions(p.ids.length);
+      out+=`<div class="card"><h3>Pick a playoff game</h3><p class="muted">Quick games first.</p>
+        ${opts.length?`<label class="fld"><span>Game</span><select class="sel" id="tb-game">${opts.map(g=>`<option value="${g.id}">${esc(g.name)} · ${g.mins} min</option>`).join('')}</select></label>
+        <p><button type="button" class="btn primary" data-act="tbstart">Start playoff</button></p>`:`<p class="muted">No game on the list fits ${p.ids.length} players. Add one in Setup.</p>`}</div>`;
+    }
+  }
+  const first=S.finale[0];
+  if(ph==='pickfinal'||ph==='final'||ph==='champion'||ph==='rematch'){
+    const ids=first?first.ids:cut.finalists;
+    out+=`<div class="card"><h3>Finalists, by qualifying rank</h3><div class="seeds">${ids.map((id,i)=>{const r=rows.find(x=>x.id===id);return `<span class="seed"><span class="mono">#${i+1}</span>${pdot(id)}${esc(r.name)}<span class="mono"> ${fmt(r.pts)}</span></span>`;}).join('')}</div></div>`;
+  }
+  if(ph==='pickfinal'){
+    const m=cut.finalists.length, opts=gameOptions(m);
+    const score=g=>-Math.abs(g.mins-35)/10-Math.abs(g.luck-2)*1.2;
+    const top=new Set(opts.slice().sort((a,b)=>score(b)-score(a)).slice(0,3).map(g=>g.id));
+    out+=`<div class="card"><h2>Choose the final game</h2><p class="muted">Games that seat exactly ${m} players. Suggested ones take about half an hour and let skill beat luck.</p>
+      <p class="muted">${esc(headStartText(m,S.headStart||0))}</p>
+      <div>${opts.sort((a,b)=>score(b)-score(a)).map(g=>`<div class="cand"><div class="info"><b>${esc(g.name)}${top.has(g.id)?'<span class="badge">Suggested</span>':''}</b><small class="mono">${g.mins} min · luck ${dots(g.luck)}</small></div><button type="button" class="btn${top.has(g.id)?' primary':''}" data-act="finpick" data-a="${g.id}">Play this</button></div>`).join('')}</div>
+      ${opts.length?'':`<p class="muted">No game on the list seats ${m} players. Add one in Setup.</p>`}</div>`;
+  }
+  if(ph==='rematch'){
+    const last=S.finale[S.finale.length-1], w=winnersOf(last), opts=gameOptions(w.length);
+    out+=`<div class="card warn"><h2>Sudden-death rematch</h2><p>${esc(w.map(pname).join(' and '))} tied for first. Play one more game to settle it.</p>
+      ${opts.length?`<label class="fld"><span>Game</span><select class="sel" id="rm-game">${opts.map(g=>`<option value="${g.id}">${esc(g.name)} · ${g.mins} min</option>`).join('')}</select></label><p><button type="button" class="btn primary" data-act="rematch">Start rematch</button></p>`:''}</div>`;
+  }
+  const scored=S.headStart>0&&first&&tableDone(first)?finalScores(S,first):null;
+  if(ph==='champion'){
+    const w=finalWinner(S), g=gameOf(S,S.finale[0].gameId);
+    const line=scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
+    out=`<div class="card gold champ">${meeple(pcol(w),72)}<div class="txt"><span class="lbl">Ultimate Board Gamer</span><span class="name">${esc(pname(w))}</span><p>${esc(line)}</p></div></div>
+      <div class="card" id="trophy-card"><div class="cardhead"><h2 class="chip c-yellow">Keepsake trophy</h2><span class="muted">Prints on half a letter page, 8.5 × 5.5 in</span></div>
+        <img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}" hidden>
+        <div class="rfoot"><button type="button" class="btn primary" data-act="trophy" data-a="pdf">Save PDF</button><button type="button" class="btn" data-act="trophy" data-a="png">Save image</button></div>
+        <p class="muted" id="dl-msg">If saving is not offered here, press and hold the picture to save it.</p></div>
+      <div class="card"${VIEW?' hidden':''}><h3>Done with this tournament?</h3><p class="muted">Saves it to History with its trophy and clears the rounds. Players and games stay.</p><p><button type="button" class="btn" data-act="newt">Start a new tournament</button></p></div>`+out;
+  }
+  if(S.finale.length){
+    S.finale.forEach((f,i)=>{
+      const g=gameOf(S,f.gameId);
+      let subs=null;
+      if(S.headStart>0&&i===0){const b=finalBonuses(f.ids.length,S.headStart);subs={};f.ids.forEach((id,s)=>{subs[id]='Seed '+(s+1)+' · starts +'+fmt(b[s]);});}
+      out+=`<div class="card"><div class="cardhead"><h3>${i===0?'Final':'Rematch'} · ${esc(g?g.name:'')}</h3>${!hasPlaces(f)&&i===S.finale.length-1?`<button type="button" class="btn sm ghost" data-act="finundo" data-a="${f.id}">Change game</button>`:''}</div>${tableBlock('f',f.id,0,f,0,'',subs)}</div>`;
+      if(i===0&&scored){
+        out+=`<div class="card"><h3>Final scores</h3>${scored.map((x,k)=>`<div class="pr"><div class="pn"><span class="nm">${pdot(x.id)}${esc(pname(x.id))}${k===0?'<span class="badge">Champion</span>':''}</span><span class="pp mono">${ord(x.place)} place +${fmt(x.base)} · head start +${fmt(x.bonus)}</span></div><span class="pts mono">${fmt(x.total)}</span></div>`).join('')}</div>`;
+      }
+    });
+  }
+  const resolved=S.tiebreaks.filter(tb=>ph!=='tie'||!(cut.pending&&cut.pending.tb&&cut.pending.tb.id===tb.id));
+  resolved.forEach(tb=>{
+    const g=gameOf(S,tb.gameId);
+    out+=`<div class="card"><h3>Playoff · ${esc(g?g.name:'')}</h3>${tableBlock('t',tb.id,0,tb,0,'')}</div>`;
+  });
+  return out;
+}
+
+/* ---------- history ---------- */
+function resultLines(t,w){
+  const pts=w?tablePoints(t.ids,t.places):null;
+  return t.ids.slice().sort((a,b)=>t.places[a]-t.places[b]).map(id=>`<div class="hl2"><span class="hp mono">${t.places[id]}</span>${pdot(id)}<span class="nm">${esc(pname(id))}</span>${pts?`<span class="pp2 mono">+${fmt(pts[id]*w)}</span>`:''}</div>`).join('');
+}
+function viewHistory(){
+  const items=[];
+  S.rounds.forEach((r,i)=>{if(roundDone(r))items.push({o:i,ts:r.doneAt||0,html:histCard('R'+(i+1),gameOf(S,r.gameId),r.doneAt,r.tables.map((t,ti)=>({label:r.tables.length>1?(gameOf(S,r.gameId).max===2?'Match ':'Table ')+(ti+1):'',t})),gameOf(S,r.gameId).weight,r.byes)});});
+  S.tiebreaks.forEach((t,i)=>{if(tableDone(t))items.push({o:1000+i,ts:t.doneAt||0,html:histCard('Playoff',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
+  S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
+  items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
+  const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
+  const past=S.archive.length?S.archive.map((a,i)=>{const T=a.data;return `<article class="card gold past"><div class="cardhead"><div><span class="lbl mono">${esc(dstr(T.date))}</span><h3>${esc(T.champ.name)} won</h3></div>${meeple(T.champ.color,44)}</div>
+      <p>${esc(T.finalGame)} final · ${T.players} players · ${T.rounds} rounds</p>
+      <p class="mono small">${T.standings.map(s=>s.rank+' '+esc(s.name)+' '+fmt(s.pts)).join(' · ')}</p>
+      <div class="rfoot"><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|pdf">Trophy PDF</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|png">Trophy image</button></div></article>`;}).join(''):`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
+  return `<section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
+}
+function histCard(tag,g,ts,tables,w,byes){
+  return `<article class="card hist"><div class="cardhead"><h3>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</h3><span class="muted">${ts?esc(dstr(ts,true)):''}</span></div>
+    ${tables.map(x=>`<div>${x.label?`<div class="tbh2">${x.label}</div>`:''}${resultLines(x.t,w)}</div>`).join('')}
+    ${byes&&byes.length?`<p class="bye">Sat out: ${esc(byes.map(pname).join(', '))}</p>`:''}</article>`;
+}
+
+/*TROPHY-START*/
+/* An 8.5 x 5.5 inch page drawn at 300 dpi. */
+async function drawTrophy(T){
+  const W=2550,H=1650,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
+  try{await Promise.all(['800 100px "Bricolage Grotesque"','500 40px "DM Sans"','700 40px "JetBrains Mono"'].map(f=>document.fonts.load(f)));}catch(e){}
+  const D='"Bricolage Grotesque","Segoe UI",system-ui,sans-serif',B='"DM Sans","Segoe UI",system-ui,sans-serif',M='"JetBrains Mono",ui-monospace,Menlo,monospace';
+  const ink='#2D2A32',edge='#3B3540',muted='#5F584D',beige='#F6F0E2',BRC=['#FF8A78','#7CC6F5','#FFD84D','#7ED9A6','#C4A8F7','#FFB05C'];
+  const rr=(a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath();};
+  const spacing=px=>{if('letterSpacing' in x)x.letterSpacing=px+'px';};
+  const font=(wt,size,fam)=>{x.font=wt+' '+size+'px '+fam;};
+  const fit=(txt,wt,fam,max,start,min)=>{let s=start;font(wt,s,fam);while(x.measureText(txt).width>max&&s>min){s-=4;font(wt,s,fam);}return s;};
+  const ordn=n=>n+(['th','st','nd','rd'][(n%100>10&&n%100<14)?0:(n%10<4?n%10:0)]);
+  x.fillStyle='#FFFFFF';x.fillRect(0,0,W,H);
+  rr(54,54,W-108,H-108,70);x.fillStyle=beige;x.fill();x.lineWidth=10;x.strokeStyle=edge;x.stroke();
+  /* board track */
+  const n=T.rounds+1,gap=12,tw=Math.min(70,Math.floor((W-360-(n-1)*gap)/n)),tot=n*tw+(n-1)*gap;let tx=(W-tot)/2;
+  for(let i=0;i<n;i++){const fin=i===n-1;rr(tx,112,tw,fin?60:46,12);x.fillStyle=fin?'#FFD84D':BRC[i%6];x.fill();x.lineWidth=6;x.strokeStyle=edge;x.stroke();
+    if(fin){x.fillStyle=edge;font('700',40,B);x.textAlign='center';x.textBaseline='middle';x.fillText('★',tx+tw/2,144);}tx+=tw+gap;}
+  x.textBaseline='alphabetic';x.textAlign='left';
+  spacing(6);font('800',54,D);x.fillStyle=ink;x.fillText(T.title.toUpperCase(),150,262);spacing(0);
+  font('700',40,M);x.fillStyle=muted;x.textAlign='right';x.fillText(dstr(T.date),W-150,262);x.textAlign='left';
+  /* champion */
+  spacing(8);font('700',44,M);const lbl='ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
+  rr(144,312,lw+24,66,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.fillText(lbl,156,360);spacing(0);
+  const ns=fit(T.champ.name,'800',D,1130,230,90);font('800',ns,D);x.fillStyle=ink;x.fillText(T.champ.name,150,600);
+  const fs=fit('Won the final at '+T.finalGame,'500',B,1130,56,34);font('500',fs,B);x.fillStyle=muted;x.fillText('Won the final at '+T.finalGame,150,690);
+  x.save();x.translate(150,740);x.scale(380/64,380/64);const mp=new Path2D('M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.6 39c-3.1-1-4.2-4.1-2.2-7C12 25.6 18.4 21.4 26.1 19.4c-1.7-1.6-2.7-3.6-2.7-6.2C23.4 8.6 26.8 5 32 5z');
+  x.fillStyle=T.champ.color;x.fill(mp);x.lineWidth=3;x.lineJoin='round';x.strokeStyle=edge;x.stroke(mp);x.restore();
+  /* the final */
+  spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText('THE FINAL',600,770);spacing(0);
+  const fl=T.final.slice(0,4);fl.forEach((f,i)=>{const y=822+i*84;
+    x.beginPath();x.arc(640,y+34,34,0,Math.PI*2);x.fillStyle=BRC[(f.place-1+2)%6];x.fill();x.lineWidth=5;x.strokeStyle=edge;x.stroke();
+    x.fillStyle=ink;font('800',38,D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(f.place),640,y+36);x.textAlign='left';x.textBaseline='alphabetic';
+    const s=fit(f.name,'700',B,430,52,30);font('700',s,B);x.fillStyle=ink;x.fillText(f.name,700,y+52);
+    font('700',46,M);x.textAlign='right';x.fillStyle=ink;x.fillText(T.scored?f.total.toFixed(1):ordn(f.place),1290,y+52);x.textAlign='left';});
+  /* qualifying standings */
+  spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText('QUALIFYING STANDINGS',1420,330);spacing(0);
+  const nn=T.standings.length,rh=Math.min(104,Math.floor(790/nn));
+  T.standings.forEach((s,i)=>{const y=372+i*rh,mid=y+rh/2,r=rh*0.32;
+    if(s.champ){rr(1400,y+4,1000,rh-8,16);x.fillStyle='#FFF1B8';x.fill();}
+    x.beginPath();x.arc(1420+r,mid,r,0,Math.PI*2);x.fillStyle=s.rank===1?'#FFD84D':s.rank===2?'#7CC6F5':s.rank===3?'#FF8A78':'#FFFFFF';x.fill();x.lineWidth=5;x.strokeStyle=edge;x.stroke();
+    x.fillStyle=ink;font('800',Math.round(rh*0.34),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(s.rank),1420+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
+    x.beginPath();x.arc(1420+2*r+34,mid,rh*0.15,0,Math.PI*2);x.fillStyle=s.color;x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
+    const sz=fit(s.name,'700',B,560,Math.round(rh*0.5),24);font('700',sz,B);x.fillStyle=ink;x.fillText(s.name,1420+2*r+34+rh*0.15+20,mid+sz*0.34);
+    font('700',Math.round(rh*0.44),M);x.textAlign='right';x.fillText(s.pts.toFixed(1),2380,mid+rh*0.15);x.textAlign='left';
+    if(i<nn-1){x.setLineDash([10,10]);x.lineWidth=3;x.strokeStyle='#D8CCB4';x.beginPath();x.moveTo(1410,y+rh);x.lineTo(2390,y+rh);x.stroke();x.setLineDash([]);}});
+  /* stats */
+  const fin0=T.final.find(f=>f.place===1)||T.final[0];
+  const stats=[['TOTAL POINTS',T.champ.pts.toFixed(1),'qualifying rounds'],['ROUND WINS',String(T.champ.wins),'of '+T.champ.played+' rounds played'],['QUALIFYING RANK','#'+T.champ.rank,'of '+T.players+' players'],['BEST ROUND',T.best?'+'+T.best.v.toFixed(1):'-',T.best?T.best.game:''],T.scored?['FINAL SCORE',(T.final.find(f=>f.name===T.champ.name)||fin0).total.toFixed(1),'head start included']:['THE FINAL','1st','at '+T.finalGame]];
+  const bw=(2250-4*24)/5;
+  stats.forEach((s,i)=>{const bx=150+i*(bw+24),by=1190;rr(bx,by,bw,280,24);x.fillStyle='#FFFFFF';x.fill();x.lineWidth=6;x.strokeStyle=edge;x.stroke();
+    rr(bx+18,by+18,bw-36,54,14);x.fillStyle=BRC[(i+1)%6];x.fill();
+    x.fillStyle=ink;spacing(3);font('700',30,M);x.textAlign='center';x.textBaseline='middle';x.fillText(s[0],bx+bw/2,by+46);spacing(0);
+    const vs=fit(s[1],'800',D,bw-50,118,60);font('800',vs,D);x.fillText(s[1],bx+bw/2,by+160);
+    const ss=fit(s[2],'500',B,bw-40,34,22);font('500',ss,B);x.fillStyle=muted;x.fillText(s[2],bx+bw/2,by+238);x.textAlign='left';x.textBaseline='alphabetic';});
+  x.fillStyle=muted;font('500',34,M);x.textAlign='center';x.fillText(T.players+' players · '+T.rounds+' rounds · '+T.games+' games',W/2,1548);x.textAlign='left';
+  return c;
+}
+/*TROPHY-END*/
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'champion';
+async function trophyPdf(T){
+  const c=await drawTrophy(T), url=c.toDataURL('image/png');
+  const J=window.jspdf&&window.jspdf.jsPDF; if(!J) throw new Error('nopdf');
+  const doc=new J({orientation:'landscape',unit:'in',format:[5.5,8.5]});
+  doc.addImage(url,'PNG',0,0,8.5,5.5);
+  return doc.output('arraybuffer');
+}
+async function saveTrophy(T,kind,msgId){
+  const say=t=>{const el=document.getElementById(msgId);if(el)el.textContent=t;};
+  try{
+    const dl=await (window.claude&&window.claude.use?window.claude.use('downloads'):null);
+    if(!dl){
+      const nm='game-night-gauntlet-'+slug(T.champ.name);let blob;
+      if(kind==='pdf') blob=new Blob([await trophyPdf(T)],{type:'application/pdf'});
+      else{const c=await drawTrophy(T);blob=await new Promise(r=>c.toBlob(r,'image/png'));}
+      anchorSave(nm+(kind==='pdf'?'.pdf':'.png'),blob);say('Saved. Look in your Downloads or Files app.');return;
+    }
+    const base='game-night-gauntlet-'+slug(T.champ.name);
+    if(kind==='pdf') await dl.save({filename:base+'.pdf',data:await trophyPdf(T)});
+    else{const c=await drawTrophy(T);const blob=await new Promise(r=>c.toBlob(r,'image/png'));await dl.save({filename:base+'.png',data:blob});}
+    say('Saved.');
+  }catch(e){
+    if(e&&e.code==='declined'){say('');return;}
+    say(e&&e.message==='nopdf'?'The PDF tool did not load. Try Save image instead.':'Could not save that. Try the other format.');
+  }
+}
+function afterRender(){
+  const im=document.getElementById('trophy-img');
+  if(im&&S.started&&phaseOf(S)==='champion'){
+    const T=trophyData(S),key=JSON.stringify(T);
+    if(ui.tkey===key&&ui.turl){im.src=ui.turl;im.hidden=false;}
+    else drawTrophy(T).then(c=>{ui.tkey=key;ui.turl=c.toDataURL('image/png');const el=document.getElementById('trophy-img');if(el){el.src=ui.turl;el.hidden=false;}}).catch(()=>{});
+  }
+}
+
+/* ---------- render ---------- */
+const TABS=(VIEW?[]:[['setup','Setup']]).concat([['rounds','Rounds'],['standings','Standings'],['finale','Finale'],['history','History']]);
+function render(){
+  const y=window.scrollY;
+  const n=S.players.length;
+  document.getElementById('sub').textContent=S.started
+    ?`${n} players · ${S.rounds.length} rounds · top ${S.finalists} play the final`
+    :`${n} players · pick the games, then build the rounds`;
+  let road='';
+  if(S.started){
+    const cur=S.rounds.findIndex(r=>!roundDone(r)), done=S.rounds.filter(roundDone).length, ph=phaseOf(S);
+    const segs=S.rounds.map((r,i)=>`<i class="${roundDone(r)?'done':(i===cur?'cur':'')}" style="--sc:${BR[i%6]}"></i>`).join('')+`<i class="fin${ph==='champion'?' done':''}"></i>`;
+    const lbl={qual:'Round '+Math.min(done+1,S.rounds.length)+' of '+S.rounds.length,tie:'Playoff for the cut line',pickfinal:'Choose the final game',final:'Final in play',rematch:'Sudden-death rematch',champion:'We have a champion'}[ph];
+    road=`<div class="road" aria-hidden="true">${segs}</div><div class="roadlbl"><span>${lbl}</span><span class="mono">${done}/${S.rounds.length} done</span></div>`;
+  }
+  document.getElementById('roadwrap').innerHTML=road;
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button type="button" class="tab t-${k}" data-act="tab" data-a="${k}"${ui.view===k?' aria-current="page"':''}>${l}</button>`).join('');
+  app.innerHTML=ui.view==='setup'?viewSetup():ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory();
+  if(ui.view==='setup'&&!VIEW) app.insertAdjacentHTML('beforeend',shareCard());
+  if(ui.top){window.scrollTo(0,0);ui.top=false;}
+  else if(ui.scrollTo){const el=document.getElementById('rd-'+ui.scrollTo);ui.scrollTo=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});}}
+  else window.scrollTo(0,y);
+  afterRender();
+}
+function renderSafe(){const a=document.activeElement;if(a&&a.tagName==='INPUT'&&app.contains(a)) return;render();}
+
+/* ---------- actions ---------- */
+function tableOf(kind,eid,ti){
+  if(kind==='r'){const r=S.rounds.find(r=>r.id===eid);return r?r.tables[ti]:null;}
+  if(kind==='t') return S.tiebreaks.find(t=>t.id===eid)||null;
+  return S.finale.find(f=>f.id===eid)||null;
+}
+function startOver(){
+  const T=S.started?trophyData(S):null, arch=S.archive.slice();
+  if(T) arch.unshift({id:S.tid||('a'+Date.now()),data:T});
+  const f=fresh();
+  f.players=S.players;f.pseq=S.pseq;f.games=S.games;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.archive=arch.slice(0,50);
+  S=f;ui.open={};ui.confirm=null;ui.view=T?'history':'setup';ui.touched=true;ui.top=true;ui.tkey=null;ui.turl=null;
+}
+function act(name,a,el){
+  switch(name){
+    case 'tab':ui.view=a[0];ui.touched=true;ui.top=true;break;
+    case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;break;}
+    case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});touch();}break;
+    case 'delplayer':if(S.players.length>MINP&&!S.started){S.players=S.players.filter(p=>p.id!==a[0]);touch();}break;
+    case 'fin':S.finalists=+a[0];touch();break;
+    case 'hs':S.headStart=+a[0];touch();break;
+    case 'nh':S.nightHours=+a[0];touch();break;
+    case 'gweight':{const g=gameOf(S,a[0]);if(g){g.weight=+a[1];touch();}break;}
+    case 'gcopy':{const g=gameOf(S,a[0]);if(g){g.copies=Math.max(1,Math.min(6,copiesOf(g)+ +a[1]));touch();}break;}
+    case 'gmove':{const i=S.games.findIndex(g=>g.id===a[0]),j=i+ +a[1];if(i>=0&&j>=0&&j<S.games.length){[S.games[i],S.games[j]]=[S.games[j],S.games[i]];touch();}break;}
+    case 'gdel':S.games=S.games.filter(g=>g.id!==a[0]);touch();break;
+    case 'addgame':{
+      const name=document.getElementById('ng-name').value.trim();
+      let mn=Math.max(2,Math.min(12,+document.getElementById('ng-min').value||2)),mx=Math.max(2,Math.min(12,+document.getElementById('ng-max').value||4));
+      if(mx<mn) mx=mn;
+      const mins=Math.max(5,Math.min(240,+document.getElementById('ng-mins').value||30)),w=+document.getElementById('ng-w').value||1,cp=Math.max(1,Math.min(6,+document.getElementById('ng-copies').value||1));
+      if(!name){document.getElementById('ng-name').focus();return false;}
+      S.games.push({id:'g'+(S.seq++),name,short:name.split(/\s+/)[0].slice(0,6),min:mn,max:mx,weight:w,mins,luck:3,copies:cp,on:true,custom:true});touch();break;
+    }
+    case 'build':if(buildRounds(S)){ui.open={};ui.view='rounds';ui.top=true;touch();}break;
+    case 'reset':
+      if(ui.confirm==='reset'){startOver();touch();}
+      else{ui.confirm='reset';setTimeout(()=>{if(ui.confirm==='reset'){ui.confirm=null;render();}},5000);}
+      break;
+    case 'newt':startOver();touch();break;
+    case 'place':{
+      const [kind,eid,ti,pid,n]=a,t=tableOf(kind,eid,+ti);if(!t) break;
+      const rd=kind==='r'?S.rounds.find(r=>r.id===eid):null, holder=rd||t, was=rd?roundDone(rd):tableDone(t);
+      const k=+n; if(t.places[pid]===k) delete t.places[pid]; else t.places[pid]=k;
+      const now=rd?roundDone(rd):tableDone(t);
+      if(now&&!was) holder.doneAt=Date.now(); else if(!now) delete holder.doneAt;
+      touch();
+      if(rd&&!was&&now&&ui.open[rd.id]===undefined){const i=S.rounds.indexOf(rd);const nx=S.rounds[i+1];if(nx) ui.scrollTo=nx.id;}
+      break;
+    }
+    case 'redraw':if(redrawRound(S,a[0])) touch();break;
+    case 'redrawall':if(redrawAll(S)) touch();break;
+    case 'delround':{const r=S.rounds.find(r=>r.id===a[0]);if(r&&!r.tables.some(hasPlaces)){S.rounds=S.rounds.filter(x=>x!==r);touch();}break;}
+    case 'addround':{const id=document.getElementById('ar-game').value;if(addRound(S,id)){ui.open[S.rounds[S.rounds.length-1].id]=true;touch();}break;}
+    case 'tbstart':{
+      const cut=resolveCut(computeStandings(S),S.finalists,S.tiebreaks);if(!cut.pending||cut.pending.tb) break;
+      const gid=document.getElementById('tb-game').value;
+      S.tiebreaks.push({id:'t'+(S.seq++),gameId:gid,ids:cut.pending.ids.slice(),places:{}});touch();break;
+    }
+    case 'tbundo':S.tiebreaks=S.tiebreaks.filter(t=>t.id!==a[0]);touch();break;
+    case 'finpick':{
+      const cut=resolveCut(computeStandings(S),S.finalists,S.tiebreaks);if(!cut.finalists) break;
+      S.finale.push({id:'f'+(S.seq++),gameId:a[0],ids:cut.finalists.slice(),places:{}});touch();break;
+    }
+    case 'finundo':S.finale=S.finale.filter(f=>f.id!==a[0]);touch();break;
+    case 'rematch':{
+      const last=S.finale[S.finale.length-1];if(!last||!tableDone(last)) break;
+      S.finale.push({id:'f'+(S.seq++),gameId:document.getElementById('rm-game').value,ids:winnersOf(last),places:{}});touch();break;
+    }
+    case 'trophy':{const T=trophyData(S);if(T)saveTrophy(T,a[0],'dl-msg');return false;}
+    case 'ptrophy':{const e=S.archive[+a[0]];if(e)saveTrophy(e.data,a[1],'dl-msg2');return false;}
+  }
+  return true;
+}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el||el.disabled) return;
+  if(VIEW&&!VIEW_OK.includes(el.dataset.act)) return;
+  if(el.tagName==='INPUT'||el.tagName==='SELECT') return;
+  if(act(el.dataset.act,(el.dataset.a||'').split('|'),el)!==false) render();
+});
+document.addEventListener('change',e=>{
+  if(VIEW) return;
+  const el=e.target;
+  if(el.dataset&&el.dataset.act==='gtoggle'){const g=gameOf(S,el.dataset.a);if(g){g.on=el.checked;touch();render();}}
+});
+document.addEventListener('input',e=>{
+  if(VIEW) return;
+  const el=e.target;
+  if(el.dataset&&el.dataset.act==='setname'){const p=S.players.find(p=>p.id===el.dataset.a);if(p){p.name=el.value.trim()||('Player '+(S.players.indexOf(p)+1));touch();}}
+});
+
+/* ---------- GitHub Pages layer: the host publishes data.json, viewers read it ---------- */
+const VIEW_OK=['tab','open','trophy','ptrophy'];
+const GHK='ubg-gh', BKK='ubg-bk';
+let GH={};try{GH=JSON.parse(localStorage.getItem(GHK))||{};}catch(e){}
+if(!GH.repo&&/\.github\.io$/i.test(location.hostname)){const o=location.hostname.split('.')[0];GH.repo=o+'/'+(location.pathname.split('/')[1]||(o+'.github.io'));}
+GH.branch=GH.branch||'main'; if(GH.auto===undefined) GH.auto=true;
+let ghNote='',ghTimer=null,ghBusy=false,ghPending=false,viewMsg='';
+const ghSave=()=>{try{localStorage.setItem(GHK,JSON.stringify(GH));}catch(e){}};
+const ghMsg=t=>{const el=document.getElementById('gh-msg');if(el)el.textContent=t;};
+const clock=()=>new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+function anchorSave(name,blob){
+  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
+function ghSchedule(){
+  if(VIEW||!GH.token||!GH.repo||!GH.auto||!(S.t>0)) return;
+  clearTimeout(ghTimer);ghTimer=setTimeout(ghPublish,4000);
+}
+async function ghPublish(){
+  if(VIEW) return;
+  if(ghBusy){ghPending=true;return;}
+  if(!GH.token||!GH.repo){ghNote='Add your repo and token to publish.';setStatus();return;}
+  ghBusy=true;ghNote='Publishing…';setStatus();
+  const url='https://api.github.com/repos/'+GH.repo+'/contents/data.json';
+  const H={Authorization:'Bearer '+GH.token,Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+  let ok=false;
+  try{
+    const snapshot=JSON.stringify(S);
+    for(let tries=0;tries<3&&!ok;tries++){
+      let sha;
+      const g=await fetch(url+'?ref='+encodeURIComponent(GH.branch)+'&t='+Date.now(),{headers:H,cache:'no-store'});
+      if(g.ok) sha=(await g.json()).sha;
+      else if(g.status===401||g.status===403) throw new Error('auth');
+      else if(g.status!==404) throw new Error('http '+g.status);
+      const body={message:'Update tournament',content:btoa(unescape(encodeURIComponent(snapshot))),branch:GH.branch};
+      if(sha) body.sha=sha;
+      const p=await fetch(url,{method:'PUT',headers:H,body:JSON.stringify(body)});
+      if(p.ok){ok=true;ghNote='Published to GitHub at '+clock()+'.';}
+      else if(p.status===401||p.status===403) throw new Error('auth');
+      else if(p.status===404) throw new Error('repo');
+      else if(p.status!==409&&p.status!==422) throw new Error('http '+p.status);
+    }
+    if(!ok) ghNote='GitHub was busy. It will try again on the next change.';
+  }catch(e){
+    ghNote=e.message==='auth'?'GitHub refused it. Check the token and that it allows Contents read and write.':e.message==='repo'?'Repo or branch not found. Check the spelling.':'Could not publish, probably offline. It will try again on the next change.';
+  }
+  ghBusy=false;setStatus();
+  if(ghPending){ghPending=false;ghSchedule();}
+}
+async function ghRestore(){
+  let r;
+  if(GH.token&&GH.repo) r=await fetch('https://api.github.com/repos/'+GH.repo+'/contents/data.json?ref='+encodeURIComponent(GH.branch)+'&t='+Date.now(),{headers:{Authorization:'Bearer '+GH.token,Accept:'application/vnd.github.raw+json'},cache:'no-store'});
+  else r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
+  if(!r.ok) throw new Error('none');
+  const o=await r.json();
+  if(!(o&&o.v===1)) throw new Error('bad');
+  return o;
+}
+function adopt(o){S=ensureDefaults(o);ui.open={};ui.tkey=null;ui.turl=null;ui.view=S.started?'rounds':'setup';ui.touched=true;ui.top=true;touch();render();}
+function viewLink(){return location.origin+location.pathname.replace(/index\.html$/,'')+'?view';}
+function shareCard(){
+  let bk=0;try{bk=+localStorage.getItem(BKK)||0;}catch(e){}
+  const bkt=bk?'Last backup file saved '+new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'.':'No backup file saved yet.';
+  return `<div class="card share"><h2 class="chip c-blue">Share &amp; backup</h2>
+    <p class="hint">Publishing puts a copy of the tournament on GitHub so family can follow along with the viewer link. Only this device, with your token, can change anything.</p>
+    <label class="fld">GitHub repo<input class="inp" data-gh="repo" value="${esc(GH.repo||'')}" placeholder="yourname/game-night" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <label class="fld">Branch<input class="inp" data-gh="branch" value="${esc(GH.branch||'main')}" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <label class="fld">Access token (stays on this device)<input class="inp" type="password" data-gh="token" value="${esc(GH.token||'')}" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <label class="chk"><input type="checkbox" data-gh="auto"${GH.auto?' checked':''}> Publish automatically after each change</label>
+    <div class="rfoot"><button type="button" class="btn sm primary" data-ghb="publish">Publish now</button><button type="button" class="btn sm ghost" data-ghb="restore">Restore from published copy</button></div>
+    <h3>Viewer link</h3>
+    <div class="linkbox mono" id="gh-link">${esc(viewLink())}</div>
+    <div class="rfoot"><button type="button" class="btn sm" data-ghb="copy">Copy link</button><button type="button" class="btn sm" data-ghb="share">Share…</button></div>
+    <h3>Backup file</h3>
+    <p class="hint" id="gh-bk">${esc(bkt)} Save one after each game night. If this device ever clears its data, load it back here.</p>
+    <div class="rfoot"><button type="button" class="btn sm" data-ghb="export">Export progress</button><button type="button" class="btn sm" data-ghb="import">Import file</button><input type="file" id="gh-file" accept=".json,application/json" hidden></div>
+    <p class="hint" id="gh-msg" role="status" aria-live="polite"></p></div>`;
+}
+document.addEventListener('change',e=>{
+  if(VIEW) return;
+  const el=e.target;
+  if(el.dataset&&el.dataset.gh){
+    const k=el.dataset.gh;GH[k]=el.type==='checkbox'?el.checked:el.value.trim();
+    if(k==='repo') GH.repo=GH.repo.replace(/^https?:\/\/github\.com\//i,'').replace(/\.git$/,'').replace(/\/+$/,'');
+    ghSave();ghMsg('Saved.');if(k==='token'||k==='repo'||k==='auto') ghSchedule();
+  }
+  if(el.id==='gh-file'&&el.files&&el.files[0]){
+    const f=el.files[0];el.value='';
+    f.text().then(t=>{
+      const o=JSON.parse(t);
+      if(!(o&&o.v===1&&Array.isArray(o.players))) throw new Error('bad');
+      if(S.started&&!confirm('Replace the tournament on this device with the one in that file?')) return;
+      adopt(o);
+    }).catch(()=>ghMsg('That file is not a Game Night Gauntlet backup.'));
+  }
+});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-ghb]');if(!b||VIEW) return;
+  const k=b.dataset.ghb;
+  try{
+    if(k==='publish'){
+      if(!(S.t>0)){ghMsg('Nothing to publish yet.');return;}
+      ghMsg('Publishing…');clearTimeout(ghTimer);await ghPublish();ghMsg(ghNote);
+    }else if(k==='restore'){
+      ghMsg('Looking for the published copy…');
+      const o=await ghRestore();
+      if(S.started&&!confirm('Replace the tournament on this device with the published copy?')){ghMsg('');return;}
+      adopt(o);
+    }else if(k==='copy'){
+      await navigator.clipboard.writeText(viewLink());ghMsg('Link copied.');
+    }else if(k==='share'){
+      if(navigator.share) await navigator.share({title:'Game Night Gauntlet',url:viewLink()});
+      else{await navigator.clipboard.writeText(viewLink());ghMsg('Link copied.');}
+    }else if(k==='export'){
+      const d=new Date(),p=n=>String(n).padStart(2,'0');
+      anchorSave('game-night-gauntlet-backup-'+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'.json',new Blob([JSON.stringify(S)],{type:'application/json'}));
+      try{localStorage.setItem(BKK,String(Date.now()));}catch(e2){}
+      ghMsg('Backup saved. Look in your Downloads or Files app.');
+    }else if(k==='import'){
+      document.getElementById('gh-file').click();
+    }
+  }catch(err){
+    if(err&&err.name==='AbortError') return;
+    ghMsg(k==='restore'?'No published copy found yet.':'That did not work on this device.');
+  }
+});
+async function viewPoll(){
+  try{
+    const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
+    if(r.status===404) viewMsg='The host has not published a tournament yet.';
+    else if(r.ok){
+      const o=await r.json();
+      if(o&&o.v===1){
+        viewMsg='Updated '+new Date(o.t||Date.now()).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})+'. This page refreshes by itself.';
+        if(o.t!==S.t){S=ensureDefaults(o);renderSafe();}
+      }
+    }
+  }catch(e){viewMsg='Could not reach the page right now. Trying again.';}
+  setStatus();
+}
+function startGh(){
+  document.body.classList.toggle('view',VIEW);
+  if(VIEW){
+    document.title='Game Night Gauntlet · live';
+    viewPoll();setInterval(viewPoll,45000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden) viewPoll();});
+  }else{
+    try{if(navigator.storage&&navigator.storage.persist) navigator.storage.persist();}catch(e){}
+    setStatus();
+  }
+}
+render();
+initDb();
+startGh();
+
+</script>
+
+</html>
