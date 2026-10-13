@@ -205,6 +205,7 @@ details.add summary{cursor:pointer;font-weight:700}
 .cp{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-mono);font-size:.85rem}
 .cp button{width:28px;height:28px;border:2px solid var(--edge);border-radius:8px;background:var(--raise);font-weight:800;line-height:1}
 .stack{display:flex;flex-direction:column;gap:12px}
+.stars{display:block;color:#C99A00;letter-spacing:.12em;font-size:1.1rem;line-height:1.2}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pcard{background:var(--surface);border:2px solid var(--edge);border-radius:16px;box-shadow:0 4px 0 var(--shadow);overflow:hidden}
 .pcard.open{grid-column:1/-1}
@@ -299,7 +300,7 @@ function fresh(){
   return {v:1,t:0,seq:1,pseq:7,tid:null,
     players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),
     games:DEFAULT_GAMES.map(g=>({...g})),
-    finalists:3,headStart:0.5,nightHours:3,winnerStays:true,order:'smart',gv:1,bkNights:0,
+    finalists:3,headStart:2,nightHours:3,winnerStays:true,order:'smart',gv:1,bkNights:0,
     started:false,rounds:[],tiebreaks:[],finale:[],archive:[]};
 }
 /* How n players split across tables for a game with seat range min..max. */
@@ -464,15 +465,32 @@ function planNights(mins,hours){
   return nights;
 }
 /* The final: places pay points, and qualifying rank can add a head start (q places per seed step). */
+const HS_CARRY=2; /* head start mode: qualifying points carry into the final */
+const hsCarry=S=>S.headStart===HS_CARRY;
 function finalBonuses(m,q){const g=10*FINAL_W/(m-1);return Array.from({length:m},(_,s)=>q*g*(m-1-s));}
+/* Carry over: the final's top payout grows with the qualifying gap, so the title is never decided before the final. */
+function finalPool(S,ids){
+  const base=10*FINAL_W;
+  if(!hsCarry(S)||!ids||ids.length<2) return base;
+  const rows=computeStandings(S), qp=ids.map(id=>(rows.find(r=>r.id===id)||{pts:0}).pts);
+  return Math.max(base,Math.ceil(qp[0]-qp[qp.length-1])+10);
+}
 function finalScores(S,e){
   if(!tableDone(e)) return null;
-  const pts=tablePoints(e.ids,e.places,true), b=finalBonuses(e.ids.length,S.headStart||0);
-  const rows=e.ids.map((id,s)=>{const base=pts[id]*FINAL_W;return {id,seed:s+1,place:e.places[id],base,bonus:b[s],total:Math.round((base+b[s])*100)/100};});
+  const pts=tablePoints(e.ids,e.places,true), pool=finalPool(S,e.ids);
+  let b;
+  if(hsCarry(S)){const qp={};computeStandings(S).forEach(r=>{qp[r.id]=r.pts;});b=e.ids.map(id=>qp[id]||0);}
+  else b=finalBonuses(e.ids.length,S.headStart||0);
+  const rows=e.ids.map((id,s)=>{const base=pts[id]*pool/10;return {id,seed:s+1,place:e.places[id],base,bonus:b[s],total:Math.round((base+b[s])*100)/100};});
   rows.sort((a,z)=>z.total-a.total||a.seed-z.seed);
   return rows;
 }
 function finalWinner(S){
+  if(S.finalists===1){
+    if(!S.started||S.rounds.some(r=>!roundDone(r))) return null;
+    const c=resolveCut(computeStandings(S),1,S.tiebreaks);
+    return c.finalists&&c.finalists.length===1?c.finalists[0]:null;
+  }
   if(!S.finale.length) return null;
   if(S.headStart>0){const sc=finalScores(S,S.finale[0]);return sc?sc[0].id:null;}
   const last=S.finale[S.finale.length-1]; if(!tableDone(last)) return null;
@@ -480,20 +498,27 @@ function finalWinner(S){
 }
 function perms(a){if(a.length<=1)return [a.slice()];const o=[];a.forEach((x,i)=>{perms(a.slice(0,i).concat(a.slice(i+1))).forEach(p=>o.push([x].concat(p)));});return o;}
 /* For each seed, the lowest finishing place that can still win the title. */
-function headStartReach(m,q){
-  const b=finalBonuses(m,q), res=Array(m).fill(0);
+function headStartReach(m,q,bOver,pool){
+  const b=bOver||finalBonuses(m,q), res=Array(m).fill(0), P=pool||10*FINAL_W;
   perms([...Array(m).keys()]).forEach(order=>{
     let bw=-1,bt=-1;
-    order.forEach((seed,k)=>{const t=Math.round((10*FINAL_W*(m-1-k)/(m-1)+b[seed])*100)/100;if(t>bt||(t===bt&&seed<bw)){bt=t;bw=seed;}});
+    order.forEach((seed,k)=>{const t=Math.round((P*(m-1-k)/(m-1)+b[seed])*100)/100;if(t>bt||(t===bt&&seed<bw)){bt=t;bw=seed;}});
     res[bw]=Math.max(res[bw],order.indexOf(bw)+1);
   });
   return res;
+}
+/* Gauntlet rank: 0 to 5 stars from how much was played (round weights, scaled by table size, plus the final). */
+function gauntletStars(S,hasFinal){
+  let w=0;for(const rd of S.rounds){const g=gameOf(S,rd.gameId);w+=g?g.weight:1;}
+  const f=Math.min(1.5,Math.max(0.5,S.players.length/6));
+  return Math.min(5,Math.floor((w*f+(hasFinal?FINAL_W:0))/3));
 }
 function phaseOf(S){
   if(!S.started) return 'setup';
   if(S.rounds.some(r=>!roundDone(r))) return 'qual';
   const c=resolveCut(computeStandings(S),S.finalists,S.tiebreaks);
   if(c.pending) return 'tie';
+  if(S.finalists===1) return 'champion';
   if(!S.finale.length) return 'pickfinal';
   const last=S.finale[S.finale.length-1];
   if(!tableDone(last)) return 'final';
@@ -508,25 +533,26 @@ function trophyData(S){
   const nm=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
   let best=null;
   for(const rd of S.rounds){const v=me.per[rd.id]; if(v!==undefined&&(!best||v>best.v)){const g=gameOf(S,rd.gameId);best={v:r1(v),game:g?g.name:''};}}
-  const first=S.finale[0], last=S.finale[S.finale.length-1], fg=gameOf(S,first.gameId);
+  const solo=S.finalists===1, first=S.finale[0], last=S.finale[S.finale.length-1], fg=solo?null:gameOf(S,first.gameId);
   const played=[],seenG=new Set();
   for(const rd of S.rounds){if(!rd.tables.some(t=>t.ids.includes(champ))) continue;const gg=gameOf(S,rd.gameId);if(gg&&!seenG.has(gg.name)){seenG.add(gg.name);played.push(gg.name);}}
   if(fg) played.push('Final: '+fg.name);
   const rlist=S.rounds.map(rd=>{const g=gameOf(S,rd.gameId);return {n:g?g.name:'?',w:g?g.weight:1};});
   const hs=String(S.tid||S.finishedAt||'x');let cw=0;for(let i=0;i<hs.length;i++) cw=(cw*31+hs.charCodeAt(i))>>>0;
   let fin;
-  if(S.headStart>0) fin=finalScores(S,first).map(x=>({name:nm(x.id),place:x.place,seed:x.seed,base:r1(x.base),bonus:r1(x.bonus),total:r1(x.total)}));
+  if(solo) fin=[];
+  else if(S.headStart>0) fin=finalScores(S,first).map(x=>({name:nm(x.id),place:x.place,seed:x.seed,base:r1(x.base),bonus:r1(x.bonus),total:r1(x.total)}));
   else fin=last.ids.slice().sort((a,b)=>last.places[a]-last.places[b]).map(id=>({name:nm(id),place:last.places[id],seed:first.ids.indexOf(id)+1}));
   const names=[...new Set(S.rounds.map(r=>{const g=gameOf(S,r.gameId);return g?g.name:'';}))];
   return {title:'Game Night Gauntlet',date:S.finishedAt||Date.now(),
     champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
-    played,rlist,cw:cw%6,best,finalGame:fg?fg.name:'',scored:S.headStart>0,final:fin,
+    played,rlist,cw:cw%6,best,finalGame:fg?fg.name:'',solo,stars:gauntletStars(S,!solo),runner:rows[1]?rows[1].name:'',margin:rows[1]?r1(me.pts-rows[1].pts):0,scored:!solo&&S.headStart>0,carry:hsCarry(S),final:fin,
     standings:rows.map(r=>({name:r.name,pts:r.pts,rank:r.rank,color:pcol(r.id),champ:r.id===champ})),
     rounds:S.rounds.length,players:S.players.length,games:names.length};
 }
 /* Saved tournaments pick up settings and games added later. */
 function ensureDefaults(S){
-  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.winnerStays===undefined) S.winnerStays=true; if(S.order===undefined) S.order=S.heavyLast===false?'list':'smart'; delete S.heavyLast; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5;
+  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.winnerStays===undefined) S.winnerStays=true; if(S.order===undefined) S.order=S.heavyLast===false?'list':'smart'; delete S.heavyLast; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5; if(!S.hv){S.hv=1;if(!S.finale.length&&S.headStart===0.5) S.headStart=HS_CARRY;}
   S.games.forEach(g=>{if(!g.copies) g.copies=1;});
   if(!S.gv){
     S.gv=1;
@@ -1308,8 +1334,20 @@ function nightsOf(){
   const mins=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return roundMinutes(g,r.tables.length,r.tables.some(t=>t.ids.length>g.max));});
   return {mins,nights:planNights(mins,S.nightHours||3)};
 }
-const HS_OPTS=[[0,'Off'],[0.5,'Medium'],[1,'Large']];
-function headStartText(m,q){
+const HS_OPTS=[[0,'Off'],[0.5,'Seed bonus'],[HS_CARRY,'Carry over']];
+function headStartText(m,q,ids,S0){
+  if(m<2) return 'With one finalist there is no final game.';
+  if(q===HS_CARRY){
+    let pool=10*FINAL_W, qp=null, rows=null;
+    if(ids&&S0){rows=computeStandings(S0);qp=ids.map(id=>(rows.find(r=>r.id===id)||{pts:0}).pts);pool=Math.max(pool,Math.ceil(qp[0]-qp[m-1])+10);}
+    const pay=Array.from({length:m},(_,k)=>fmt(pool*(m-1-k)/(m-1))).join(' / ');
+    let t=`Qualifying points carry into the final. The final pays ${pay} points for 1st to last${ids&&S0?'':' (at least 20 for first, more when the finalists are far apart so the title is never settled early)'}, added to each finalist's qualifying total. The highest combined total wins, and a tie goes to the higher seed.`;
+    if(qp){
+      const reach=headStartReach(m,q,qp,pool), names=ids.map(id=>(rows.find(r=>r.id===id)||{name:'?'}).name);
+      t+=' '+reach.map((p,i)=>names[i]+' ('+fmt(qp[i])+') '+(p<1?'cannot catch up':p===1?'must win':'can finish '+ord(p)+' or better')).join('; ')+'.';
+    }
+    return t;
+  }
   if(q<=0) return 'Clean slate: the final game alone decides the champion. A tie for first means a rematch.';
   const b=finalBonuses(m,q), reach=headStartReach(m,q);
   const starts=b.map((v,i)=>'seed '+(i+1)+' +'+fmt(v)).join(', ');
@@ -1322,8 +1360,8 @@ function viewSetup(){
   const n=S.players.length, locked=S.started, maxF=Math.min(4,n-1);
   if(S.finalists>maxF) S.finalists=maxF;
   const players=S.players.map((p,i)=>`<li class="prow2"><span class="pnum mono">${i+1}</span><input class="inp" id="pn-${p.id}" value="${esc(p.name)}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name">${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>`).join('');
-  const fopts=[];for(let k=2;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
-  const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
+  const fopts=[];for(let k=1;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
+  const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${q===0.5?((S.headStart||0)===0.5||S.headStart===1):(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
   const ws=S.winnerStays!==false, ord=S.order||'smart';
   let total=0,valid=0,skipped=[],sit=[]; const minsList=[];
   const games=S.games.map((g,i)=>{
@@ -1373,9 +1411,9 @@ function viewSetup(){
     ${locked||n>=MAXP?'':`<p><button type="button" class="btn" data-act="addplayer">Add a player</button></p>`}</section>
   <section class="card"><div class="cardhead"><h2 class="chip c-yellow">Finalists</h2>
     <div class="seg" role="group" aria-label="Number of finalists">${fopts.join('')}</div></div>
-    <p class="muted">After the last round, the top ${S.finalists} play one final game. A tie at the cut line gets a playoff.</p>
+    ${S.finalists===1?`<p class="muted">No final game: whoever leads after the last round is crowned. A tie for first gets a playoff.</p>`:`<p class="muted">After the last round, the top ${S.finalists} play one final game. A tie at the cut line gets a playoff.</p>
     <div class="cardhead"><h3>Head start in the final</h3><div class="seg" role="group" aria-label="Head start in the final">${hsb}</div></div>
-    <p class="muted">${esc(headStartText(S.finalists,S.headStart||0))}</p></section>
+    <p class="muted">${esc(headStartText(S.finalists,S.headStart||0))}</p>`}</section>
   ${rules}
   <section class="card"><div class="cardhead"><h2 class="chip c-green">Games</h2><span class="muted">Weight multiplies placement points</span></div>
     <ul class="glist">${games}</ul>${addForm}</section>
@@ -1461,7 +1499,7 @@ function viewFinale(){
     }
   }
   const first=S.finale[0];
-  if(ph==='pickfinal'||ph==='final'||ph==='champion'||ph==='rematch'){
+  if(S.finalists!==1&&(ph==='pickfinal'||ph==='final'||ph==='champion'||ph==='rematch')){
     const ids=first?first.ids:cut.finalists;
     out+=`<div class="card"><h3>Finalists, by qualifying rank</h3><div class="seeds">${ids.map((id,i)=>{const r=rows.find(x=>x.id===id);return `<span class="seed"><span class="mono">#${i+1}</span>${pdot(id)}${esc(r.name)}<span class="mono"> ${fmt(r.pts)}</span></span>`;}).join('')}</div></div>`;
   }
@@ -1470,7 +1508,7 @@ function viewFinale(){
     const score=g=>-Math.abs(g.mins-35)/10-Math.abs(g.luck-2)*1.2;
     const top=new Set(opts.slice().sort((a,b)=>score(b)-score(a)).slice(0,3).map(g=>g.id));
     out+=`<div class="card"><h2>Choose the final game</h2><p class="muted">Games that seat exactly ${m} players. Suggested ones take about half an hour and let skill beat luck.</p>
-      <p class="muted">${esc(headStartText(m,S.headStart||0))}</p>
+      <p class="muted">${esc(headStartText(m,S.headStart||0,cut.finalists,S))}</p>
       <div>${opts.sort((a,b)=>score(b)-score(a)).map(g=>`<div class="cand"><div class="info"><b>${esc(g.name)}${top.has(g.id)?'<span class="badge">Suggested</span>':''}</b><small class="mono">${g.mins} min · luck ${dots(g.luck)}</small></div><button type="button" class="btn${top.has(g.id)?' primary':''}" data-act="finpick" data-a="${g.id}">Play this</button></div>`).join('')}</div>
       ${opts.length?'':`<p class="muted">No game on the list seats ${m} players. Add one in Setup.</p>`}</div>`;
   }
@@ -1481,9 +1519,9 @@ function viewFinale(){
   }
   const scored=S.headStart>0&&first&&tableDone(first)?finalScores(S,first):null;
   if(ph==='champion'){
-    const w=finalWinner(S), g=gameOf(S,S.finale[0].gameId);
-    const line=scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
-    out=`<div class="card gold champ">${meeple(pcol(w),72)}<div class="txt"><span class="lbl">Ultimate Board Gamer</span><span class="name">${esc(pname(w))}</span><p>${esc(line)}</p></div></div>
+    const w=finalWinner(S), solo=S.finalists===1, g=solo?null:gameOf(S,S.finale[0].gameId), stars=gauntletStars(S,!solo);
+    const line=solo?`Led the standings after ${S.rounds.length} round${S.rounds.length===1?'':'s'}.`:scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
+    out=`<div class="card gold champ">${meeple(pcol(w),72)}<div class="txt"><span class="lbl">Ultimate Board Gamer</span><span class="name">${esc(pname(w))}</span>${stars?`<span class="stars" aria-label="${stars}-star gauntlet">${'★'.repeat(stars)}</span>`:''}<p>${esc(line)}</p></div></div>
       <div class="card" id="trophy-card"><div class="cardhead"><h2 class="chip c-yellow">Keepsake trophy</h2><span class="muted">PDF prints on half a letter page</span></div>
         <img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}. Tap to save to Photos." data-act="photo" role="button" tabindex="0" style="cursor:pointer" hidden>
         <div class="rfoot"><button type="button" class="btn primary" data-act="trophy" data-a="pdf">Save PDF</button><button type="button" class="btn" data-act="trophy" data-a="png">Save image</button></div><p class="hint">The image is sized for a phone screen, handy for sharing in chats. The PDF is the half-page print.</p>
@@ -1494,10 +1532,10 @@ function viewFinale(){
     S.finale.forEach((f,i)=>{
       const g=gameOf(S,f.gameId);
       let subs=null;
-      if(S.headStart>0&&i===0){const b=finalBonuses(f.ids.length,S.headStart);subs={};f.ids.forEach((id,s)=>{subs[id]='Seed '+(s+1)+' · starts +'+fmt(b[s]);});}
+      if(S.headStart>0&&i===0){const b=hsCarry(S)?f.ids.map(id=>(rows.find(r=>r.id===id)||{pts:0}).pts):finalBonuses(f.ids.length,S.headStart);subs={};f.ids.forEach((id,s)=>{subs[id]='Seed '+(s+1)+' · starts '+(hsCarry(S)?'at ':'+')+fmt(b[s]);});}
       out+=`<div class="card"><div class="cardhead"><h3>${i===0?'Final':'Rematch'} · ${esc(g?g.name:'')}</h3>${!hasPlaces(f)&&i===S.finale.length-1?`<button type="button" class="btn sm ghost" data-act="finundo" data-a="${f.id}">Change game</button>`:''}</div>${tableBlock('f',f.id,0,f,0,'',subs)}</div>`;
       if(i===0&&scored){
-        out+=`<div class="card"><h3>Final scores</h3>${scored.map((x,k)=>`<div class="pr"><div class="pn"><span class="nm">${pdot(x.id)}${esc(pname(x.id))}${k===0?'<span class="badge">Champion</span>':''}</span><span class="pp mono">${ord(x.place)} place +${fmt(x.base)} · head start +${fmt(x.bonus)}</span></div><span class="pts mono">${fmt(x.total)}</span></div>`).join('')}</div>`;
+        out+=`<div class="card"><h3>Final scores</h3>${scored.map((x,k)=>`<div class="pr"><div class="pn"><span class="nm">${pdot(x.id)}${esc(pname(x.id))}${k===0?'<span class="badge">Champion</span>':''}</span><span class="pp mono">${ord(x.place)} place +${fmt(x.base)} · ${hsCarry(S)?'qualifying':'head start'} +${fmt(x.bonus)}</span></div><span class="pts mono">${fmt(x.total)}</span></div>`).join('')}</div>`;
       }
     });
   }
@@ -1524,8 +1562,8 @@ function viewHistory(){
   const crownSvg=(T,w)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/></svg>`;
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
     const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/></svg>`).join('');
-    return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84)}<span class="pname">${esc(T.champ.name)}</span><span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
-      ${op?`<div class="pdet"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><p class="muted">${esc(T.finalGame)} final · ${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|pdf">Trophy PDF</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|png">Trophy image</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
+    return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
+      ${op?`<div class="pdet"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|pdf">Trophy PDF</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|png">Trophy image</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
   return `<section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
 function histCard(tag,g,ts,tables,w,byes){
@@ -1559,6 +1597,13 @@ function gamesGrid(x,T,L,top,W,rows,pitch,fs,B,M){
     x.fillStyle=g.fin?'#2D2A32':'#5F584D';x.fillText(label,cx+2*r0+12,y);
   });
 }
+function drawStars(x,cx,cy,r,n,gap){
+  const tot=n*2*r+(n-1)*gap;let sx=cx-tot/2+r;
+  for(let k=0;k<n;k++,sx+=2*r+gap){
+    x.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*0.45:r;x.lineTo(sx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}
+    x.closePath();x.fillStyle='#FFD84D';x.fill();x.lineWidth=r*0.18;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke();
+  }
+}
 function playedLines(x,T,maxW,maxLines){
   const names=(T.played&&T.played.length)?T.played:[];
   if(!names.length) return [];
@@ -1583,7 +1628,7 @@ function playedLines(x,T,maxW,maxLines){
 }
 function trophyStats(T){
   const fin0=T.final.find(f=>f.place===1)||T.final[0];
-  return [['TOTAL POINTS',T.champ.pts.toFixed(1),'qualifying rounds'],['ROUND WINS',String(T.champ.wins),'of '+T.champ.played+' rounds played'],['QUALIFYING RANK','#'+T.champ.rank,'of '+T.players+' players'],['BEST ROUND',T.best?'+'+T.best.v.toFixed(1):'-',T.best?T.best.game:''],T.scored?['FINAL SCORE',(T.final.find(f=>f.name===T.champ.name)||fin0).total.toFixed(1),'head start included']:['THE FINAL','1st','at '+T.finalGame]];
+  return [['TOTAL POINTS',T.champ.pts.toFixed(1),'qualifying rounds'],['ROUND WINS',String(T.champ.wins),'of '+T.champ.played+' rounds played'],['QUALIFYING RANK','#'+T.champ.rank,'of '+T.players+' players'],['BEST ROUND',T.best?'+'+T.best.v.toFixed(1):'-',T.best?T.best.game:''],T.solo?['WINNING MARGIN','+'+(T.margin||0).toFixed(1),T.runner?'over '+T.runner:'']:T.scored?[T.carry?'COMBINED TOTAL':'FINAL SCORE',(T.final.find(f=>f.name===T.champ.name)||fin0).total.toFixed(1),T.carry?'qualifying + final':'head start included']:['THE FINAL','1st','at '+T.finalGame]];
 }
 /* An 8.5 x 5.5 inch page drawn at 300 dpi. */
 async function drawTrophy(T){
@@ -1609,15 +1654,17 @@ async function drawTrophy(T){
   spacing(8);font('700',44,M);const lbl='ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
   rr(144,312,lw+24,66,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.fillText(lbl,156,360);spacing(0);
   const ns=fit(T.champ.name,'800',D,1130,230,90);font('800',ns,D);x.fillStyle=ink;x.fillText(T.champ.name,150,600);
-  const fs=fit('Won the final at '+T.finalGame,'500',B,1130,56,34);font('500',fs,B);x.fillStyle=muted;x.fillText('Won the final at '+T.finalGame,150,690);
-  drawChamp(x,150,770,340,T);
+  const wl=T.solo?'Won the gauntlet on points':'Won the final at '+T.finalGame;const fs=fit(wl,'500',B,1130,56,34);font('500',fs,B);x.fillStyle=muted;x.fillText(wl,150,690);
+  const cxl=T.solo?580:320;drawChamp(x,cxl-170,735,340,T);if(T.stars) drawStars(x,cxl,1082,22,T.stars,14);
   /* the final */
+  if(!T.solo){
   spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText('THE FINAL',600,770);spacing(0);
   const fl=T.final.slice(0,4);fl.forEach((f,i)=>{const y=822+i*84;
     x.beginPath();x.arc(640,y+34,34,0,Math.PI*2);x.fillStyle=BRC[(f.place-1+2)%6];x.fill();x.lineWidth=5;x.strokeStyle=edge;x.stroke();
     x.fillStyle=ink;font('800',38,D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(f.place),640,y+36);x.textAlign='left';x.textBaseline='alphabetic';
     const s=fit(f.name,'700',B,430,52,30);font('700',s,B);x.fillStyle=ink;x.fillText(f.name,700,y+52);
     font('700',46,M);x.textAlign='right';x.fillStyle=ink;x.fillText(T.scored?f.total.toFixed(1):ordn(f.place),1290,y+52);x.textAlign='left';});
+  }
   /* qualifying standings */
   spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText('QUALIFYING STANDINGS',1420,330);spacing(0);
   const nn=T.standings.length,rh=Math.min(104,Math.floor(790/nn));
@@ -1665,9 +1712,9 @@ async function drawTrophyPhone(T){
   font('700',34,M);x.fillStyle=muted;ctr(dstr(T.date),298);
   spacing(8);font('700',40,M);const lbl='ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
   rr((W-lw)/2-18,340,lw+36,64,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.textAlign='center';x.fillText(lbl,W/2+4,386);x.textAlign='left';spacing(0);
-  drawChamp(x,(W-300)/2,430,300,T);
+  drawChamp(x,(W-300)/2,420,300,T);if(T.stars) drawStars(x,W/2,740,26,T.stars,16);
   const ns=fit(T.champ.name,'800',D,W-200,170,80);font('800',ns,D);x.fillStyle=ink;ctr(T.champ.name,932);
-  const sub='Won the final at '+T.finalGame;const fs=fit(sub,'500',B,W-200,50,32);font('500',fs,B);x.fillStyle=muted;ctr(sub,1012);
+  const sub=T.solo?'Won the gauntlet on points':'Won the final at '+T.finalGame;const fs=fit(sub,'500',B,W-200,50,32);font('500',fs,B);x.fillStyle=muted;ctr(sub,1012);
   /* stats */
   const stats=trophyStats(T),bw=(W-200-30)/2,bh=186;
   stats.forEach((s,i)=>{
@@ -1678,23 +1725,24 @@ async function drawTrophyPhone(T){
     const vs=fit(s[1],'800',D,w-50,96,52);font('800',vs,D);x.fillText(s[1],bx+w/2,by+110);
     const ss=fit(s[2],'500',B,w-40,30,20);font('500',ss,B);x.fillStyle=muted;x.fillText(s[2],bx+w/2,by+166);x.textAlign='left';x.textBaseline='alphabetic';});
   /* the final and the qualifying standings, side by side */
-  spacing(4);font('700',28,M);x.fillStyle=muted;x.fillText('THE FINAL',100,1704);x.fillText('STANDINGS',620,1704);spacing(0);
-  const fl=T.final.slice(0,4),nn=T.standings.length,p=Math.min(60,Math.floor(330/Math.max(nn,fl.length)));
+  const sx=T.solo?100:620;
+  spacing(4);font('700',28,M);x.fillStyle=muted;if(!T.solo)x.fillText('THE FINAL',100,1704);x.fillText('STANDINGS',sx,1704);spacing(0);
+  const fl=T.solo?[]:T.final.slice(0,4),nn=T.standings.length,p=Math.min(60,Math.floor(330/Math.max(nn,fl.length)));
   fl.forEach((f,i)=>{const y=1726+i*p,mid=y+p/2,r=p*0.36;
     x.beginPath();x.arc(100+r,mid,r,0,Math.PI*2);x.fillStyle=BRC[(f.place-1+2)%6];x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
     x.fillStyle=ink;font('800',Math.round(p*0.4),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(f.place),100+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
     const sz=fit(f.name,'700',B,250,Math.round(p*0.5),20);font('700',sz,B);x.fillText(f.name,100+2*r+16,mid+sz*0.34);
     font('700',Math.round(p*0.44),M);x.textAlign='right';x.fillText(T.scored?f.total.toFixed(1):ordn(f.place),540,mid+p*0.15);x.textAlign='left';});
   T.standings.forEach((s,i)=>{const y=1726+i*p,mid=y+p/2,r=p*0.36;
-    if(s.champ){rr(606,y+2,464,p-4,12);x.fillStyle='#FFF1B8';x.fill();}
-    x.beginPath();x.arc(620+r,mid,r,0,Math.PI*2);x.fillStyle=s.rank===1?'#FFD84D':s.rank===2?'#7CC6F5':s.rank===3?'#FF8A78':'#FFFFFF';x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
-    x.fillStyle=ink;font('800',Math.round(p*0.4),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(s.rank),620+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
-    const mz=p*0.5,mcx=620+2*r+26;drawMeeple(x,mcx-mz/2,mid-mz/2,mz,s.color,5);
-    const sz=fit(s.name,'700',B,190,Math.round(p*0.5),18);font('700',sz,B);x.fillStyle=ink;x.fillText(s.name,mcx+mz/2+12,mid+sz*0.34);
-    font('700',Math.round(p*0.42),M);x.textAlign='right';x.fillText(s.pts.toFixed(1),1060,mid+p*0.15);x.textAlign='left';});
+    if(s.champ){rr(sx-14,y+2,(T.solo?W-172:464),p-4,12);x.fillStyle='#FFF1B8';x.fill();}
+    x.beginPath();x.arc(sx+r,mid,r,0,Math.PI*2);x.fillStyle=s.rank===1?'#FFD84D':s.rank===2?'#7CC6F5':s.rank===3?'#FF8A78':'#FFFFFF';x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
+    x.fillStyle=ink;font('800',Math.round(p*0.4),D);x.textAlign='center';x.textBaseline='middle';x.fillText(String(s.rank),sx+r,mid+2);x.textAlign='left';x.textBaseline='alphabetic';
+    const mz=p*0.5,mcx=sx+2*r+26;drawMeeple(x,mcx-mz/2,mid-mz/2,mz,s.color,5);
+    const sz=fit(s.name,'700',B,(T.solo?600:190),Math.round(p*0.5),18);font('700',sz,B);x.fillStyle=ink;x.fillText(s.name,mcx+mz/2+12,mid+sz*0.34);
+    font('700',Math.round(p*0.42),M);x.textAlign='right';x.fillText(s.pts.toFixed(1),(T.solo?1060:1060),mid+p*0.15);x.textAlign='left';});
   /* every game played */
   spacing(4);font('700',28,M);x.fillStyle=muted;x.fillText('THE GAMES WE PLAYED',100,2112);spacing(0);
-  const gl=(T.rlist&&T.rlist.length?T.rlist.length+1:(T.played||[]).length),grow=Math.ceil(gl/2),gp=Math.min(46,Math.floor(300/grow));
+  const gl=(T.rlist&&T.rlist.length?T.rlist.length+(T.finalGame?1:0):(T.played||[]).length),grow=Math.ceil(gl/2),gp=Math.min(46,Math.floor(300/grow));
   gamesGrid(x,T,100,2170,W-200,grow,gp,Math.min(32,Math.round(gp*0.7)),B,M);
   return c;
 }
@@ -1763,7 +1811,7 @@ function render(){
   try{localStorage.setItem('ubg-view',ui.view);}catch(e){}
   const n=S.players.length;
   document.getElementById('sub').textContent=S.started
-    ?`${n} players · ${S.rounds.length} rounds · top ${S.finalists} play the final`
+    ?(S.finalists===1?`${n} players · ${S.rounds.length} rounds · points leader wins`:`${n} players · ${S.rounds.length} rounds · top ${S.finalists} play the final`)
     :`${n} players · pick the games, then build the rounds`;
   let road='';
   if(S.started){
