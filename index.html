@@ -55,8 +55,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .roadlbl{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
 
 /* tabs */
-.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:6px;margin-top:14px;padding-block:10px;background:var(--bg)}
-.tab{flex:1;min-width:0;padding:9px 4px;border:2px solid transparent;border-radius:12px;background:transparent;font-weight:700;font-size:.92rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:4px;margin-top:14px;padding-block:10px;background:var(--bg)}
+.tab{flex:1 1 auto;min-width:0;padding:9px 6px;border:2px solid transparent;border-radius:12px;background:transparent;font-weight:700;font-size:clamp(.72rem,3.6vw,.92rem);color:var(--muted);white-space:nowrap;text-align:center}
 .tab[aria-current="page"]{color:var(--on-bright);border-color:var(--edge);box-shadow:0 3px 0 var(--shadow)}
 .t-setup[aria-current="page"]{background:var(--c-blue)}
 .t-rounds[aria-current="page"]{background:var(--c-green)}
@@ -204,8 +204,17 @@ details.add summary{cursor:pointer;font-weight:700}
 .tbh2{font-weight:700;font-size:.85rem;color:var(--muted);margin-top:4px}
 .trophy{display:block;width:100%;height:auto;border:2px solid var(--edge);border-radius:12px;background:#fff;box-shadow:0 4px 0 var(--shadow)}
 .small{font-size:.85rem}
-.tab{font-size:.85rem}
 .t-history[aria-current="page"]{background:var(--c-purple)}
+@media (max-width:350px){.tab{padding-inline:3px;font-size:.68rem}.tabs{gap:2px}}
+
+/* v8 additions */
+.bk{border-color:var(--edge);background:var(--c-yellow);margin-bottom:14px}
+.bk .muted{color:var(--on-bright)}
+.catres{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.catit{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 12px;border:2px solid var(--edge);border-radius:12px;background:var(--raise);text-align:left;box-shadow:0 2px 0 var(--shadow)}
+.catit:disabled{opacity:.55;box-shadow:none}
+.catit span{font-size:.8rem;color:var(--muted)}
+.cats{margin-bottom:0}
 
 /* GitHub Pages build */
 body.view [data-act]{pointer-events:none}
@@ -272,12 +281,13 @@ function fresh(){
   return {v:1,t:0,seq:1,pseq:7,tid:null,
     players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),
     games:DEFAULT_GAMES.map(g=>({...g})),
-    finalists:3,headStart:0.5,nightHours:3,
+    finalists:3,headStart:0.5,nightHours:3,winnerStays:true,heavyLast:true,bkNights:0,
     started:false,rounds:[],tiebreaks:[],finale:[],archive:[]};
 }
 /* How n players split across tables for a game with seat range min..max. */
-function layout(n,min,max){
+function layout(n,min,max,ws){
   if(n<min) return null;
+  if(ws&&min===2&&max===2&&n>=3&&n%2===1){const s=Array(Math.floor((n-3)/2)).fill(2);s.push(3);return {sizes:s,byes:0,ladder:true};}
   let k=Math.ceil(n/max), seated=n;
   if(n<k*min){k=k-1;seated=Math.min(n,k*max);}
   if(k<1) return null;
@@ -285,20 +295,21 @@ function layout(n,min,max){
   for(let i=0;i<k;i++) sizes.push(base+(i<extra?1:0));
   return {sizes,byes:n-seated};
 }
-function describeLayout(n,g){
-  const L=layout(n,g.min,g.max);
+function describeLayout(n,g,ws){
+  const L=layout(n,g.min,g.max,ws);
   if(!L) return {ok:false,k:0,text:'Needs at least '+g.min+' players, so it is skipped'};
   const k=L.sizes.length; let t;
-  if(g.min===2&&g.max===2) t=k===1?'1 head-to-head match':k+' head-to-head matches';
+  if(L.ladder) t=k===1?'One winner-stays table of 3':(k-1)+(k===2?' head-to-head match':' head-to-head matches')+' + a winner-stays table of 3';
+  else if(g.min===2&&g.max===2) t=k===1?'1 head-to-head match':k+' head-to-head matches';
   else if(k===1) t='One table of '+L.sizes[0];
   else{const u=[...new Set(L.sizes)]; t=u.length===1?k+' tables of '+u[0]:k+' tables ('+L.sizes.join(' + ')+')';}
   if(L.byes) t+=' · '+L.byes+(L.byes>1?' sit':' sits')+' out';
-  return {ok:true,k,text:t};
+  return {ok:true,k,text:t,ladder:!!L.ladder};
 }
 function pk(a,b){return a<b?a+'|'+b:b+'|'+a;}
 /* Seat players, spreading byes evenly and avoiding repeat opponents. */
-function seatRound(ids,g,pairCount,byeCount){
-  const L=layout(ids.length,g.min,g.max); if(!L) return null;
+function seatRound(ids,g,pairCount,byeCount,ws){
+  const L=layout(ids.length,g.min,g.max,ws); if(!L) return null;
   let pool=shuffle(ids.slice()), byes=[];
   if(L.byes>0){
     pool.sort((a,b)=>(byeCount[a]||0)-(byeCount[b]||0));
@@ -327,7 +338,7 @@ function historyOf(S,skipId){
 function addRound(S,gameId){
   const g=gameOf(S,gameId); if(!g) return false;
   const h=historyOf(S,null);
-  const seat=seatRound(S.players.map(p=>p.id),g,h.pairCount,h.byeCount); if(!seat) return false;
+  const seat=seatRound(S.players.map(p=>p.id),g,h.pairCount,h.byeCount,S.winnerStays!==false); if(!seat) return false;
   S.rounds.push({id:'r'+(S.seq++),gameId,tables:seat.tables.map(t=>({ids:t,places:{}})),byes:seat.byes});
   return true;
 }
@@ -336,13 +347,15 @@ const roundUnscored=r=>!r.tables.some(t=>Object.keys(t.places).length>0);
 function redrawRound(S,rid){
   const r=S.rounds.find(x=>x.id===rid); if(!r||!roundUnscored(r)) return false;
   const g=gameOf(S,r.gameId), h=historyOf(S,rid);
-  const seat=seatRound(S.players.map(p=>p.id),g,h.pairCount,h.byeCount); if(!seat) return false;
+  const seat=seatRound(S.players.map(p=>p.id),g,h.pairCount,h.byeCount,S.winnerStays!==false); if(!seat) return false;
   r.tables=seat.tables.map(t=>({ids:t,places:{}})); r.byes=seat.byes; return true;
 }
 function redrawAll(S){let n=0;for(const r of S.rounds) if(roundUnscored(r)&&redrawRound(S,r.id)) n++;return n;}
 function buildRounds(S){
   S.rounds=[];S.tiebreaks=[];S.finale=[];delete S.finishedAt;
-  for(const g of S.games) if(g.on) addRound(S,g.id);
+  let list=S.games.filter(g=>g.on);
+  if(S.heavyLast!==false) list=list.map((g,i)=>({g,i})).sort((a,b)=>a.g.weight-b.g.weight||a.i-b.i).map(x=>x.g);
+  for(const g of list) addRound(S,g.id);
   S.started=S.rounds.length>0;
   if(S.started) S.tid='t'+Date.now();
   return S.rounds.length;
@@ -406,7 +419,7 @@ function resolveCut(rows,cut,tbs){
 }
 /* Game nights: with one copy of a game its tables take turns. */
 const copiesOf=g=>Math.max(1,g.copies||1);
-const roundMinutes=(g,tables)=>Math.ceil(tables/copiesOf(g))*g.mins;
+const roundMinutes=(g,tables,ladder)=>Math.ceil((tables+(ladder?2:0))/copiesOf(g))*g.mins;
 function planNights(mins,hours){
   const cap=hours*60, nights=[]; let cur=null;
   mins.forEach((m,i)=>{
@@ -473,7 +486,7 @@ function trophyData(S){
 }
 /* Saved tournaments pick up settings and games added later. */
 function ensureDefaults(S){
-  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.headStart===undefined) S.headStart=0.5;
+  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.winnerStays===undefined) S.winnerStays=true; if(S.heavyLast===undefined) S.heavyLast=true; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5;
   S.games.forEach(g=>{if(!g.copies) g.copies=1;});
   DEFAULT_GAMES.forEach((d,i)=>{
     if(S.games.some(g=>g.id===d.id)) return;
@@ -484,6 +497,590 @@ function ensureDefaults(S){
   return S;
 }
 /*LOGIC-END*/
+
+
+/* ---------- game catalog (approximate play times, player counts and suggested weights) ---------- */
+const CATALOG_RAW=`Chess|2|2|40|3|1
+Checkers|2|2|20|1|1
+Monopoly|2|8|120|3|4
+Risk|2|6|120|3|3
+Clue|3|6|45|2|3
+Scrabble|2|4|60|2|3
+Yahtzee|2|10|30|1|5
+Backgammon|2|2|30|2|3
+Connect Four|2|2|10|1|1
+Battleship|2|2|30|1|3
+Sorry!|2|4|30|1|4
+Trouble|2|4|25|1|5
+Candy Land|2|4|20|1|5
+Chutes and Ladders|2|4|20|1|5
+The Game of Life|2|6|60|1|5
+Trivial Pursuit|2|6|60|2|3
+Pictionary|3|12|45|1|3
+Boggle|2|8|15|1|2
+Mastermind|2|2|20|1|1
+Stratego|2|2|45|2|2
+Othello|2|2|25|2|1
+Go|2|2|60|3|1
+Dominoes|2|4|30|1|3
+Mexican Train|2|8|60|1|4
+Rummikub|2|4|45|2|3
+Qwirkle|2|4|45|1|3
+Blokus|2|4|25|2|1
+Sequence|2|12|30|1|3
+Phase 10|2|6|45|2|4
+Skip-Bo|2|6|30|1|4
+Uno|2|10|30|1|4
+Uno Flip|2|10|30|1|4
+Uno Attack|2|10|30|1|5
+Uno All Wild|2|10|20|1|4
+Uno Dos|2|4|20|1|4
+Dutch Blitz|2|4|15|1|3
+Spot It!|2|8|15|1|2
+Jenga|2|8|15|1|3
+Kerplunk|2|4|15|1|3
+Connect 4 Shots|2|2|10|1|2
+Operation|2|6|20|1|3
+Hungry Hungry Hippos|2|4|10|1|3
+Mouse Trap|2|4|30|1|4
+Guess Who?|2|2|15|1|2
+Perfection|2|2|10|1|3
+Twister|2|6|15|1|4
+Cranium|4|12|60|1|3
+Taboo|4|10|30|1|3
+Scattergories|2|6|30|1|3
+Balderdash|2|6|45|1|3
+Apples to Apples|4|10|30|1|4
+Cards Against Humanity|4|12|45|1|4
+Telestrations|4|8|30|1|3
+Catchphrase|4|10|30|1|3
+Headbanz|2|6|20|1|3
+Charades|4|12|30|1|2
+Heads Up!|3|10|15|1|3
+Codenames|4|8|20|1|2
+Codenames Duet|2|2|15|1|2
+Just One|3|7|20|1|2
+Wavelength|2|12|35|1|3
+Decrypto|3|8|30|1|2
+Concept|4|12|40|1|2
+Dixit|3|6|30|1|3
+Cluedo Master Detective|3|8|60|2|3
+Rummy|2|6|30|1|4
+Gin Rummy|2|2|20|1|3
+Canasta|2|6|60|2|3
+Hearts|3|6|30|1|3
+Spades|4|4|45|2|3
+Euchre|4|4|30|2|3
+Bridge|4|4|60|3|2
+Cribbage|2|4|30|1|3
+Pinochle|2|4|45|2|3
+Poker|2|10|60|2|4
+Blackjack|2|7|30|1|5
+Crazy Eights|2|7|15|1|4
+Go Fish|2|6|10|1|5
+Old Maid|2|8|10|1|5
+War|2|2|20|1|5
+Spit|2|2|10|1|3
+Speed|2|2|10|1|3
+Egyptian Rat Screw|2|8|15|1|3
+Golf (card game)|2|6|30|1|4
+Oh Hell!|3|7|45|2|3
+Whist|4|4|45|2|3
+Rook|4|4|45|2|3
+Skat|3|3|45|2|3
+Pitch|2|10|30|2|3
+Hand and Foot|2|6|90|2|3
+Nertz|2|6|20|1|3
+Scopa|2|4|20|1|3
+Uno Teams|4|4|30|1|4
+Uno 99|2|6|20|1|3
+Uno Golf|2|6|30|1|4
+Uno Flex|2|10|30|1|4
+Flip 7|3|12|20|1|5
+Exploding Kittens|2|5|15|1|5
+Exploding Kittens Party Pack|2|10|15|1|5
+Throw Throw Burrito|2|6|15|1|4
+Taco Cat Goat Cheese Pizza|2|8|10|1|4
+Catan|3|4|75|2|3
+Catan: Seafarers|3|4|90|2|3
+Catan: Cities & Knights|3|4|120|3|3
+Catan Junior|2|4|30|1|4
+Starfarers of Catan|3|4|120|3|3
+Ticket to Ride|2|5|60|2|3
+Ticket to Ride: Europe|2|5|60|2|3
+Ticket to Ride: Nordic Countries|2|3|40|2|3
+Ticket to Ride: First Journey|2|4|30|1|3
+Ticket to Ride: Rails & Sails|2|5|75|2|3
+Carcassonne|2|5|40|2|3
+Carcassonne: Hunters and Gatherers|2|5|35|2|3
+Carcassonne: South Seas|2|5|40|2|3
+Carcassonne: Inns & Cathedrals|2|6|45|2|3
+Kingdomino|2|4|20|1|2
+Queendomino|2|4|30|2|3
+Azul|2|4|40|2|2
+Azul: Summer Pavilion|2|4|40|2|2
+Azul: Stained Glass of Sintra|2|4|45|2|2
+Splendor|2|4|30|2|2
+Sushi Go!|2|5|15|1|3
+Sushi Go Party!|2|8|20|1|3
+7 Wonders|2|7|40|2|2
+7 Wonders Duel|2|2|30|2|2
+Lords of Waterdeep|2|5|90|2|2
+Agricola|2|5|120|3|2
+Agricola: Family Edition|2|4|60|2|2
+Puerto Rico|3|5|120|3|2
+San Juan|2|4|40|2|3
+Power Grid|2|6|120|3|2
+Stone Age|2|4|60|2|3
+Small World|2|5|60|2|2
+Small World Underground|2|5|60|2|2
+Dominion|2|4|30|2|3
+Dominion: Intrigue|2|4|30|2|3
+Race for the Galaxy|2|4|40|2|3
+Red7|2|4|10|1|2
+Love Letter|2|4|20|1|4
+Coup|2|6|15|1|3
+Skull|3|6|15|1|2
+Sheriff of Nottingham|3|5|60|2|3
+Scotland Yard|3|6|45|2|2
+Fury of Dracula|2|4|150|3|3
+Mr. Jack|2|2|30|2|2
+King of Tokyo|2|6|30|1|4
+King of Tokyo Duel|2|2|20|1|4
+King of New York|2|6|40|2|4
+Machi Koro|2|4|30|1|4
+Machi Koro 2|2|5|30|1|4
+Cascadia|2|4|40|2|3
+Wingspan|2|5|60|2|3
+Everdell|2|4|80|3|2
+Root|2|4|90|3|2
+Terraforming Mars|2|5|120|3|3
+Brass: Birmingham|2|4|120|3|2
+Scythe|2|5|115|3|2
+Viticulture|2|6|90|3|3
+Tzolk'in|2|4|90|3|1
+Caylus|2|5|90|3|1
+Alhambra|2|6|60|2|3
+Istanbul|2|5|60|2|3
+Yokohama|2|4|90|3|2
+Targi|2|2|60|2|2
+Jaipur|2|2|30|1|3
+Lost Cities|2|2|30|1|3
+Hive|2|2|20|2|1
+Santorini|2|4|20|2|1
+Patchwork|2|2|30|2|2
+Cartographers|2|12|35|1|3
+Bärenpark|2|4|45|2|2
+Isle of Skye|2|5|40|2|2
+Ethnos|2|6|60|2|3
+Century: Spice Road|2|5|40|2|2
+Century: Golem Edition|2|5|45|2|2
+Hanamikoji|2|2|15|1|3
+The Quest for El Dorado|2|4|60|2|3
+Rivals for Catan|2|2|60|2|3
+Dungeon Lords|2|4|90|3|2
+Dixit Odyssey|3|12|30|1|3
+Lords of Vegas|2|4|60|2|4
+Tokaido|2|5|45|1|2
+Between Two Cities|3|7|20|1|2
+Fresco|2|4|90|2|2
+Takenoko|2|4|45|2|3
+Bohnanza|2|7|45|2|3
+Acquire|2|6|90|3|3
+Sagrada|2|4|40|2|3
+Zombie Dice|2|12|15|1|5
+Munchkin|3|6|90|2|5
+Smash Up|2|4|45|2|3
+Star Realms|2|2|20|2|3
+Ascension|2|4|30|2|3
+Ticket to Ride: Asia|2|5|60|2|3
+Ticket to Ride: Germany|2|5|60|2|3
+Ticket to Ride: UK|2|5|60|2|3
+Ticket to Ride: Switzerland|2|3|45|2|3
+Ticket to Ride: Africa|2|5|60|2|3
+Ticket to Ride: Japan|2|5|60|2|3
+Ticket to Ride: New York|2|4|20|1|3
+Ticket to Ride: London|2|4|20|1|3
+Ticket to Ride: Amsterdam|2|4|20|1|3
+Ticket to Ride: San Francisco|2|4|20|1|3
+Carcassonne: The Castle|2|2|35|2|3
+Carcassonne: Amazonas|2|5|45|2|3
+Carcassonne: Safari|2|5|45|2|3
+Carcassonne: Star Wars|2|2|35|2|3
+Carcassonne: Big Box|2|6|45|2|3
+Catan: Traders & Barbarians|3|4|90|3|3
+Catan: Explorers & Pirates|3|4|90|2|3
+Catan: Dice Game|2|4|20|1|5
+Catan Card Game|2|2|60|2|3
+Dominion: Seaside|2|4|30|2|3
+Dominion: Prosperity|2|4|35|2|3
+Dominion: Alchemy|2|4|30|2|3
+Dominion: Hinterlands|2|4|30|2|3
+Dominion: Dark Ages|2|4|35|2|3
+Dominion: Adventures|2|4|35|2|3
+Dominion: Empires|2|4|35|2|3
+Dominion: Renaissance|2|4|35|2|3
+Thunderstone|2|5|60|2|3
+Clank!|2|4|60|2|3
+Clank!: A Deck-Building Adventure|2|4|60|2|3
+Quacks of Quedlinburg|2|4|45|2|4
+Welcome To...|2|12|30|1|3
+Railroad Ink|2|6|20|1|4
+Roll for the Galaxy|2|5|45|2|4
+Sagrada: The Great Facades|2|4|45|2|3
+Qwixx|2|5|15|1|4
+Kingdomino Duel|2|2|15|1|2
+Dragonwood|2|4|20|1|3
+Fluxx|2|6|20|1|5
+Zombie Fluxx|2|6|20|1|5
+Star Fluxx|2|6|20|1|5
+Pirate Fluxx|2|6|20|1|5
+Monty Python Fluxx|2|6|20|1|5
+Tsuro|2|8|15|1|3
+Tsuro of the Seas|2|8|20|1|3
+Bananagrams|2|8|15|1|3
+Rory's Story Cubes|2|12|15|1|3
+Rack-O|2|4|20|1|4
+Pass the Pigs|2|8|15|1|5
+Farkle|2|8|20|1|5
+Liar's Dice|2|6|20|1|4
+Perudo|2|6|20|1|4
+Cover Your Assets|2|6|20|1|3
+No Thanks!|3|7|20|1|3
+Port Royal|2|5|25|1|4
+Biblios|2|4|30|1|3
+Citadels|2|8|40|2|3
+Libertalia|2|6|45|2|3
+Sheep & Thief|2|5|40|1|3
+Chinatown|3|5|60|2|3
+Can't Stop|2|4|30|1|4
+Incan Gold|3|8|30|1|4
+Diamant|3|8|30|1|4
+Qwirkle Cube|2|4|20|1|3
+Rush Hour|2|2|20|1|1
+Gobblet Gobblers|2|2|10|1|1
+Quoridor|2|4|20|1|1
+Quarto|2|2|20|1|1
+Pente|2|2|30|1|1
+Mancala|2|2|20|1|1
+Nine Men's Morris|2|2|20|1|1
+Chinese Checkers|2|6|30|1|1
+Halma|2|4|45|1|1
+Fox and Geese|2|2|20|1|1
+Hex|2|2|20|2|1
+Tak|2|2|30|2|1
+Onitama|2|2|20|1|1
+Yinsh|2|2|45|2|1
+Gipf|2|2|45|2|1
+Dvonn|2|2|45|2|1
+Tzaar|2|2|30|2|1
+Lines of Action|2|2|30|2|1
+Abalone|2|2|30|1|1
+Reversi|2|2|25|2|1
+Draughts|2|2|30|1|1
+Shogi|2|2|60|3|1
+Xiangqi|2|2|60|3|1
+Fanorona|2|2|30|1|1
+Bagh-Chal|2|2|20|1|1
+Azul: Queen's Garden|2|4|40|2|2
+Calico|2|4|40|2|3
+Photosynthesis|2|4|60|2|2
+Parks|2|5|60|2|3
+Arboretum|2|4|30|2|3
+Planet|2|4|30|1|3
+Sprawlopolis|2|4|20|1|3
+Harmonies|2|4|30|1|3
+Earth|2|5|40|2|3
+Ark Nova|2|4|150|3|2
+Wyrmspan|2|5|75|2|3
+Heat: Pedal to the Metal|2|6|60|2|3
+Flamme Rouge|2|4|45|2|3
+Downforce|2|6|30|1|3
+Formula D|2|10|90|2|4
+Camel Up|2|8|30|1|5
+Thunder Alley|3|8|60|2|3
+Rolling Heights|2|4|35|2|3
+Villainous|2|6|60|2|3
+The Resistance|5|10|30|1|2
+Secret Hitler|5|10|45|1|3
+Avalon|5|10|30|1|2
+One Night Ultimate Werewolf|3|10|10|1|3
+Ultimate Werewolf|5|12|30|1|3
+Mafia|6|12|30|1|3
+Spyfall|3|12|15|1|2
+Two Rooms and a Boom|6|12|20|1|3
+Blood on the Clocktower|5|12|90|3|2
+Wits & Wagers|3|7|30|1|3
+Quiplash Board|3|8|20|1|3
+Say Anything|3|8|30|1|3
+Hues and Cues|3|10|30|1|3
+Time's Up!|4|12|45|1|3
+Anomia|3|6|15|1|3
+Wordsmith|2|6|20|1|3
+Bananagrams Duel|2|2|10|1|3
+Upwords|2|4|40|1|2
+Words With Friends Board|2|4|40|1|3
+Boggle Junior|2|4|10|1|2
+Scrabble Slam|2|4|10|1|3
+Quiddler|2|8|30|1|3
+Alhambra: The Dice Game|2|6|30|1|4
+Roll Through the Ages|2|4|30|1|4
+Yahtzee Free for All|2|4|20|1|5
+Boss Monster|2|4|30|2|3
+Munchkin Quest|3|4|90|2|4
+Epic Spell Wars|2|6|30|1|5
+Gloom|2|4|45|1|3
+Lunch Money|2|6|30|1|3
+Cheese|2|4|30|1|3
+Tapple|2|8|10|1|3
+Dobble|2|8|15|1|2
+Kakerlakenpoker|2|6|20|1|3
+Cockroach Poker|2|6|20|1|3
+Sleeping Queens|2|5|20|1|4
+Rat-a-Tat Cat|2|6|20|1|4
+Slamwich|2|8|15|1|3
+Bears vs Babies|2|8|20|1|4
+Unstable Unicorns|2|8|45|1|5
+Here to Slay|2|6|45|2|4
+Joking Hazard|3|10|30|1|4
+What Do You Meme?|3|12|40|1|4
+Superfight|3|10|30|1|3
+Happy Salmon|3|12|5|1|2
+Yeti in My Spaghetti|2|6|10|1|3
+Brain Games|2|8|20|1|2
+Blurble|3|12|15|1|3
+Gubs|2|4|10|1|3
+Bandu|2|4|15|1|2
+Elefun|2|4|15|1|3
+Don't Break the Ice|2|4|10|1|3
+Pop the Pig|2|6|10|1|4
+Lucky Ducks|2|4|10|1|4
+Dino Hunt Dice|2|4|15|1|4
+Eye Found It|2|4|20|1|2
+Rhino Hero|2|5|10|1|3
+Rhino Hero: Super Battle|2|4|15|1|3
+Animal Upon Animal|2|4|15|1|3
+Cat Tower|2|4|20|1|2
+Villa Paletti|2|4|30|1|2
+Bausack|2|4|20|1|3
+Ubongo|2|4|25|1|3
+Katamino|2|2|15|1|1
+Mighty Bugs|2|4|20|1|2
+Block Party|2|4|20|1|2
+Blokus Trigon|2|4|25|2|1
+Blokus Duo|2|2|15|1|1
+Ingenious|2|4|45|2|2
+Hive Pocket|2|2|20|2|1
+Pylos|2|2|20|1|1
+Shobu|2|2|20|2|1
+Santorini: Golden Fleece|2|4|25|2|2
+Lost Ruins of Arnak|2|4|90|3|3
+Dune: Imperium|2|4|120|3|3
+Ra|2|5|60|2|3
+Lords of Xidit|2|5|75|2|3
+Mombasa|2|4|120|3|2
+Great Western Trail|2|4|120|3|2
+Russian Railroads|2|4|90|3|1
+7 Wonders: Architects|2|7|25|1|2
+7 Wonders: Cities|2|8|45|2|2
+Alchemists|2|4|120|3|2
+Amun-Re|3|5|90|3|2
+Antike|2|6|120|3|1
+Archaeology: The Card Game|2|5|20|1|4
+Aquarius|2|5|20|1|3
+Axis & Allies|2|5|240|3|3
+Battle Line|2|2|30|2|3
+Blood Rage|2|4|90|3|2
+Bohemian Villages|2|4|30|1|2
+Bruges|2|4|60|2|3
+Camel Cup|2|8|30|1|5
+Can't Stop Express|2|4|20|1|4
+Carson City|2|5|90|3|2
+Cash 'n Guns|4|8|30|1|3
+Cathedral|2|2|20|1|1
+Cities: Skylines|2|4|60|2|3
+Coloretto|2|5|20|1|3
+Colt Express|2|6|40|2|4
+Concordia|2|5|100|3|1
+Cosmic Encounter|3|5|60|2|4
+Crokinole|2|4|30|1|2
+Cuba Libre|2|4|180|3|2
+Dungeon Petz|2|4|90|3|2
+Eclipse|2|6|180|3|3
+Elfenland|2|6|60|2|3
+Escape from the Aliens in Outer Space|2|8|45|1|3
+Fields of Arle|2|2|120|3|1
+Finca|2|4|40|2|2
+Forbidden Stars|2|4|240|3|3
+Formula One|2|6|60|2|3
+Galaxy Trucker|2|4|60|2|4
+Gizmos|2|4|40|2|2
+Glass Road|2|4|60|2|1
+Glen More|2|5|60|2|2
+Golem Arcana|2|2|90|3|2
+Guilds of London|2|5|60|2|2
+Heroscape|2|4|60|2|3
+Hoity Toity|2|5|60|2|3
+Hotel Samoa|2|5|45|2|2
+Imperial|2|6|120|3|1
+In the Year of the Dragon|2|5|90|3|2
+Jamaica|2|6|30|1|4
+Kahuna|2|2|20|1|2
+Keyflower|2|6|90|3|2
+Khet|2|2|20|1|1
+La Granja|2|4|90|3|2
+Last Will|2|5|60|2|2
+Letters from Whitechapel|2|6|90|3|2
+Liberté|2|4|90|3|2
+Lost Cities Rivals|2|2|30|1|3
+Machiavelli|3|6|90|3|3
+Manhattan|2|4|60|2|2
+Marrakech|2|4|30|1|3
+Maharaja|2|5|60|2|2
+Mexica|2|4|60|2|2
+Midgard|2|4|60|2|2
+Modern Art|3|5|45|2|3
+Mondo|2|4|30|1|3
+Monopoly Deal|2|5|15|1|4
+Mystic Vale|2|4|45|2|3
+Nations|2|5|100|3|3
+Netrunner|2|2|45|3|3
+Notre Dame|2|5|60|2|2
+Ora et Labora|2|4|120|3|1
+Orleans|2|4|90|3|3
+Paths of Glory|2|2|240|3|3
+Pax Pamir|2|5|90|3|2
+Pickomino|2|7|20|1|4
+Pillars of the Earth|2|4|90|3|3
+Pirate's Cove|2|4|60|2|4
+Power Struggle|2|4|60|2|3
+Pret-a-Porter|2|4|60|2|3
+Pyramid of Pengqueen|2|2|20|1|2
+Qin|2|4|45|2|2
+Quarriors!|2|4|30|1|4
+Race to the Treasure|2|4|20|1|2
+Ricochet Robots|2|10|30|1|2
+Roll Player|2|4|75|2|3
+Saboteur|3|10|30|1|3
+Samurai|2|4|30|2|2
+Scoville|2|5|60|2|3
+Seasons|2|4|60|2|4
+Snow Tails|2|4|30|1|3
+Spirits of the Forest|2|4|40|2|3
+Star Wars: Rebellion|2|4|240|3|3
+Stockpile|2|5|45|2|3
+Survive: Escape from Atlantis!|2|4|60|2|4
+Taj Mahal|3|5|60|2|3
+Tales of the Arabian Nights|2|6|90|2|5
+Terra Mystica|2|5|120|3|1
+Thebes|2|4|90|2|3
+The Castles of Burgundy|2|4|90|3|3
+The Downfall of Pompeii|2|4|45|1|3
+The Pillars of the Earth Builders|2|4|60|2|3
+The Settlers of Zarahemla|3|4|120|3|3
+Thunderstone Quest|2|5|75|2|3
+Trains|2|4|45|2|3
+Twilight Imperium|3|6|480|3|3
+Vegas Showdown|2|5|60|2|3
+Vinhos|2|5|120|3|2
+Walnut Grove|2|4|60|2|2
+War of the Ring|2|4|180|3|3
+Wasteland Express|2|5|90|3|3
+Wiz-War|2|4|45|1|5
+Xia|3|5|180|3|3
+Yedo|2|5|90|3|3
+Zooloretto|2|5|45|1|3
+Kingdom Builder|2|5|45|2|3
+Tiny Towns|2|6|45|2|3
+Imhotep|2|4|40|2|3
+Karuba|2|6|40|1|3
+Draftosaurus|2|5|15|1|3
+Azul: Master Chocolatier|2|4|45|2|2
+Cubitos|2|4|40|2|4
+Clever (Ganz schön clever)|2|4|30|1|4
+Twice as Clever|2|4|30|1|4
+Forest Shuffle|2|5|40|2|3
+Cubirds|2|5|20|1|3
+Faraway|2|6|20|1|3
+Next Station London|2|4|20|1|3
+Nidavellir|2|5|50|2|2
+Kingsburg|2|5|90|2|4
+Splendor Duel|2|2|30|2|2
+Century: Eastern Wonders|2|4|45|2|2
+Space Base|2|5|60|2|4
+Tiny Epic Galaxies|2|5|35|2|3
+Sushi Roll|2|5|20|1|4
+Point Salad|2|6|20|1|3
+Mah-jong|4|4|90|2|4
+Bunco|4|12|30|1|5
+Kismet|2|8|30|1|5
+Aggravation|2|6|40|1|5
+Parcheesi|2|4|60|1|4
+Ludo|2|4|30|1|5
+Snakes and Ladders|2|6|20|1|5
+Tic-Tac-Toe|2|2|5|1|1
+Dots and Boxes|2|4|10|1|1
+Memory|2|6|15|1|2
+Bingo|2|12|30|1|5
+Pie Face|2|4|10|1|4
+Don't Wake Daddy|2|4|10|1|4
+Jumanji|2|4|30|1|5
+Scrabble Junior|2|4|20|1|3
+Monopoly Junior|2|4|20|1|4
+Clue Jr.|2|4|20|1|3
+Sequence for Kids|2|4|15|1|3
+Mille Bornes|2|6|45|1|4
+Rummikub Twist|2|4|45|2|3
+Settlers of America|3|4|120|3|3
+Thurn and Taxis|2|4|60|2|3
+Wits and Wagers Family|3|7|20|1|3
+Telestrations After Dark|4|8|30|1|3
+Spot It! Junior|2|6|10|1|2
+Ghost Blitz|2|8|15|1|3
+Jungle Speed|2|10|15|1|3
+Toc Toc Woodman|2|4|15|1|3
+Beez|2|4|20|1|3
+Hey That's My Fish!|2|4|20|1|2
+Penguin Party|2|4|15|1|3
+Click Clack Lumberjack|2|4|15|1|3
+Rummy 500|2|8|45|1|3
+Contract Bridge Party|4|4|60|3|2
+Oh Pshaw|2|6|45|1|3
+Sorry! Revenge|2|4|30|1|4
+Trouble Chaos|2|4|20|1|5
+Yahtzee Duel|2|2|20|1|5
+Battleship Card Game|2|2|20|1|3
+Risk Legacy|3|5|120|3|3
+Clue: The Office|3|6|45|2|3
+Monopoly Builder|2|6|60|2|4
+Monopoly Cheaters Edition|2|6|60|2|5
+Scrabble Duplicate|2|4|60|2|1
+Uno Show 'em No Mercy|2|10|30|1|5
+Uno Wild Twists|2|10|30|1|4
+Uno Minimalista|2|10|20|1|4
+Phase 10 Dice|2|6|30|1|4
+Skyjo|2|8|25|1|4
+Take 5|2|10|45|1|4
+6 nimmt!|2|10|45|1|4
+Tichu|4|4|60|2|3
+Frankenstein's Bag of Bits|2|4|20|1|3`;
+let CATALOG=null;
+const normName=s=>s.toLowerCase().replace(/['\u2019]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+function catalog(){
+  if(!CATALOG) CATALOG=CATALOG_RAW.trim().split('\n').map(l=>{const [n,a,b,m,w,lk]=l.split('|');return {n,min:+a,max:+b,mins:+m,w:+w,luck:+lk,k:normName(n)};});
+  return CATALOG;
+}
+function catSearch(q){
+  q=normName(q); if(q.length<2) return [];
+  const toks=q.split(' '), out=[];
+  for(const g of catalog()){
+    let sc=0;
+    if(g.k.startsWith(q)) sc=3; else if((' '+g.k).includes(' '+q)) sc=2; else if(g.k.includes(q)||toks.every(x=>g.k.includes(x))) sc=1;
+    if(sc) out.push([sc,g]);
+  }
+  out.sort((a,b)=>b[0]-a[0]||a[1].n.length-b[1].n.length);
+  return out.slice(0,8).map(x=>x[1]);
+}
 
 const VIEW=/[?&]view(&|=|$)/.test(location.search);
 const KEY='ubg-v1';
@@ -544,6 +1141,45 @@ async function initDb(){
   }catch(e){}
 }
 
+
+/* ---------- backups: asked for at the end of every game night ---------- */
+function anchorSave(name,blob){
+  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
+}
+function toast(t){const el=document.getElementById('status');if(!el) return;el.textContent=t;clearTimeout(ui.tt);ui.tt=setTimeout(()=>setStatus(),4500);}
+function nightMarks(){
+  if(!S.started) return 0;
+  const nights=nightsOf().nights; let k=0;
+  for(const nt of nights){
+    let all=true;
+    for(let i=nt.from;i<nt.from+nt.count;i++) if(!roundDone(S.rounds[i])){all=false;break;}
+    if(all) k++; else break;
+  }
+  return k+(phaseOf(S)==='champion'?1:0);
+}
+async function exportBackup(){
+  const d=new Date(),p=n=>String(n).padStart(2,'0');
+  const name='game-night-gauntlet-backup-'+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'.json';
+  const marks=nightMarks(), at=Date.now();
+  const snap=JSON.parse(JSON.stringify(S));snap.bkNights=marks;snap.bkAt=at;
+  const text=JSON.stringify(snap);
+  let dl=null;try{dl=await (window.claude&&window.claude.use?window.claude.use('downloads'):null);}catch(e){}
+  if(dl) await dl.save({filename:name,data:text});
+  else anchorSave(name,new Blob([text],{type:'application/json'}));
+  S.bkNights=marks;S.bkAt=at;
+  try{localStorage.setItem('ubg-bk',String(at));}catch(e){}
+  touch();
+  return name;
+}
+function backupBanner(){
+  if(typeof VIEW!=='undefined'&&VIEW) return '';
+  if(!S.started) return '';
+  const m=nightMarks();
+  if(m<=(S.bkNights||0)||ui.bkLater===m) return '';
+  const title=phaseOf(S)==='champion'?'The tournament is finished.':'Night '+m+' is done.';
+  return `<div class="card bk" role="status"><div><strong>${title} Save a backup before you close up.</strong><p class="muted">One tap saves your progress to a file, so nothing is lost if this phone clears the page.</p></div><div class="rfoot"><button type="button" class="btn primary" data-act="bkup">Save backup</button><button type="button" class="btn sm ghost" data-act="bklater">Later</button></div></div>`;
+}
+
 /* ---------- shared view pieces ---------- */
 function empty(title,text,btn){
   return `<div class="card"><h2>${esc(title)}</h2><p class="muted">${esc(text)}</p>${btn||''}</div>`;
@@ -563,7 +1199,7 @@ function tableBlock(kind,eid,ti,t,w,label,subs){
 }
 function hasPlaces(e){return Object.keys(e.places).length>0;}
 function nightsOf(){
-  const mins=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return roundMinutes(g,r.tables.length);});
+  const mins=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return roundMinutes(g,r.tables.length,r.tables.some(t=>t.ids.length>g.max));});
   return {mins,nights:planNights(mins,S.nightHours||3)};
 }
 const HS_OPTS=[[0,'Off'],[0.5,'Medium'],[1,'Large']];
@@ -582,12 +1218,13 @@ function viewSetup(){
   const players=S.players.map((p,i)=>`<li class="prow2"><span class="pnum mono">${i+1}</span><input class="inp" id="pn-${p.id}" value="${esc(p.name)}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name">${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>`).join('');
   const fopts=[];for(let k=2;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
   const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
+  const ws=S.winnerStays!==false;
   let total=0,valid=0,skipped=[],sit=[]; const minsList=[];
   const games=S.games.map((g,i)=>{
-    const d=describeLayout(n,g);
-    if(g.on&&d.ok){const rm=roundMinutes(g,d.k);total+=rm;minsList.push(rm);valid++;const LL=layout(n,g.min,g.max);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
+    const d=describeLayout(n,g,ws);
+    if(g.on&&d.ok){const rm=roundMinutes(g,d.k,d.ladder);total+=rm;minsList.push(rm);valid++;const LL=layout(n,g.min,g.max,ws);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
     const wts=[1,2,3].map(w=>`<button type="button" aria-pressed="${g.weight===w}" data-act="gweight" data-a="${g.id}|${w}" aria-label="${esc(g.name)} weight ${w}">×${w}</button>`).join('');
-    const rm=d.ok?roundMinutes(g,d.k):0;
+    const rm=d.ok?roundMinutes(g,d.k,d.ladder):0;
     return `<li class="game${g.on?'':' off'}"><label class="gname"><input type="checkbox" data-act="gtoggle" data-a="${g.id}"${g.on?' checked':''}${locked?' disabled':''}><span>${esc(g.name)}</span></label>
       <div class="gmeta mono">${g.min===g.max?g.min:g.min+'–'+g.max} players · ${g.mins} min a game · luck ${dots(g.luck)}</div>
       <div class="gplan${d.ok?'':' bad'}">${esc(d.text)}${d.ok?` · about ${hm(rm)} a round`:''}</div>
@@ -596,6 +1233,9 @@ function viewSetup(){
       <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button>`}${g.custom&&!locked?`<button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}">Delete</button>`:''}</div></div></li>`;
   }).join('');
   const addForm=locked?'':`<details class="add"><summary>Add a game</summary>
+    <label class="fld wide cats"><span>Search ${catalog().length} popular family games</span><input class="inp" id="cat-q" type="search" placeholder="Try Catan, Azul or Sushi Go" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <div id="cat-res" class="catres" role="listbox" aria-label="Matching games"></div>
+    <p class="hint" id="cat-note">Pick a match to fill the boxes below, change anything that doesn't fit your copy, then add it. Or type your own.</p>
     <div class="addgrid">
       <label class="fld wide"><span>Name</span><input class="inp" id="ng-name" maxlength="30" placeholder="Uno Flip"></label>
       <label class="fld"><span>Min players</span><input class="inp" id="ng-min" type="number" min="2" max="12" value="2"></label>
@@ -604,6 +1244,11 @@ function viewSetup(){
       <label class="fld"><span>Copies</span><input class="inp" id="ng-copies" type="number" min="1" max="6" value="1"></label>
       <label class="fld"><span>Weight</span><select class="sel" id="ng-w"><option value="1">×1 light</option><option value="2">×2 medium</option><option value="3">×3 heavy</option></select></label>
     </div><p style="margin-top:12px"><button type="button" class="btn" data-act="addgame">Add to list</button></p></details>`;
+  const rules=locked?'':`<section class="card"><div class="cardhead"><h2 class="chip c-coral">Round rules</h2></div>
+    <div class="cardhead"><h3>Odd player in a 2-player game</h3><div class="seg" role="group" aria-label="Odd player in a 2-player game"><button type="button" aria-pressed="${ws}" data-act="ws" data-a="1">Winner stays</button><button type="button" aria-pressed="${!ws}" data-act="ws" data-a="0">Sit out</button></div></div>
+    <p class="muted">${ws?'With an odd number of players, three of them share one table in a 2-player game. Two play, the winner stays on against whoever sat out, and the first to 2 wins takes 1st. Everyone plays and nobody gets free points. It takes about three games of time.':'The odd player sits out and gets half marks, the same as an average result. The draw rotates who sits out.'}</p>
+    <div class="cardhead"><h3>Order of the games</h3><div class="seg" role="group" aria-label="Order of the games"><button type="button" aria-pressed="${S.heavyLast!==false}" data-act="hl" data-a="1">Big games last</button><button type="button" aria-pressed="${S.heavyLast===false}" data-act="hl" data-a="0">List order</button></div></div>
+    <p class="muted">${S.heavyLast!==false?'Rounds run ×1 games first, then ×2, then ×3, so the leaderboard can still swing in the last rounds. The standings stay visible the whole time. The arrows in the list reorder games of the same weight.':'Rounds follow the game list below, top to bottom. Use the arrows to reorder it.'}</p></section>`;
   const nh=[2,3,4,5,6].map(h=>`<button type="button" aria-pressed="${(S.nightHours||3)===h}" data-act="nh" data-a="${h}">${h}</button>`).join('');
   const nights=planNights(minsList,S.nightHours||3);
   const plan=locked
@@ -625,6 +1270,7 @@ function viewSetup(){
     <p class="muted">After the last round, the top ${S.finalists} play one final game. A tie at the cut line gets a playoff.</p>
     <div class="cardhead"><h3>Head start in the final</h3><div class="seg" role="group" aria-label="Head start in the final">${hsb}</div></div>
     <p class="muted">${esc(headStartText(S.finalists,S.headStart||0))}</p></section>
+  ${rules}
   <section class="card"><div class="cardhead"><h2 class="chip c-green">Games</h2><span class="muted">Weight multiplies placement points</span></div>
     <ul class="glist">${games}</ul>${addForm}</section>
   ${plan}`;
@@ -646,7 +1292,8 @@ function viewRounds(){
     let body='';
     if(open){
       const k=r.tables.length, copies=copiesOf(g);
-      body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,g.min===2&&g.max===2?'Match '+(ti+1):(k>1?'Table '+(ti+1):''))).join('')}
+      body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,t.ids.length>g.max?'Winner stays':(g.min===2&&g.max===2?'Match '+(ti+1):(k>1?'Table '+(ti+1):'')))).join('')}
+        ${r.tables.some(t=>t.ids.length>g.max)?`<p class="bye">Winner stays: two players start. The winner stays on and plays whoever sat out, and so on. First to 2 wins is 1st. The other two rank by wins, and level wins share the place.</p>`:''}
         ${r.byes.length?`<p class="bye">Sitting out: ${esc(r.byes.map(pname).join(', '))}. ${done?'Each gets +'+fmt(5*g.weight)+', half marks, the same as an average result.':'They get half marks when the round finishes, the same as an average result.'}</p>`:''}
         ${!S.finale.length&&!r.tables.some(hasPlaces)?`<div class="rfoot">${(r.tables.length>1||r.byes.length)?`<button type="button" class="btn sm" data-act="redraw" data-a="${r.id}">Re-draw seats</button>`:''}<button type="button" class="btn sm ghost" data-act="delround" data-a="${r.id}">Remove this round</button></div>`:''}</div>`;
     }
@@ -892,7 +1539,7 @@ function render(){
   }
   document.getElementById('roadwrap').innerHTML=road;
   document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button type="button" class="tab t-${k}" data-act="tab" data-a="${k}"${ui.view===k?' aria-current="page"':''}>${l}</button>`).join('');
-  app.innerHTML=ui.view==='setup'?viewSetup():ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory();
+  app.innerHTML=backupBanner()+(ui.view==='setup'?viewSetup():ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory());
   if(ui.view==='setup'&&!VIEW) app.insertAdjacentHTML('beforeend',shareCard());
   if(ui.top){window.scrollTo(0,0);ui.top=false;}
   else if(ui.scrollTo){const el=document.getElementById('rd-'+ui.scrollTo);ui.scrollTo=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});}}
@@ -911,7 +1558,7 @@ function startOver(){
   const T=S.started?trophyData(S):null, arch=S.archive.slice();
   if(T) arch.unshift({id:S.tid||('a'+Date.now()),data:T});
   const f=fresh();
-  f.players=S.players;f.pseq=S.pseq;f.games=S.games;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.archive=arch.slice(0,50);
+  f.players=S.players;f.pseq=S.pseq;f.games=S.games;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.heavyLast=S.heavyLast;f.archive=arch.slice(0,50);
   S=f;ui.open={};ui.confirm=null;ui.view=T?'history':'setup';ui.touched=true;ui.top=true;ui.tkey=null;ui.turl=null;
 }
 function act(name,a,el){
@@ -923,6 +1570,10 @@ function act(name,a,el){
     case 'fin':S.finalists=+a[0];touch();break;
     case 'hs':S.headStart=+a[0];touch();break;
     case 'nh':S.nightHours=+a[0];touch();break;
+    case 'ws':S.winnerStays=a[0]==='1';touch();break;
+    case 'hl':S.heavyLast=a[0]==='1';touch();break;
+    case 'bklater':ui.bkLater=nightMarks();break;
+    case 'bkup':exportBackup().then(()=>{toast('Backup saved.');render();}).catch(e=>{if(e&&e.code==='declined')return;toast('Could not save the backup. Try again.');});return false;
     case 'gweight':{const g=gameOf(S,a[0]);if(g){g.weight=+a[1];touch();}break;}
     case 'gcopy':{const g=gameOf(S,a[0]);if(g){g.copies=Math.max(1,Math.min(6,copiesOf(g)+ +a[1]));touch();}break;}
     case 'gmove':{const i=S.games.findIndex(g=>g.id===a[0]),j=i+ +a[1];if(i>=0&&j>=0&&j<S.games.length){[S.games[i],S.games[j]]=[S.games[j],S.games[i]];touch();}break;}
@@ -933,7 +1584,7 @@ function act(name,a,el){
       if(mx<mn) mx=mn;
       const mins=Math.max(5,Math.min(240,+document.getElementById('ng-mins').value||30)),w=+document.getElementById('ng-w').value||1,cp=Math.max(1,Math.min(6,+document.getElementById('ng-copies').value||1));
       if(!name){document.getElementById('ng-name').focus();return false;}
-      S.games.push({id:'g'+(S.seq++),name,short:name.split(/\s+/)[0].slice(0,6),min:mn,max:mx,weight:w,mins,luck:3,copies:cp,on:true,custom:true});touch();break;
+      S.games.push({id:'g'+(S.seq++),name,short:name.split(/\s+/)[0].slice(0,6),min:mn,max:mx,weight:w,mins,luck:(ui.catName===name&&ui.catLuck)||3,copies:cp,on:true,custom:true});ui.catName=null;ui.catLuck=null;touch();break;
     }
     case 'build':if(buildRounds(S)){ui.open={};ui.view='rounds';ui.top=true;touch();}break;
     case 'reset':
@@ -992,6 +1643,28 @@ document.addEventListener('input',e=>{
   if(el.dataset&&el.dataset.act==='setname'){const p=S.players.find(p=>p.id===el.dataset.a);if(p){p.name=el.value.trim()||('Player '+(S.players.indexOf(p)+1));touch();}}
 });
 
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.id!=='cat-q') return;
+  const res=document.getElementById('cat-res'); if(!res) return;
+  const have=new Set(S.games.map(g=>normName(g.name)));
+  const hits=catSearch(el.value);
+  res.innerHTML=hits.map(g=>{const i=catalog().indexOf(g),dup=have.has(g.k);
+    return `<button type="button" class="catit" role="option" data-cat="${i}"${dup?' disabled':''}><b>${esc(g.n)}</b><span class="mono">${g.min===g.max?g.min:g.min+'–'+g.max} players · ${g.mins} min · ×${g.w}${dup?' · already in your list':''}</span></button>`;}).join('')
+    ||(normName(el.value).length>=2?'<p class="hint">No match. Type its details below instead.</p>':'');
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-cat]'); if(!b||b.disabled) return;
+  const g=catalog()[+b.dataset.cat]; if(!g) return;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v;};
+  set('ng-name',g.n);set('ng-min',g.min);set('ng-max',g.max);set('ng-mins',g.mins);set('ng-w',g.w);set('ng-copies',1);
+  ui.catName=g.n;ui.catLuck=g.luck;
+  const res=document.getElementById('cat-res'),q=document.getElementById('cat-q'),note=document.getElementById('cat-note');
+  if(res) res.innerHTML=''; if(q) q.value='';
+  if(note) note.textContent='Filled in '+g.n+' from the catalog. Times and player counts are approximate, so adjust them for your copy, then tap Add to list.';
+  const nm=document.getElementById('ng-name'); if(nm&&nm.scrollIntoView) nm.scrollIntoView({block:'center'});
+});
+
 /* ---------- GitHub Pages layer: the host publishes data.json, viewers read it ---------- */
 const VIEW_OK=['tab','open','trophy','ptrophy'];
 const GHK='ubg-gh', BKK='ubg-bk';
@@ -1002,9 +1675,6 @@ let ghNote='',ghTimer=null,ghBusy=false,ghPending=false,viewMsg='';
 const ghSave=()=>{try{localStorage.setItem(GHK,JSON.stringify(GH));}catch(e){}};
 const ghMsg=t=>{const el=document.getElementById('gh-msg');if(el)el.textContent=t;};
 const clock=()=>new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-function anchorSave(name,blob){
-  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);
-}
 function ghSchedule(){
   if(VIEW||!GH.token||!GH.repo||!GH.auto||!(S.t>0)) return;
   clearTimeout(ghTimer);ghTimer=setTimeout(ghPublish,4000);
@@ -1105,9 +1775,8 @@ document.addEventListener('click',async e=>{
       if(navigator.share) await navigator.share({title:'Game Night Gauntlet',url:viewLink()});
       else{await navigator.clipboard.writeText(viewLink());ghMsg('Link copied.');}
     }else if(k==='export'){
-      const d=new Date(),p=n=>String(n).padStart(2,'0');
-      anchorSave('game-night-gauntlet-backup-'+d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'.json',new Blob([JSON.stringify(S)],{type:'application/json'}));
-      try{localStorage.setItem(BKK,String(Date.now()));}catch(e2){}
+      await exportBackup();
+      document.getElementById('gh-bk')&&(document.getElementById('gh-bk').textContent='Backup saved just now. Save one after each game night. If this device ever clears its data, load it back here.');
       ghMsg('Backup saved. Look in your Downloads or Files app.');
     }else if(k==='import'){
       document.getElementById('gh-file').click();
