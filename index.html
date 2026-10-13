@@ -54,12 +54,18 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 
 /* board track */
 .road{display:flex;gap:4px;align-items:center;margin-top:16px;padding-top:4px}
-.road i{flex:1;min-width:6px;height:18px;border-radius:6px;background:var(--surface);border:2px solid var(--line)}
-.road i.done{background:var(--sc);border-color:var(--edge)}
-.road i.cur{background:var(--raise);border-color:var(--edge);transform:translateY(-3px);box-shadow:0 3px 0 var(--shadow)}
-.road i.fin{flex:0 0 30px;height:26px;border-radius:8px;border-color:var(--edge);position:relative}
-.road i.fin::after{content:"★";position:absolute;inset:0;display:grid;place-items:center;font-size:.85rem;font-style:normal;color:var(--edge)}
-.road i.fin.done{background:var(--c-yellow)}
+.road i,.road .seg2{flex:1;min-width:6px;height:18px;border-radius:6px;background:var(--surface);border:2px solid var(--line);padding:0;position:relative;cursor:pointer;display:block;font:inherit;color:inherit;box-sizing:border-box}
+.road .seg2::before{content:"";position:absolute;inset:-10px -2px}
+.road .seg2:focus-visible{outline:3px solid var(--c-blue);outline-offset:2px}
+.road .seg2:active{transform:translateY(1px)}
+@keyframes flash{0%{box-shadow:0 0 0 6px var(--c-yellow)}100%{box-shadow:0 0 0 0 transparent}}
+.flash{animation:flash 1.6s ease-out}
+[id^="hr-"],[id^="rd-"],[id^="ht-"]{scroll-margin-top:80px}
+.road .seg2.done{background:var(--sc);border-color:var(--edge)}
+.road .seg2.cur{background:var(--raise);border-color:var(--edge);transform:translateY(-3px);box-shadow:0 3px 0 var(--shadow)}
+.road .seg2.fin{flex:0 0 30px;height:26px;border-radius:8px;border-color:var(--edge);position:relative}
+.road .seg2.fin::after{content:"★";position:absolute;inset:0;display:grid;place-items:center;font-size:.85rem;font-style:normal;color:var(--edge)}
+.road .seg2.fin.done{background:var(--c-yellow)}
 .roadlbl{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
 
 /* tabs */
@@ -237,7 +243,7 @@ details.add summary{cursor:pointer;font-weight:700}
 
 /* GitHub Pages build */
 body.view [data-act]{pointer-events:none}
-body.view [data-act="tab"],body.view [data-act="open"],body.view [data-act="trophy"],body.view [data-act="ptrophy"]{pointer-events:auto}
+body.view [data-act="tab"],body.view [data-act="open"],body.view [data-act="trophy"],body.view [data-act="ptrophy"],body.view [data-act="ptoggle"],body.view [data-act="photo"],body.view [data-act="goround"]{pointer-events:auto}
 body.view .btn:not([data-act="trophy"]):not([data-act="ptrophy"]){display:none}
 .share .fld{display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:.85rem;margin-top:10px}
 .share .chk{display:flex;gap:8px;align-items:center;margin-top:12px;font-weight:700;font-size:.9rem}
@@ -1218,7 +1224,7 @@ const KEY='ubg-v1';
 function load(){if(VIEW)return fresh();try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return ensureDefaults(o);}}catch(e){}return fresh();}
 let S=load();
 const ui={view:VIEW?'standings':S.started?'rounds':'setup',open:{},confirm:null,scrollTo:null,top:false,tkey:null,turl:null};
-try{const v=localStorage.getItem('ubg-view');if(['setup','rounds','standings','finale','history'].includes(v)){ui.view=v;ui.touched=true;}}catch(e){}
+try{const v=localStorage.getItem('ubg-view');if(['setup','rounds','standings','finale','history'].includes(v)&&(typeof VIEW==='undefined'||v!=='setup')){ui.view=v;ui.touched=true;}}catch(e){}
 const app=document.getElementById('app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pname=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
@@ -1554,7 +1560,7 @@ function resultLines(t,w){
 }
 function viewHistory(){
   const items=[];
-  S.rounds.forEach((r,i)=>{if(roundDone(r))items.push({o:i,ts:r.doneAt||0,html:histCard('R'+(i+1),gameOf(S,r.gameId),r.doneAt,r.tables.map((t,ti)=>({label:r.tables.length>1?(gameOf(S,r.gameId).max===2?'Match ':'Table ')+(ti+1):'',t})),gameOf(S,r.gameId).weight,r.byes)});});
+  S.rounds.forEach((r,i)=>{if(roundDone(r))items.push({o:i,ts:r.doneAt||0,html:histCard('R'+(i+1),gameOf(S,r.gameId),r.doneAt,r.tables.map((t,ti)=>({label:r.tables.length>1?(gameOf(S,r.gameId).max===2?'Match ':'Table ')+(ti+1):'',t})),gameOf(S,r.gameId).weight,r.byes,'hr-'+r.id)});});
   S.tiebreaks.forEach((t,i)=>{if(tableDone(t))items.push({o:1000+i,ts:t.doneAt||0,html:histCard('Playoff',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
@@ -1566,8 +1572,8 @@ function viewHistory(){
       ${op?`<div class="pdet"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|pdf">Trophy PDF</button><button type="button" class="btn sm" data-act="ptrophy" data-a="${i}|png">Trophy image</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
   return `<section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
-function histCard(tag,g,ts,tables,w,byes){
-  return `<article class="card hist"><div class="cardhead"><h3>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</h3><span class="muted">${ts?esc(dstr(ts,true)):''}</span></div>
+function histCard(tag,g,ts,tables,w,byes,eid){
+  return `<article class="card hist"${eid?` id="${eid}"`:''}><div class="cardhead"><h3>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</h3><span class="muted">${ts?esc(dstr(ts,true)):''}</span></div>
     ${tables.map(x=>`<div>${x.label?`<div class="tbh2">${x.label}</div>`:''}${resultLines(x.t,w)}</div>`).join('')}
     ${byes&&byes.length?`<p class="bye">Sat out: ${esc(byes.map(pname).join(', '))}</p>`:''}</article>`;
 }
@@ -1816,16 +1822,16 @@ function render(){
   let road='';
   if(S.started){
     const cur=S.rounds.findIndex(r=>!roundDone(r)), done=S.rounds.filter(roundDone).length, ph=phaseOf(S);
-    const segs=S.rounds.map((r,i)=>`<i class="${roundDone(r)?'done':(i===cur?'cur':'')}" style="--sc:${BR[i%6]}"></i>`).join('')+`<i class="fin${ph==='champion'?' done':''}"></i>`;
+    const segs=S.rounds.map((r,i)=>`<button type="button" class="seg2 ${roundDone(r)?'done':(i===cur?'cur':'')}" style="--sc:${BR[i%6]}" data-act="goround" data-a="${r.id}" aria-label="Round ${i+1}, ${roundDone(r)?'done, view results':(i===cur?'in play':'not played yet')}"></button>`).join('')+`<button type="button" class="seg2 fin${ph==='champion'?' done':''}" data-act="goround" data-a="fin" aria-label="The final"></button>`;
     const lbl={qual:'Round '+Math.min(done+1,S.rounds.length)+' of '+S.rounds.length,tie:'Playoff for the cut line',pickfinal:'Choose the final game',final:'Final in play',rematch:'Sudden-death rematch',champion:'We have a champion'}[ph];
-    road=`<div class="road" aria-hidden="true">${segs}</div><div class="roadlbl"><span>${lbl}</span><span class="mono">${done}/${S.rounds.length} done</span></div>`;
+    road=`<div class="road">${segs}</div><div class="roadlbl"><span>${lbl}</span><span class="mono">${done}/${S.rounds.length} done</span></div>`;
   }
   document.getElementById('roadwrap').innerHTML=road;
   document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button type="button" class="tab t-${k}" data-act="tab" data-a="${k}"${ui.view===k?' aria-current="page"':''}>${l}</button>`).join('');
   app.innerHTML=backupBanner()+(ui.view==='setup'?viewSetup():ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory());
   if(ui.view==='setup'&&!VIEW) app.insertAdjacentHTML('beforeend',shareCard());
   if(ui.top){window.scrollTo(0,0);ui.top=false;}
-  else if(ui.scrollTo){const el=document.getElementById('rd-'+ui.scrollTo);ui.scrollTo=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});}}
+  else if(ui.scrollTo||ui.scrollEl){const el=document.getElementById(ui.scrollEl||('rd-'+ui.scrollTo));ui.scrollTo=null;ui.scrollEl=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1700);}}
   else window.scrollTo(0,y);
   afterRender();
 }
@@ -1850,6 +1856,12 @@ function startOver(){
 }
 function act(name,a,el){
   switch(name){
+    case 'goround':{
+      if(a[0]==='fin'){ui.view='finale';ui.top=true;break;}
+      const rd=S.rounds.find(r=>r.id===a[0]);if(!rd) break;
+      if(roundDone(rd)){ui.view='history';ui.scrollEl='hr-'+rd.id;}
+      else{ui.view='rounds';ui.scrollEl='rd-'+rd.id;ui.open[rd.id]=true;}
+      break;}
     case 'tab':ui.view=a[0];ui.touched=true;ui.top=true;break;
     case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;break;}
     case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});touch();}break;
@@ -1955,7 +1967,7 @@ document.addEventListener('click',e=>{
 });
 
 /* ---------- GitHub Pages layer: the host publishes data.json, viewers read it ---------- */
-const VIEW_OK=['tab','open','trophy','ptrophy'];
+const VIEW_OK=['tab','open','trophy','ptrophy','ptoggle','photo','goround'];
 const GHK='ubg-gh', BKK='ubg-bk';
 let GH={};try{GH=JSON.parse(localStorage.getItem(GHK))||{};}catch(e){}
 if(!GH.repo&&/\.github\.io$/i.test(location.hostname)){const o=location.hostname.split('.')[0];GH.repo=o+'/'+(location.pathname.split('/')[1]||(o+'.github.io'));}
