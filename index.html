@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Game Night Gauntlet</title>
 <meta name="theme-color" content="#F6F0E2">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -33,6 +33,8 @@
 }
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--f-body);padding-inline:16px;padding-block:20px 64px;-webkit-text-size-adjust:100%}
+html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}
+input,select,textarea{font-size:16px!important}
 .wrap{max-width:760px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:14px}
 .logo{flex:none;display:block;overflow:visible;width:clamp(72px,22vw,100px);height:auto;aspect-ratio:1}
@@ -270,8 +272,17 @@ body.view .btn:not([data-act="trophy"]):not([data-act="ptrophy"]){display:none}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
+/* Lock zoom once the page is open: it has already sized itself to the screen, so pinch and double-tap zoom are switched off. */
+(function(){try{
+  let m=document.querySelector('meta[name=viewport]');
+  if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}
+  m.content='width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
+  ['gesturestart','gesturechange','gestureend'].forEach(e=>document.addEventListener(e,ev=>ev.preventDefault(),{passive:false}));
+  document.addEventListener('touchmove',ev=>{if(ev.touches&&ev.touches.length>1)ev.preventDefault();},{passive:false});
+  document.addEventListener('wheel',ev=>{if(ev.ctrlKey)ev.preventDefault();},{passive:false});
+}catch(e){}})();
 /*LOGIC-START*/
-const MINP=3, MAXP=12, FINAL_W=2;
+const MINP=2, MAXP=12, FINAL_W=2;
 const DEFAULT_GAMES=[
   {id:'ek',name:'Exploding Kittens',short:'EK',min:2,max:5,weight:1,mins:15,luck:5,on:true},
   {id:'kotd',name:'King of Tokyo Duel',short:'KoTD',min:2,max:2,weight:1,mins:20,luck:4,on:true},
@@ -320,6 +331,8 @@ function layout(n,min,max,ws){
   for(let i=0;i<k;i++) sizes.push(base+(i<extra?1:0));
   return {sizes,byes:n-seated};
 }
+/* Games that need more players than are signed up switch off by themselves (and back on when players are added). A manual tick always wins. */
+function syncGamesToCount(){const n=S.players.length;S.games.forEach(g=>{if(g.on&&g.min>n){g.on=false;g.auto=true;}else if(!g.on&&g.auto&&g.min<=n){g.on=true;delete g.auto;}});}
 function describeLayout(n,g,ws){
   const L=layout(n,g.min,g.max,ws);
   if(!L) return {ok:false,k:0,text:'Needs at least '+g.min+' players, so it is skipped'};
@@ -516,8 +529,9 @@ function headStartReach(m,q,bOver,pool){
 /* Gauntlet rank: 0 to 5 stars from how much was played (round weights, scaled by table size, plus the final). */
 function gauntletStars(S,hasFinal){
   let w=0;for(const rd of S.rounds){const g=gameOf(S,rd.gameId);w+=g?g.weight:1;}
-  const f=Math.min(1.5,Math.max(0.5,S.players.length/6));
-  return Math.min(5,Math.floor((w*f+(hasFinal?FINAL_W:0))/3));
+  /* Gauntlet Rank: weighted rounds, scaled gently by table size (6 players = 1.0, never below 0.6 or above 1.3), plus 3 for a final, 3.8 points per star, 5 stars at most. */
+  const f=Math.min(1.3,Math.max(0.6,Math.sqrt(S.players.length/6)));
+  return Math.min(5,Math.floor((w*f+(hasFinal?3:0))/3.8));
 }
 function phaseOf(S){
   if(!S.started) return 'setup';
@@ -1365,7 +1379,7 @@ function headStartText(m,q,ids,S0){
 function viewSetup(){
   const n=S.players.length, locked=S.started, maxF=Math.min(4,n-1);
   if(S.finalists>maxF) S.finalists=maxF;
-  const players=S.players.map((p,i)=>`<li class="prow2"><span class="pnum mono">${i+1}</span><input class="inp" id="pn-${p.id}" value="${esc(p.name)}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name">${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>`).join('');
+  const players=S.players.map((p,i)=>`<li class="prow2"><span class="pnum mono">${i+1}</span><input class="inp" id="pn-${p.id}" value="${p.name==='Player '+(i+1)?'':esc(p.name)}" placeholder="Player ${i+1}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name">${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>`).join('');
   const fopts=[];for(let k=1;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
   const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${q===0.5?((S.headStart||0)===0.5||S.headStart===1):(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
   const ws=S.winnerStays!==false, ord=S.order||'smart';
@@ -1414,7 +1428,7 @@ function viewSetup(){
       ${sit.length?`<p class="muted">With ${n} players, ${esc(sit.join(', '))} can't seat everyone, so someone sits out each time. The draw picks them at random, and nobody sits out twice until everyone has sat out once. A sit-out earns half marks, the same as an average result.</p>`:''}</div>`;
   return `<section class="card"><div class="cardhead"><h2 class="chip c-blue">Players</h2><span class="muted mono">${n} of ${MAXP}</span></div>
     <ul class="plist">${players}</ul>
-    ${locked||n>=MAXP?'':`<p><button type="button" class="btn" data-act="addplayer">Add a player</button></p>`}</section>
+    ${locked?'<p class="muted">Players are locked because the tournament has started. To change who is playing, tap Start over below, or finish this one and begin a new tournament.</p>':''}${locked||n>=MAXP?'':`<p><button type="button" class="btn" data-act="addplayer">Add a player</button></p>`}</section>
   <section class="card"><div class="cardhead"><h2 class="chip c-yellow">Finalists</h2>
     <div class="seg" role="group" aria-label="Number of finalists">${fopts.join('')}</div></div>
     ${S.finalists===1?`<p class="muted">No final game: whoever leads after the last round is crowned. A tie for first gets a playoff.</p>`:`<p class="muted">After the last round, the top ${S.finalists} play one final game. A tie at the cut line gets a playoff.</p>
@@ -1526,8 +1540,8 @@ function viewFinale(){
   const scored=S.headStart>0&&first&&tableDone(first)?finalScores(S,first):null;
   if(ph==='champion'){
     const w=finalWinner(S), solo=S.finalists===1, g=solo?null:gameOf(S,S.finale[0].gameId), stars=gauntletStars(S,!solo);
-    const line=solo?`Led the standings after ${S.rounds.length} round${S.rounds.length===1?'':'s'}.`:scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
-    out=`<div class="card gold champ">${meeple(pcol(w),72)}<div class="txt"><span class="lbl">Ultimate Board Gamer</span><span class="name">${esc(pname(w))}</span>${stars?`<span class="stars" aria-label="${stars}-star gauntlet">${'★'.repeat(stars)}</span>`:''}<p>${esc(line)}</p></div></div>
+    const line=solo&&S.players.length===2?`Won the duel after ${S.rounds.length} round${S.rounds.length===1?'':'s'}.`:solo?`Led the standings after ${S.rounds.length} round${S.rounds.length===1?'':'s'}.`:scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
+    out=`<div class="card gold champ">${meeple(pcol(w),72)}<div class="txt"><span class="lbl">${S.players.length===2?'Duel Champion':'Ultimate Board Gamer'}</span><span class="name">${esc(pname(w))}</span>${stars?`<span class="stars" aria-label="${stars}-star gauntlet">${'★'.repeat(stars)}</span>`:''}<p>${esc(line)}</p></div></div>
       <div class="card" id="trophy-card"><div class="cardhead"><h2 class="chip c-yellow">Keepsake trophy</h2><span class="muted">PDF prints on half a letter page</span></div>
         <img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}. Tap to save to Photos." data-act="photo" role="button" tabindex="0" style="cursor:pointer" hidden>
         <div class="rfoot"><button type="button" class="btn primary" data-act="trophy" data-a="pdf">Save PDF</button><button type="button" class="btn" data-act="trophy" data-a="png">Save image</button></div><p class="hint">The image is sized for a phone screen, handy for sharing in chats. The PDF is the half-page print.</p>
@@ -1657,10 +1671,10 @@ async function drawTrophy(T){
   spacing(6);font('800',54,D);x.fillStyle=ink;x.fillText(T.title.toUpperCase(),150,262);spacing(0);
   font('700',40,M);x.fillStyle=muted;x.textAlign='right';x.fillText(dstr(T.date),W-150,262);x.textAlign='left';
   /* champion */
-  spacing(8);font('700',44,M);const lbl='ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
+  spacing(8);font('700',44,M);const lbl=T.players===2?'DUEL CHAMPION':'ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
   rr(144,312,lw+24,66,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.fillText(lbl,156,360);spacing(0);
   const ns=fit(T.champ.name,'800',D,1130,230,90);font('800',ns,D);x.fillStyle=ink;x.fillText(T.champ.name,150,600);
-  const wl=T.solo?'Won the gauntlet on points':'Won the final at '+T.finalGame;const fs=fit(wl,'500',B,1130,56,34);font('500',fs,B);x.fillStyle=muted;x.fillText(wl,150,690);
+  const wl=T.players===2&&T.solo?'Won the duel against '+T.runner+' by '+T.margin.toFixed(1)+' points':T.solo?'Won the gauntlet on points':'Won the final at '+T.finalGame;const fs=fit(wl,'500',B,1130,56,34);font('500',fs,B);x.fillStyle=muted;x.fillText(wl,150,690);
   const cxl=T.solo?580:320;drawChamp(x,cxl-170,735,340,T);if(T.stars) drawStars(x,cxl,1082,22,T.stars,14);
   /* the final */
   if(!T.solo){
@@ -1672,7 +1686,7 @@ async function drawTrophy(T){
     font('700',46,M);x.textAlign='right';x.fillStyle=ink;x.fillText(T.scored?f.total.toFixed(1):ordn(f.place),1290,y+52);x.textAlign='left';});
   }
   /* qualifying standings */
-  spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText('QUALIFYING STANDINGS',1420,330);spacing(0);
+  spacing(4);font('700',38,M);x.fillStyle=muted;x.fillText(T.players===2?'DUEL STANDINGS':'QUALIFYING STANDINGS',1420,330);spacing(0);
   const nn=T.standings.length,rh=Math.min(104,Math.floor(790/nn));
   T.standings.forEach((s,i)=>{const y=372+i*rh,mid=y+rh/2,r=rh*0.32;
     if(s.champ){rr(1400,y+4,1000,rh-8,16);x.fillStyle='#FFF1B8';x.fill();}
@@ -1716,11 +1730,11 @@ async function drawTrophyPhone(T){
     if(fin){x.fillStyle=edge;font('700',34,B);x.textAlign='center';x.textBaseline='middle';x.fillText('★',tx+tw/2,132);x.textBaseline='alphabetic';x.textAlign='left';}tx+=tw+gap;}
   spacing(6);font('800',54,D);x.fillStyle=ink;ctr(T.title.toUpperCase(),246);spacing(0);
   font('700',34,M);x.fillStyle=muted;ctr(dstr(T.date),298);
-  spacing(8);font('700',40,M);const lbl='ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
+  spacing(8);font('700',40,M);const lbl=T.players===2?'DUEL CHAMPION':'ULTIMATE BOARD GAMER',lw=x.measureText(lbl).width;
   rr((W-lw)/2-18,340,lw+36,64,12);x.fillStyle='#FFD84D';x.fill();x.fillStyle=ink;x.textAlign='center';x.fillText(lbl,W/2+4,386);x.textAlign='left';spacing(0);
   drawChamp(x,(W-300)/2,420,300,T);if(T.stars) drawStars(x,W/2,740,26,T.stars,16);
   const ns=fit(T.champ.name,'800',D,W-200,170,80);font('800',ns,D);x.fillStyle=ink;ctr(T.champ.name,932);
-  const sub=T.solo?'Won the gauntlet on points':'Won the final at '+T.finalGame;const fs=fit(sub,'500',B,W-200,50,32);font('500',fs,B);x.fillStyle=muted;ctr(sub,1012);
+  const sub=T.players===2&&T.solo?'Won the duel against '+T.runner+' by '+T.margin.toFixed(1)+' points':T.solo?'Won the gauntlet on points':'Won the final at '+T.finalGame;const fs=fit(sub,'500',B,W-200,50,32);font('500',fs,B);x.fillStyle=muted;ctr(sub,1012);
   /* stats */
   const stats=trophyStats(T),bw=(W-200-30)/2,bh=186;
   stats.forEach((s,i)=>{
@@ -1732,7 +1746,7 @@ async function drawTrophyPhone(T){
     const ss=fit(s[2],'500',B,w-40,30,20);font('500',ss,B);x.fillStyle=muted;x.fillText(s[2],bx+w/2,by+166);x.textAlign='left';x.textBaseline='alphabetic';});
   /* the final and the qualifying standings, side by side */
   const sx=T.solo?100:620;
-  spacing(4);font('700',28,M);x.fillStyle=muted;if(!T.solo)x.fillText('THE FINAL',100,1704);x.fillText('STANDINGS',sx,1704);spacing(0);
+  spacing(4);font('700',28,M);x.fillStyle=muted;if(!T.solo)x.fillText('THE FINAL',100,1704);x.fillText(T.players===2?'DUEL STANDINGS':'STANDINGS',sx,1704);spacing(0);
   const fl=T.solo?[]:T.final.slice(0,4),nn=T.standings.length,p=Math.min(60,Math.floor(330/Math.max(nn,fl.length)));
   fl.forEach((f,i)=>{const y=1726+i*p,mid=y+p/2,r=p*0.36;
     x.beginPath();x.arc(100+r,mid,r,0,Math.PI*2);x.fillStyle=BRC[(f.place-1+2)%6];x.fill();x.lineWidth=4;x.strokeStyle=edge;x.stroke();
@@ -1864,8 +1878,8 @@ function act(name,a,el){
       break;}
     case 'tab':ui.view=a[0];ui.touched=true;ui.top=true;break;
     case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;break;}
-    case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});touch();}break;
-    case 'delplayer':if(S.players.length>MINP&&!S.started){S.players=S.players.filter(p=>p.id!==a[0]);touch();}break;
+    case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});syncGamesToCount();touch();}break;
+    case 'delplayer':if(S.players.length>MINP&&!S.started){S.players=S.players.filter(p=>p.id!==a[0]);S.finalists=Math.max(1,Math.min(S.finalists,Math.min(4,S.players.length-1)));syncGamesToCount();touch();}break;
     case 'fin':S.finalists=+a[0];touch();break;
     case 'hs':S.headStart=+a[0];touch();break;
     case 'nh':S.nightHours=+a[0];touch();break;
@@ -1936,7 +1950,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   if(VIEW) return;
   const el=e.target;
-  if(el.dataset&&el.dataset.act==='gtoggle'){const g=gameOf(S,el.dataset.a);if(g){g.on=el.checked;touch();render();}}
+  if(el.dataset&&el.dataset.act==='gtoggle'){const g=gameOf(S,el.dataset.a);if(g){g.on=el.checked;delete g.auto;touch();render();}}
 });
 document.addEventListener('input',e=>{
   if(VIEW) return;
