@@ -215,7 +215,7 @@ details.add summary{cursor:pointer;font-weight:700}
 .sndbtn{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:6;width:36px;height:36px;border:2px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);opacity:.5;display:grid;place-items:center;padding:0;cursor:pointer}.sndbtn:hover,.sndbtn:focus-visible{opacity:1}
 .sndbtn:active{transform:scale(.92)}
 
-.statcard{cursor:pointer;gap:10px;background:var(--surface);position:relative;overflow:hidden;margin-bottom:6px}
+.statcard{cursor:pointer;touch-action:pan-y;gap:10px;background:var(--surface);position:relative;overflow:hidden;margin-bottom:6px}
 .statcard .shead2{display:flex;align-items:center;justify-content:space-between}
 .statcard .sdots{display:flex;gap:5px}.statcard .sdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.statcard .sdots i.on{background:var(--edge);transform:scale(1.25)}
 .statcard .sbody{display:flex;align-items:center;gap:14px}
@@ -225,7 +225,7 @@ details.add summary{cursor:pointer;font-weight:700}
 .statcard .sbar{height:2px;border-radius:2px;background:var(--line);overflow:hidden;opacity:.8}
 .statcard .sbar i{display:block;height:100%;width:100%;background:var(--c-purple);transform-origin:left;animation:sbar 10s linear forwards}
 @keyframes sbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes sswap{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes sswap{from{opacity:0;transform:translateX(var(--sdx,0px)) translateY(var(--sdy,8px))}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:no-preference){.statcard.swap .sbody{animation:sswap .45s ease-out}.statcard.swap .sico{animation:popIn .5s cubic-bezier(.3,1.6,.5,1)}}
 @media (prefers-reduced-motion:reduce){.statcard .sbar i{animation:none;transform:none}}
 
@@ -310,7 +310,7 @@ details.add summary{cursor:pointer;font-weight:700}
   .road .seg2.pop{animation:popIn .5s cubic-bezier(.3,1.6,.5,1)}
   .btn.primary:not([disabled]){animation:glowPulse 2.8s ease-in-out infinite}
   .btn:not([disabled]):not(.ghost)::after{content:"";position:absolute;top:-20%;bottom:-20%;left:0;width:70%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.28) 30%,rgba(255,255,255,.95) 44%,rgba(255,255,255,.95) 56%,rgba(255,255,255,.28) 70%,transparent 100%);transform:translateX(-150%) skewX(-20deg);pointer-events:none}
-  .btn.primary:not([disabled])::after{animation:glint 3.8s ease-in-out infinite}
+  .btn.primary:not([disabled])::after{animation:glint var(--gd,3.8s) ease-in-out var(--gl,0s) infinite}
   @keyframes glint{0%,55%{transform:translateX(-150%) skewX(-20deg)}100%{transform:translateX(260%) skewX(-20deg)}}
   @media (hover:hover){.btn:not([disabled]):hover{transform:translateY(-2px)}.btn:not([disabled]):not(.primary):hover::after{transform:translateX(260%) skewX(-20deg);transition:transform .7s ease}.pcard .pbtn:hover svg{animation:wob .5s ease}}
   .btn:not([disabled]):active{transform:translateY(2px) scale(.97)}
@@ -386,10 +386,11 @@ details.add summary{cursor:pointer;font-weight:700}
 .twrap{position:relative;max-width:340px;margin-inline:auto}
 .twrap .trophy{margin:0}
 .tglint{position:absolute;inset:2px;overflow:hidden;pointer-events:none;border-radius:10px;-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
-.crsh{fill:#fff;opacity:0}
+.crsh{opacity:0}
 @media (prefers-reduced-motion:no-preference){
-  .tglint::after{content:"";position:absolute;top:-10%;bottom:-10%;left:0;width:45%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.35) 30%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.35) 70%,transparent 100%);transform:translateX(-160%) skewX(-20deg);animation:glint 4.4s ease-in-out infinite}
-  .crsh{opacity:.9;animation:crsh 4.2s ease-in-out infinite;animation-delay:var(--d,0s)}
+  .tglint::after{content:"";position:absolute;top:-10%;bottom:-10%;left:0;width:45%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.35) 30%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.35) 70%,transparent 100%);transform:translateX(-450%) skewX(-20deg);animation:glint4 var(--gd,4.4s) ease-in-out var(--gl,0s) infinite}
+  @keyframes glint4{0%,55%{transform:translateX(-450%) skewX(-20deg)}100%{transform:translateX(550%) skewX(-20deg)}}
+  .crsh{opacity:.9;animation:crsh var(--gd,4.2s) ease-in-out var(--gl,0s) infinite}
   @keyframes crsh{0%,50%{transform:translateX(-90px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
 }
 
@@ -1914,9 +1915,17 @@ function statInner(){
 function statNext(d){
   const L=ui.statList||[],c=document.getElementById('statcard');if(!c||L.length<2) return;
   ui.statIdx=((ui.statIdx||0)+d+L.length)%L.length;ui.statT=Date.now();
+  c.style.setProperty('--sdx',(d*28)+'px');c.style.setProperty('--sdy',d?'0px':'8px');
   c.innerHTML=statInner();c.classList.remove('swap');void c.offsetWidth;c.classList.add('swap');
 }
-document.addEventListener('click',ev=>{if(ev.target.closest&&ev.target.closest('#statcard')) statNext(1);});
+let statSw=null,statSwiped=0;
+document.addEventListener('touchstart',ev=>{const c=ev.target.closest&&ev.target.closest('#statcard');if(!c||ev.touches.length!==1){statSw=null;return;}const t=ev.touches[0];statSw={x:t.clientX,y:t.clientY};},{passive:true});
+document.addEventListener('touchend',ev=>{
+  if(!statSw) return;const t=ev.changedTouches[0],dx=t.clientX-statSw.x,dy=t.clientY-statSw.y;statSw=null;
+  if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.4){statSwiped=Date.now();statNext(dx<0?1:-1);}
+},{passive:true});
+document.addEventListener('click',ev=>{if(ev.target.closest&&ev.target.closest('#statcard')){if(Date.now()-statSwiped<500) return;statNext(1);}});
+document.addEventListener('keydown',ev=>{const c=ev.target.closest&&ev.target.closest('#statcard');if(!c) return;if(ev.key==='ArrowLeft'){statNext(-1);ev.preventDefault();}else if(ev.key==='ArrowRight'||ev.key==='Enter'||ev.key===' '){statNext(1);ev.preventDefault();}});
 setInterval(()=>{if(document.hidden) return;if(!document.getElementById('statcard')) return;if(Date.now()-(ui.statT||0)>=10000) statNext(1);},400);
 
 function viewHistory(){
@@ -1926,13 +1935,13 @@ function viewHistory(){
   S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
   const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
-  const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><clipPath id="cc${k}"><path d="${CROWN_D}"/></clipPath><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g clip-path="url(#cc${k})"><rect class="crsh" x="0" y="100" width="90" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
+  const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><clipPath id="cc${k}"><path d="${CROWN_D}"/></clipPath><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g clip-path="url(#cc${k})"><rect class="crsh" x="0" y="100" width="130" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
     const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
       ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
   ui.statList=statsList();if((ui.statIdx||0)>=ui.statList.length) ui.statIdx=0;if(!ui.statT) ui.statT=Date.now();
-  return `<section class="card statcard swap" id="statcard" role="button" tabindex="0" aria-label="Hall of fame. Tap for the next stat.">${statInner()}</section><section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
+  return `<section class="card statcard swap" id="statcard" role="button" tabindex="0" aria-label="Hall of fame. Tap or swipe for another stat.">${statInner()}</section><section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
 function histCard(tag,g,ts,tables,w,byes,eid){
   return `<article class="card hist"${eid?` id="${eid}"`:''}><div class="cardhead"><h3>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</h3><span class="muted">${ts?esc(dstr(ts,true)):''}</span></div>
@@ -2348,7 +2357,14 @@ function trophyGlint(im,T){
   }catch(e){}};
   g.src=im.src;
 }
+/* every shine gets its own pace and phase so they never sweep together */
+function fxJitter(){
+  document.querySelectorAll('.btn.primary,.crsh,.tglint').forEach(el=>{
+    const d=3.4+Math.random()*4.6;el.style.setProperty('--gd',d.toFixed(2)+'s');el.style.setProperty('--gl',(-Math.random()*d).toFixed(2)+'s');
+  });
+}
 function afterRender(){
+  fxJitter();
   try{fxAfterRender();}catch(e){}
   document.querySelectorAll('img[data-pimg]').forEach(im=>{
     const e=S.archive[+im.dataset.pimg]; if(!e) return;
@@ -2460,10 +2476,11 @@ function render(){
   document.getElementById('roadwrap').innerHTML=road;
   document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button type="button" class="tab t-${k}" data-act="tab" data-a="${k}"${ui.view===k?' aria-current="page"':''}>${l}</button>`).join('');
   stickMeasure();
+  const anEl=ui.pop?document.querySelector(ui.pop):null,anTop=anEl?anEl.getBoundingClientRect().top:null,anSel=ui.pop;
   app.innerHTML=backupBanner()+(ui.view==='setup'?viewSetup():ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory());
   if(ui.top){window.scrollTo(0,0);ui.top=false;}
   else if(ui.scrollTo||ui.scrollEl){const el=document.getElementById(ui.scrollEl||('rd-'+ui.scrollTo));ui.scrollTo=null;ui.scrollEl=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1700);}}
-  else window.scrollTo(0,y);
+  else{window.scrollTo(0,y);if(anTop!==null){const n2=document.querySelector(anSel);if(n2){const d=n2.getBoundingClientRect().top-anTop;if(Math.abs(d)>0.5) window.scrollTo(0,y+d);}}}
   if(ui.view==='setup'&&!(typeof VIEW!=='undefined'&&VIEW)) app.insertAdjacentHTML('beforeend',sharePanel());
   stickCheck();
   afterRender();
