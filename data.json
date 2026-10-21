@@ -1,8 +1,8 @@
 {
   "v": 1,
-  "t": 1792548777700,
+  "t": 1792548791260,
   "seq": 93,
-  "pseq": 16,
+  "pseq": 17,
   "tid": null,
   "players": [
     {
@@ -24,6 +24,11 @@
       "id": "p15",
       "name": "Kris",
       "rid": "r6"
+    },
+    {
+      "id": "p16",
+      "name": "Eilon",
+      "rid": "r8"
     }
   ],
   "roster": [
@@ -51,9 +56,13 @@
     {
       "rid": "r7",
       "name": "Danna"
+    },
+    {
+      "rid": "r8",
+      "name": "Eilon"
     }
   ],
-  "rseq": 7,
+  "rseq": 8,
   "rv": 1,
   "games": [
     {
