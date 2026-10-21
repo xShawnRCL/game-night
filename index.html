@@ -498,7 +498,7 @@ function fresh(){
     players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),roster:[],rseq:0,rv:1,
     games:DEFAULT_GAMES.map(g=>({...g})),
     finalists:3,headStart:2,nightHours:3,winnerStays:true,order:'smart',gv:1,bkNights:0,
-    started:false,rounds:[],tiebreaks:[],finale:[],archive:[],trash:[]};
+    started:false,rounds:[],tiebreaks:[],finale:[],archive:[],trash:[],slots:[],born:Date.now()};
 }
 /* How n players split across tables for a game with seat range min..max. */
 function layout(n,min,max,ws){
@@ -771,6 +771,7 @@ function trophyData(S){
 /* Saved tournaments pick up settings and games added later. */
 function ensureDefaults(S){
   S.roster=S.roster||[];
+  S.slots=(S.slots||[]).filter(x=>x&&x.snap).slice(0,12);
   S.trash=(S.trash||[]).filter(t=>t&&t.payload&&Date.now()-t.at<6048e5).slice(0,20);
   if(!S.rv){S.rv=1;
     const add=n=>{n=String(n||'').trim();if(!n||/^Player \d+$/.test(n)) return null;let e=S.roster.find(r=>r.name.toLowerCase()===n.toLowerCase());if(!e){e={rid:'r'+(S.rseq=(S.rseq||0)+1),name:n};S.roster.push(e);}return e;};
@@ -1666,7 +1667,7 @@ function viewSetup(){
       <p class="muted">Games with one copy take turns, so three Chess matches run one after another. Raise the copies if you own more than one.</p>
       ${skipped.length?`<p class="muted">Skipped for ${n} players: ${esc(skipped.join(', '))}.</p>`:''}
       ${sit.length?`<p class="muted">With ${n} players, ${esc(sit.join(', '))} can't seat everyone, so someone sits out each time. The draw picks them at random, and nobody sits out twice until everyone has sat out once. A sit-out earns half marks, the same as an average result.</p>`:''}</div>`;
-  return `<section class="card"><div class="cardhead"><h2 class="chip c-blue">Players</h2><span class="muted mono">${n} of ${MAXP}</span></div>
+  return `${gauntletsCard()}<section class="card"><div class="cardhead"><h2 class="chip c-blue">Players</h2><span class="muted mono">${n} of ${MAXP}</span></div>
     <ul class="plist">${players}</ul>
     ${rosterChips()}${locked?'<p class="muted">Players are locked during gauntlet.</p>':''}${locked||n>=MAXP?'':`<p><button type="button" class="btn" data-act="addplayer">Add a player</button></p>`}</section>
   <section class="card"><div class="cardhead"><h2 class="chip c-yellow">Finalists</h2>
@@ -2405,9 +2406,9 @@ function dataMgmtHTML(){
   const past=S.archive.map(a=>`<div class="dmr"><div><b>${esc(a.data.champ.name)}</b><span class="muted">${esc(dstr(a.data.date))} · ${a.data.players} players · ${a.data.rounds} rounds</span></div>${dmBtn('delpast:'+a.id,'delpast',a.id,'Delete','Are you sure? Tap again')}</div>`).join('');
   const all=`<div class="dmr"><div><b>Clear everything and restart</b><span class="muted">Current gauntlet, past gauntlets, stats and saved players</span></div>${dmBtn('clearall','clearall','x','Clear all','Are you sure? Tap again')}</div>`;
   const tr=(S.trash||[]).map(t=>{
-    const snap=t.kind!=='tournament',need=snap&&(S.started||(t.kind==='all'&&(S.archive.length||(S.roster||[]).length)));
+    const snap=(t.kind==='current'||t.kind==='all'),need=snap&&(S.started||(t.kind==='all'&&(S.archive.length||(S.roster||[]).length)));
     const on=ui.confirm==='restore:'+t.id;
-    return `<div class="dmr"><div><b>${esc(t.kind==='tournament'?t.label:t.label)}</b><span class="muted">${t.kind==='tournament'?'Past gauntlet':t.kind==='all'?'Everything':'In-progress gauntlet'} · ${daysLeft(t)} day${daysLeft(t)===1?'':'s'} left</span></div><span class="dmb"><button type="button" class="btn sm${on?' danger armed':''}" data-act="restore" data-a="${t.id}">${on?'Replaces what is here. Tap again':'Restore'}</button>${on?'<button type="button" class="btn sm ghost" data-act="dmcancel">Cancel</button>':''}</span></div>`;}).join('');
+    return `<div class="dmr"><div><b>${esc(t.kind==='tournament'?t.label:t.label)}</b><span class="muted">${t.kind==='tournament'?'Past gauntlet':t.kind==='slot'?'Saved gauntlet':t.kind==='all'?'Everything':'In-progress gauntlet'} · ${daysLeft(t)} day${daysLeft(t)===1?'':'s'} left</span></div><span class="dmb"><button type="button" class="btn sm${on?' danger armed':''}" data-act="restore" data-a="${t.id}">${on?'Replaces what is here. Tap again':'Restore'}</button>${on?'<button type="button" class="btn sm ghost" data-act="dmcancel">Cancel</button>':''}</span></div>`;}).join('');
   return `<h3>Data management</h3>
     <p class="hint">Deleting asks twice. Anything deleted waits 7 days under Recently deleted, so you can bring it back.</p>
     <div class="dm">${cur}${all}</div>
@@ -2436,14 +2437,52 @@ function doRestore(id){
   const i=(S.trash||[]).findIndex(x=>x.id===id);if(i<0) return;const it=S.trash[i];
   if(it.kind==='tournament'){
     S.archive.splice(Math.min(it.payload.at,S.archive.length),0,it.payload.entry);S.trash.splice(i,1);
+  }else if(it.kind==='slot'){
+    S.slots=S.slots||[];S.slots.unshift(it.payload.slot);S.trash.splice(i,1);
   }else{
     if(S.started||it.kind==='all') trashPush(it.kind==='all'?'all':'current','Before restore',snapOf());
     const rest=S.trash.filter(x=>x.id!==id),snap=JSON.parse(JSON.stringify(it.payload));
     if(it.kind==='all') S=ensureDefaults(snap);
-    else S=ensureDefaults({...snap,archive:S.archive,roster:S.roster,rseq:S.rseq,rv:S.rv});
+    else S=ensureDefaults({...snap,archive:S.archive,roster:S.roster,rseq:S.rseq,rv:S.rv,slots:S.slots});
     S.trash=rest;ui.open={};ui.tkey=null;ui.turl=null;
   }
   ui.pimg={};ui.confirm=null;ui.top=false;touch();
+}
+
+/* ---------- several gauntlets: park one, open another ---------- */
+const G_SKIP=['archive','roster','rseq','rv','trash','slots'];
+function gSnap(){const c=JSON.parse(JSON.stringify(S));G_SKIP.forEach(k=>delete c[k]);return c;}
+function gLabel(o){return o.gname||('Gauntlet · '+dstr(o.born||o.t||Date.now()));}
+function gStatus(o){
+  if(!o.started) return 'Still being set up';
+  const d=o.rounds.filter(roundDone).length;
+  return o.players.length+' players · '+d+' of '+o.rounds.length+' rounds done';
+}
+function gHasWork(){return S.started||S.players.some((p,i)=>p.name!=='Player '+(i+1));}
+function gPark(){S.slots=S.slots||[];S.slots.unshift({id:'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),name:gLabel(S),at:Date.now(),snap:gSnap()});S.slots=S.slots.slice(0,12);}
+function gNew(){
+  if(!S.started) return;
+  if(phaseOf(S)==='champion') startOver();
+  else{gPark();startOver(true);}
+  ui.view='setup';ui.top=true;
+}
+function gOpen(id){
+  const i=(S.slots||[]).findIndex(x=>x.id===id);if(i<0) return;
+  const it=S.slots.splice(i,1)[0];
+  if(S.started&&phaseOf(S)==='champion'){const T=trophyData(S);if(T) S.archive.unshift({id:S.tid||('a'+Date.now()),data:T});}
+  else if(gHasWork()) gPark();
+  const keep={archive:S.archive,roster:S.roster,rseq:S.rseq,rv:S.rv,trash:S.trash,slots:S.slots};
+  S=ensureDefaults({...JSON.parse(JSON.stringify(it.snap)),...keep});
+  ui.open={};ui.tkey=null;ui.turl=null;ui.pimg={};ui.confirm=null;ui.lookFor=null;ui.view=S.started?'rounds':'setup';ui.touched=true;ui.top=true;
+}
+function gauntletsCard(){
+  const sl=(S.slots||[]).map(x=>`<div class="dmr"><div><b>${esc(x.name||gLabel(x.snap))}</b><span class="muted">${esc(gStatus(x.snap))}</span></div><span class="dmb"><button type="button" class="btn sm primary" data-act="gopen" data-a="${x.id}">Open</button>${dmBtn('delslot:'+x.id,'delslot',x.id,'Delete','Sure? Tap again')}</span></div>`).join('');
+  const fin=S.started&&phaseOf(S)==='champion';
+  return `<section class="card"><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2></div>
+    <label class="fld wide"><span>This gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
+    <p class="muted">${esc(gStatus(S))}</p>
+    ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
+    ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
 }
 /* ---------- render ---------- */
 
@@ -2463,7 +2502,7 @@ function stickCheck(){
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ui) ui[d.dataset.ui]=d.open;},true);
 const TABS=(VIEW?[]:[['setup','Setup']]).concat([['rounds','Rounds'],['standings','Standings'],['finale','Finale'],['history','History']]);
 function render(){
-  const y=window.scrollY;
+  const y=window.scrollY;ui.dirty=false;
   try{localStorage.setItem('ubg-view',ui.view);}catch(e){}
   const n=S.players.length;
   let road='';
@@ -2501,7 +2540,7 @@ function startOver(discard){
   const staples=DEFAULT_GAMES.map(g=>({...g,copies:Math.max(1,own[g.id]||1)}));
   const extras=S.games.filter(g=>g.custom).map(g=>({...g,on:false}));
   f.games=staples.concat(extras);
-  f.roster=S.roster;f.rseq=S.rseq;f.rv=1;f.players=S.players;f.pseq=S.pseq;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.order=S.order;f.archive=arch.slice(0,50);f.trash=S.trash||[];
+  f.roster=S.roster;f.rseq=S.rseq;f.rv=1;f.players=S.players;f.pseq=S.pseq;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.order=S.order;f.archive=arch.slice(0,50);f.trash=S.trash||[];f.slots=S.slots||[];f.born=Date.now();
   S=f;ui.open={};ui.confirm=null;ui.view=T?'history':'setup';ui.touched=true;ui.top=true;ui.tkey=null;ui.turl=null;
 }
 function act(name,a,el){
@@ -2552,11 +2591,14 @@ function act(name,a,el){
       break;
     case 'newt':startOver();touch();break;
     case 'dmcancel':ui.confirm=null;break;
+    case 'gnew':gNew();touch();break;
+    case 'gopen':gOpen(a[0]);touch();break;
+    case 'delslot':{if(!arm('delslot:'+a[0])) break;ui.confirm=null;const i=(S.slots||[]).findIndex(x=>x.id===a[0]);if(i>=0){const e=S.slots.splice(i,1)[0];trashPush('slot',e.name||gLabel(e.snap),{slot:e});touch();toast('Deleted. Restore it from Recently deleted for 7 days.');}break;}
     case 'clearcur':if(!S.started) break;if(!arm('clearcur')) break;doClear('cur');toast('Cleared. Restore it from Recently deleted for 7 days.');break;
     case 'clearall':if(!arm('clearall')) break;doClear('all');toast('Everything cleared. Restore it from Recently deleted for 7 days.');break;
     case 'delpast':{if(!arm('delpast:'+a[0])) break;ui.confirm=null;const i=S.archive.findIndex(x=>x.id===a[0]);if(i>=0){const e=S.archive.splice(i,1)[0];trashPush('tournament',trLabel(e.data),{entry:e,at:i});ui.pimg={};ui.open={};touch();toast('Deleted. Restore it from Recently deleted for 7 days.');}break;}
     case 'restore':{const it=(S.trash||[]).find(x=>x.id===a[0]);if(!it) break;
-      if(it.kind!=='tournament'&&(S.started||(it.kind==='all'&&(S.archive.length||(S.roster||[]).length)))&&!arm('restore:'+a[0])) break;
+      if((it.kind==='current'||it.kind==='all')&&(S.started||(it.kind==='all'&&(S.archive.length||(S.roster||[]).length)))&&!arm('restore:'+a[0])) break;
       doRestore(a[0]);toast('Restored.');break;}
     case 'place':{
       const [kind,eid,ti,pid,n]=a;if(kind==='r'&&S.finale.length) break;const t=tableOf(kind,eid,+ti);if(!t) break;
@@ -2600,15 +2642,19 @@ document.addEventListener('click',e=>{
   if(el.tagName==='INPUT'||el.tagName==='SELECT') return;
   if(act(el.dataset.act,(el.dataset.a||'').split('|'),el)!==false) render();
 });
+/* a name field redraws the page when it loses focus; if that happens mid-tap the tapped button is replaced and the tap is lost, so wait for the finger to lift */
+document.addEventListener('pointerdown',()=>{ui.down=true;},{capture:true,passive:true});
+['pointerup','pointercancel'].forEach(t=>document.addEventListener(t,()=>{ui.down=false;if(ui.dirty) setTimeout(()=>{if(ui.dirty){ui.dirty=false;renderSafe();}},450);},{capture:true,passive:true}));
 document.addEventListener('change',e=>{
   if(VIEW) return;
   const el=e.target;
-  if(el.dataset&&el.dataset.act==='setname'){const p=S.players.find(q=>q.id===el.dataset.a);if(p){rosterSync(p);touch();renderSafe();}}
+  if(el.dataset&&el.dataset.act==='setname'){const p=S.players.find(q=>q.id===el.dataset.a);if(p){rosterSync(p);touch();if(ui.down) ui.dirty=true;else renderSafe();}}
   if(el.dataset&&el.dataset.act==='gtoggle'){const g=gameOf(S,el.dataset.a);if(g){g.on=el.checked;delete g.auto;touch();render();}}
 });
 document.addEventListener('input',e=>{
   if(VIEW) return;
   const el=e.target;
+  if(el.dataset&&el.dataset.act==='gname'){S.gname=el.value.trim().slice(0,30);if(!S.gname) delete S.gname;touch();}
   if(el.dataset&&el.dataset.act==='setname'){const p=S.players.find(p=>p.id===el.dataset.a);if(p){p.name=el.value.trim()||('Player '+(S.players.indexOf(p)+1));touch();}}
 });
 
