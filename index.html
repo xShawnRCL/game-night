@@ -394,6 +394,20 @@ details.add summary{cursor:pointer;font-weight:700}
   @keyframes crsh{0%,50%{transform:translateX(-90px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
 }
 
+#splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;transition:opacity .45s ease}
+#splash.out{opacity:0}
+#splash .sl{width:110px;height:110px}
+#splash .sn{font:800 1.5rem/1 var(--f-display);letter-spacing:-.02em;color:var(--ink)}
+#splash .sb{display:flex;gap:6px}
+#splash .sb i{width:22px;height:16px;border-radius:6px;border:2px solid var(--edge);background:var(--surface)}
+@media (prefers-reduced-motion:no-preference){
+  #splash .sl{animation:slIn .6s cubic-bezier(.3,1.5,.5,1) both}
+  #splash .sn{animation:vIn .5s .15s ease-out both}
+  #splash .sb i{animation:sbf 1.2s ease-in-out infinite;animation-delay:calc(var(--k)*.12s)}
+  @keyframes slIn{from{opacity:0;transform:scale(.6) rotate(-12deg)}to{opacity:1;transform:none}}
+  @keyframes sbf{0%,100%{background:var(--surface);transform:translateY(0)}35%{background:var(--c);transform:translateY(-5px)}}
+}
+
 /* GitHub Pages build */
 body.view [data-act]{pointer-events:none}
 body.view [data-act="tab"],body.view [data-act="open"],body.view [data-act="share"],body.view [data-act="pshare"],body.view [data-act="ptoggle"],body.view [data-act="photo"],body.view [data-act="goround"]{pointer-events:auto}
@@ -408,6 +422,7 @@ body.view .rost{display:none}
 .share .hint{margin-top:8px}
 </style>
 
+<div id="splash" aria-hidden="true"><svg class="sl" id="splogo" viewBox="1 2 62 60"></svg><div class="sn">Game Night Gauntlet</div><div class="sb"><i style="--k:0;--c:var(--c-coral)"></i><i style="--k:1;--c:var(--c-blue)"></i><i style="--k:2;--c:var(--c-yellow)"></i><i style="--k:3;--c:var(--c-green)"></i><i style="--k:4;--c:var(--c-purple)"></i><i style="--k:5;--c:var(--c-orange)"></i></div></div>
 <div class="wrap">
   <header>
     <div class="brand">
@@ -2691,6 +2706,14 @@ document.addEventListener('click',e=>{
   if(note) note.textContent='Filled in '+g.n+' from the catalog. Times and player counts are approximate, so adjust them for your copy, then tap Add to list.';
   const nm=document.getElementById('ng-name'); if(nm&&nm.scrollIntoView) nm.scrollIntoView({block:'center'});
 });
+(function(){
+  const sp=document.getElementById('splash'),lg=document.querySelector('.logo');if(!sp) return;
+  if(lg) document.getElementById('splogo').innerHTML=lg.innerHTML;
+  const t0=Date.now(),min=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?0:1100;
+  const done=()=>setTimeout(()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),500);},Math.max(0,min-(Date.now()-t0)));
+  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(done,done);
+  setTimeout(()=>{if(sp.parentNode) done();},3000);
+})();
 
 /* ---------- GitHub Pages layer: the host publishes data.json, viewers read it ---------- */
 const VIEW_OK=['tab','open','share','pshare','ptoggle','photo','goround'];
