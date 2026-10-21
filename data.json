@@ -1,9 +1,9 @@
 {
   "v": 1,
-  "t": 1792548765423,
+  "t": 1792548777700,
   "seq": 93,
   "pseq": 16,
-  "tid": "t1792296829659",
+  "tid": null,
   "players": [
     {
       "id": "p1",
@@ -341,134 +341,36 @@
   "order": "smart",
   "gv": 1,
   "bkNights": 0,
-  "started": true,
-  "rounds": [
-    {
-      "id": "r80",
-      "gameId": "checkers",
-      "tables": [
-        {"ids":["p1","p15","p2"],"places":{"p1":1,"p15":2,"p2":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338250954
-    },
-    {
-      "id": "r81",
-      "gameId": "kot",
-      "tables": [
-        {"ids":["p15","p1","p2"],"places":{"p15":1,"p1":2,"p2":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338338842
-    },
-    {
-      "id": "r82",
-      "gameId": "kotd",
-      "tables": [
-        {"ids":["p2","p15","p1"],"places":{"p2":1,"p15":2,"p1":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338340191
-    },
-    {
-      "id": "r83",
-      "gameId": "skipbo",
-      "tables": [
-        {"ids":["p15","p2","p1"],"places":{"p15":1,"p2":2,"p1":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338345606
-    },
-    {
-      "id": "r84",
-      "gameId": "blokus",
-      "tables": [
-        {"ids":["p1","p15","p2"],"places":{"p1":1,"p15":2,"p2":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338348608
-    },
-    {
-      "id": "r85",
-      "gameId": "ek",
-      "tables": [
-        {"ids":["p1","p2","p15"],"places":{"p2":1,"p1":3,"p15":2}}
-      ],
-      "byes": [],
-      "doneAt": 1792338352859
-    },
-    {
-      "id": "r86",
-      "gameId": "uno",
-      "tables": [
-        {"ids":["p2","p15","p1"],"places":{"p2":1,"p15":2,"p1":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338356794
-    },
-    {
-      "id": "r87",
-      "gameId": "carc",
-      "tables": [
-        {"ids":["p1","p2","p15"],"places":{"p1":1,"p2":2,"p15":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338359505
-    },
-    {
-      "id": "r88",
-      "gameId": "7w",
-      "tables": [
-        {"ids":["p2","p1","p15"],"places":{"p2":1,"p1":2,"p15":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338361401
-    },
-    {
-      "id": "r89",
-      "gameId": "ttr",
-      "tables": [
-        {"ids":["p1","p2","p15"],"places":{"p1":2,"p2":1,"p15":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338365121
-    },
-    {
-      "id": "r90",
-      "gameId": "chess",
-      "tables": [
-        {"ids":["p15","p1","p2"],"places":{"p15":1,"p1":2,"p2":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338368192
-    },
-    {
-      "id": "r91",
-      "gameId": "clue",
-      "tables": [
-        {"ids":["p2","p15","p1"],"places":{"p2":1,"p15":2,"p1":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792338372349
-    }
-  ],
+  "started": false,
+  "rounds": [],
   "tiebreaks": [],
-  "finale": [
-    {
-      "id": "f92",
-      "gameId": "blokus",
-      "ids": [
-        "p2",
-        "p1"
-      ],
-      "places": {
-        "p2": 1,
-        "p1": 2
-      },
-      "doneAt": 1792338407432
-    }
-  ],
+  "finale": [],
   "archive": [
+    {
+      "id": "t1792296829659",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1792338407432,
+        "champ": {"name":"Danna","color":"#7CC6F5","pts":102.5,"wins":6,"rank":1,"played":12},
+        "played": ["Checkers","King of Tokyo","King of Tokyo Duel","Skip-Bo","Blokus","Exploding Kittens","Uno","Carcassonne","7 Wonders","Ticket to Ride","Chess","Clue","Final: Blokus"],
+        "rlist": [{"n":"Checkers","w":1},{"n":"King of Tokyo","w":1},{"n":"King of Tokyo Duel","w":1},{"n":"Skip-Bo","w":1},{"n":"Blokus","w":2},{"n":"Exploding Kittens","w":1},{"n":"Uno","w":1},{"n":"Carcassonne","w":2},{"n":"7 Wonders","w":2},{"n":"Ticket to Ride","w":2},{"n":"Chess","w":2},{"n":"Clue","w":2}],
+        "cw": 1,
+        "best": {"v":18.4,"game":"7 Wonders"},
+        "finalGame": "Blokus",
+        "solo": false,
+        "stars": 4,
+        "runner": "Shawn",
+        "margin": 16.7,
+        "scored": true,
+        "carry": true,
+        "final": [{"name":"Danna","place":1,"seed":1,"base":27,"bonus":102.5,"total":129.5},{"name":"Shawn","place":2,"seed":2,"base":0,"bonus":85.8,"total":85.8}],
+        "standings": [{"name":"Danna","pts":102.5,"rank":1,"color":"#7CC6F5","look":{"h":0,"i":0},"champ":true},{"name":"Shawn","pts":85.8,"rank":2,"color":"#7ED9A6","look":{"h":2,"i":2},"champ":false},{"name":"Kris","pts":81.6,"rank":3,"color":"#FFD84D","look":{"h":0,"i":0},"champ":false}],
+        "log": [{"g":"Checkers","w":1,"t":[[{"n":"Shawn","r":"r1","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5},{"n":"Danna","r":"r7","p":3,"v":0.8}]]},{"g":"King of Tokyo","w":1,"t":[[{"n":"Kris","r":"r6","p":1,"v":9.2},{"n":"Shawn","r":"r1","p":2,"v":5},{"n":"Danna","r":"r7","p":3,"v":0.8}]]},{"g":"King of Tokyo Duel","w":1,"t":[[{"n":"Danna","r":"r7","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5},{"n":"Shawn","r":"r1","p":3,"v":0.8}]]},{"g":"Skip-Bo","w":1,"t":[[{"n":"Kris","r":"r6","p":1,"v":9.2},{"n":"Danna","r":"r7","p":2,"v":5},{"n":"Shawn","r":"r1","p":3,"v":0.8}]]},{"g":"Blokus","w":2,"t":[[{"n":"Shawn","r":"r1","p":1,"v":18.4},{"n":"Kris","r":"r6","p":2,"v":10},{"n":"Danna","r":"r7","p":3,"v":1.6}]]},{"g":"Exploding Kittens","w":1,"t":[[{"n":"Shawn","r":"r1","p":3,"v":0.8},{"n":"Danna","r":"r7","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5}]]},{"g":"Uno","w":1,"t":[[{"n":"Danna","r":"r7","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5},{"n":"Shawn","r":"r1","p":3,"v":0.8}]]},{"g":"Carcassonne","w":2,"t":[[{"n":"Shawn","r":"r1","p":1,"v":18.4},{"n":"Danna","r":"r7","p":2,"v":10},{"n":"Kris","r":"r6","p":3,"v":1.6}]]},{"g":"7 Wonders","w":2,"t":[[{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Shawn","r":"r1","p":2,"v":10},{"n":"Kris","r":"r6","p":3,"v":1.6}]]},{"g":"Ticket to Ride","w":2,"t":[[{"n":"Shawn","r":"r1","p":2,"v":10},{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Kris","r":"r6","p":3,"v":1.6}]]},{"g":"Chess","w":2,"t":[[{"n":"Kris","r":"r6","p":1,"v":18.4},{"n":"Shawn","r":"r1","p":2,"v":10},{"n":"Danna","r":"r7","p":3,"v":1.6}]]},{"g":"Clue","w":2,"t":[[{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Kris","r":"r6","p":2,"v":10},{"n":"Shawn","r":"r1","p":3,"v":1.6}]]}],
+        "rounds": 12,
+        "players": 3,
+        "games": 12
+      }
+    },
     {
       "id": "t1792291321307",
       "data": {
@@ -601,7 +503,6 @@
     }
   ],
   "trash": [],
-  "finishedAt": 1792338407432,
   "slots": [],
-  "hv": 1
+  "born": 1792548777700
 }
