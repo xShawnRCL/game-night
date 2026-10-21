@@ -2709,10 +2709,10 @@ document.addEventListener('click',e=>{
 (function(){
   const sp=document.getElementById('splash'),lg=document.querySelector('.logo');if(!sp) return;
   if(lg) document.getElementById('splogo').innerHTML=lg.innerHTML;
-  const t0=Date.now(),min=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?0:2200;
+  const t0=Date.now(),min=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?0:3800;
   const done=()=>setTimeout(()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),500);},Math.max(0,min-(Date.now()-t0)));
   (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(done,done);
-  setTimeout(()=>{if(sp.parentNode) done();},4500);
+  setTimeout(()=>{if(sp.parentNode) done();},6500);
 })();
 
 /* ---------- GitHub Pages layer: the host publishes data.json, viewers read it ---------- */
