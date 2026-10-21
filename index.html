@@ -408,6 +408,65 @@ details.add summary{cursor:pointer;font-weight:700}
   @keyframes sbf{0%,100%{background:var(--surface);transform:translateY(0)}35%{background:var(--c);transform:translateY(-5px)}}
 }
 
+/* ux v2: header buttons, slim header, setup */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
+header .brand{flex:1 1 0;min-width:0}
+.hbtns{order:-1;width:100%;display:flex;justify-content:flex-end;align-items:center;gap:8px}
+body.slim .hbtns{order:0;width:auto;align-self:flex-start}
+body.slim .logo{width:40px}
+body.slim h1{font-size:1.45rem;line-height:1}
+body.slim .tagline{display:none}
+body.slim .brand{gap:10px}
+
+.gmb{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:2px solid var(--edge);border-radius:999px;background:var(--surface);font-weight:700;font-size:.85rem;color:var(--ink);box-shadow:0 2px 0 var(--shadow)}
+.gmb[aria-expanded="true"]{background:var(--c-yellow);color:var(--on-bright)}
+.gmb:active{transform:translateY(1px);box-shadow:none}
+.sndbtn{position:static!important;width:36px;height:36px;opacity:1;color:var(--ink);flex:none}
+.step2{display:inline-flex;align-items:center;gap:10px}
+.step2 .btn{width:44px;height:44px;font-size:1.3rem;padding:0;line-height:1}
+.step2 .pn2{min-width:2ch;text-align:center;font-size:1.7rem;font-weight:800}
+.qs{font-weight:700}
+.cg{grid-template-columns:minmax(0,1fr) auto}
+.cg .gsum{grid-column:1;font-size:.8rem;color:var(--muted);padding-left:30px}
+.cg>.btn{grid-column:2;grid-row:1 / span 2;align-self:center}
+.cg .gmore{grid-column:1 / -1;display:flex;flex-direction:column;gap:8px;padding:6px 0 0 30px}
+.cg .gmore .gctl{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;grid-column:auto;grid-row:auto}
+.cg .gmore .gplan{padding-left:12px;margin:0}
+.cg .gmore .gmeta{padding-left:0}
+.pk{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pk span{padding:2px 10px;border:2px solid var(--line);border-radius:999px;font-size:.8rem;font-weight:700;background:var(--raise)}
+.btn.big{padding:12px 20px;font-size:1.05rem}
+.mbody{display:flex;flex-direction:column;gap:10px}
+.mbody>h3{margin-top:12px}
+
+.gmenu{border-color:var(--c-coral)}
+.tab.lockd{opacity:.55}
+.tab.lockd svg{margin-left:4px;vertical-align:-2px}
+.seed .mono:last-child{margin:0 0 0 8px}
+@media (max-width:480px){.shead span:nth-child(5),.srow>span:nth-child(5){display:none}.shead,.srow{grid-template-columns:30px minmax(0,1fr) 3.4rem 2.4rem}}
+
+/* header buttons now live in the footer */
+header{display:block}
+header .brand{flex:none}
+.hbtns,body.slim .hbtns{order:0;width:auto;justify-content:center;margin-top:28px;align-self:auto}
+body.slim .gmb span{display:inline!important}
+body.slim .gmb{padding:0 12px;width:auto}
+.foot{text-align:center}
+
+/* ux v2.1 */
+.inv{visibility:hidden}
+.dmr{flex-wrap:nowrap}
+.dmr .dmb{flex:none;align-items:center}
+.dmb .btn:not(.ghost){width:7.6rem;min-height:46px;line-height:1.15;white-space:normal}
+.mbody .seg{display:flex;width:100%}
+.mbody .seg button{flex:1 1 0;min-width:0;padding:8px 4px;font-size:.85rem;white-space:normal;line-height:1.15}
+.tip{border-left-width:2px;position:relative;overflow:hidden}
+.tip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c-yellow)}
+@media (prefers-reduced-motion:no-preference){
+  @keyframes segFade{0%{opacity:1}15%{opacity:.3}65%{opacity:.3}100%{opacity:1}}
+  .road .seg2.pop{animation:popIn .5s cubic-bezier(.3,1.6,.5,1),segFade 1s ease-in-out}
+}
+
 /* GitHub Pages build */
 body.view [data-act]{pointer-events:none}
 body.view [data-act="tab"],body.view [data-act="open"],body.view [data-act="share"],body.view [data-act="pshare"],body.view [data-act="ptoggle"],body.view [data-act="photo"],body.view [data-act="goround"]{pointer-events:auto}
@@ -418,6 +477,8 @@ body.view .rost{display:none}
 .share .chk input{width:20px;height:20px}
 .share .linkbox{margin-top:6px;padding:8px 10px;border:2px dashed var(--line);border-radius:10px;word-break:break-all;font-size:.8rem;background:var(--raise)}
 .share h3{margin-top:18px}
+.share details.host{margin-top:12px;border:2px dashed var(--line);border-radius:12px;padding:8px 12px}
+.share details.host>summary{cursor:pointer}
 .share .rfoot{margin-top:10px;justify-content:flex-start}
 .share .hint{margin-top:8px}
 </style>
@@ -433,10 +494,10 @@ body.view .rost{display:none}
   <div id="sentinel" aria-hidden="true" style="height:1px"></div>
   <div id="stickph"><div class="stick" id="stick"><div class="stin"><div id="roadwrap"></div><nav class="tabs" id="tabs" aria-label="Sections"></nav></div></div></div>
   <main id="app"></main>
+  <div class="hbtns" id="hbtns"><button type="button" id="gmbtn" class="gmb" title="Gauntlets" aria-label="Gauntlets" data-act="gmenu" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><rect x="3" y="7" width="14" height="12" rx="2.500" fill="currentColor" fill-opacity=".18"/><path d="M7 4h12a2 2 0 0 1 2 2v10"/></svg><span>Gauntlets</span></button><button type="button" id="snd" class="sndbtn" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 9.500h3.500L12 6v12l-4.500-3.500H4z" fill="currentColor" fill-opacity=".25"/><path d="M15.500 9a4 4 0 0 1 0 6M18 6.500a8 8 0 0 1 0 11"/></svg></button></div>
   <p class="foot" id="status">Saved on this device.</p>
 </div>
 
-<button type="button" id="snd" class="sndbtn" aria-pressed="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 9.500h3.500L12 6v12l-4.500-3.500H4z" fill="currentColor" fill-opacity=".25"/><path d="M15.500 9a4 4 0 0 1 0 6M18 6.500a8 8 0 0 1 0 11"/></svg></button>
 <script>
 /* Lock zoom once the page is open: it has already sized itself to the screen, so pinch and double-tap zoom are switched off. */
 (function(){try{
@@ -512,9 +573,10 @@ function fresh(){
   return {v:1,t:0,seq:1,pseq:7,tid:null,
     players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),roster:[],rseq:0,rv:1,
     games:DEFAULT_GAMES.map(g=>({...g})),
-    finalists:3,headStart:2,nightHours:3,winnerStays:true,order:'smart',gv:1,bkNights:0,
+    finalists:3,headStart:2,nightHours:3,howLong:2,howManual:false,winnerStays:true,order:'smart',gv:1,bkNights:0,
     started:false,rounds:[],tiebreaks:[],finale:[],archive:[],trash:[],slots:[],born:Date.now()};
 }
+function freshPicked(){const f=fresh();pickGames(f);return f;}
 /* How n players split across tables for a game with seat range min..max. */
 function layout(n,min,max,ws){
   if(n<min) return null;
@@ -527,6 +589,23 @@ function layout(n,min,max,ws){
   return {sizes,byes:n-seated};
 }
 /* Games that need more players than are signed up switch off by themselves (and back on when players are added). A manual tick always wins. */
+/* How long: choose games to fill 1, 2 or 3 game nights. Greedy through the list, skipping games that do not fit the players. */
+function pickGames(T){
+  const n=T.players.length, ws=T.winnerStays!==false, N=T.howLong||2, cap=(T.nightHours||3)*60;
+  let nights=1, cur=0, firstOk=null;
+  T.games.forEach(g=>{
+    delete g.auto;
+    const d=describeLayout(n,g,ws);
+    if(!d.ok){g.on=false;return;}
+    const rm=roundMinutes(g,d.k,d.ladder);
+    if(!firstOk) firstOk=g;
+    if(cur+rm<=cap){cur+=rm;g.on=true;}
+    else if(nights<N&&cur>0){nights++;cur=rm;g.on=true;}
+    else g.on=false;
+  });
+  if(firstOk&&!T.games.some(g=>g.on)) firstOk.on=true;
+}
+function syncCount(){if(!S.howManual&&!S.started&&S.howLong) pickGames(S); else syncGamesToCount();}
 function syncGamesToCount(){const n=S.players.length;S.games.forEach(g=>{if(g.on&&g.min>n){g.on=false;g.auto=true;}else if(!g.on&&g.auto&&g.min<=n){g.on=true;delete g.auto;}});}
 function describeLayout(n,g,ws){
   const L=layout(n,g.min,g.max,ws);
@@ -793,7 +872,7 @@ function ensureDefaults(S){
     (S.players||[]).forEach(p=>{const e=add(p.name);if(e) p.rid=e.rid;});
     (S.archive||[]).forEach(a=>{const T=a&&a.data;if(T&&T.standings) T.standings.forEach(q=>add(q.name));});
   }
-  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.winnerStays===undefined) S.winnerStays=true; if(S.order===undefined) S.order=S.heavyLast===false?'list':'smart'; delete S.heavyLast; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5; if(!S.hv){S.hv=1;if(!S.finale.length&&S.headStart===0.5) S.headStart=HS_CARRY;}
+  S.archive=S.archive||[]; S.nightHours=S.nightHours||3; if(S.howLong===undefined){S.howLong=2;S.howManual=true;} if(S.winnerStays===undefined) S.winnerStays=true; if(S.order===undefined) S.order=S.heavyLast===false?'list':'smart'; delete S.heavyLast; S.bkNights=S.bkNights||0; if(S.headStart===undefined) S.headStart=0.5; if(!S.hv){S.hv=1;if(!S.finale.length&&S.headStart===0.5) S.headStart=HS_CARRY;}
   S.games.forEach(g=>{if(!g.copies) g.copies=1;});
   if(!S.gv){
     S.gv=1;
@@ -1456,7 +1535,7 @@ function catSearch(q){
 
 const VIEW=/[?&]view(&|=|$)/.test(location.search);
 const KEY='ubg-v1';
-function load(){if(VIEW)return fresh();try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return ensureDefaults(o);}}catch(e){}return fresh();}
+function load(){if(VIEW)return fresh();try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return ensureDefaults(o);}}catch(e){}return freshPicked();}
 let S=load();
 const ui={view:VIEW?'standings':S.started?'rounds':'setup',open:{},confirm:null,scrollTo:null,top:false,tkey:null,turl:null};
 try{const v=localStorage.getItem('ubg-view');if(['setup','rounds','standings','finale','history'].includes(v)&&(typeof VIEW==='undefined'||v!=='setup')){ui.view=v;ui.touched=true;}}catch(e){}
@@ -1563,7 +1642,7 @@ function backupBanner(){
   if(!S.started) return '';
   const m=nightMarks();
   if(m<=(S.bkNights||0)||ui.bkLater===m) return '';
-  const title=phaseOf(S)==='champion'?'The tournament is finished.':'Night '+m+' is done.';
+  const title=phaseOf(S)==='champion'?'The gauntlet is finished.':'Night '+m+' is done.';
   return `<div class="card bk" role="status"><div><strong>${title} Save a backup before you close up.</strong><p class="muted">One tap saves your progress to a file, so nothing is lost if this phone clears the page.</p></div><div class="rfoot"><button type="button" class="btn primary" data-act="bkup">Save backup</button><button type="button" class="btn sm ghost" data-act="bklater">Later</button></div></div>`;
 }
 
@@ -1589,7 +1668,7 @@ function nightsOf(){
   const mins=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return roundMinutes(g,r.tables.length,r.tables.some(t=>t.ids.length>g.max));});
   return {mins,nights:planNights(mins,S.nightHours||3)};
 }
-const HS_OPTS=[[0,'Off'],[0.5,'Seed bonus'],[HS_CARRY,'Carry over']];
+const HS_OPTS=[[0,'Final only'],[0.5,'Small bonus'],[HS_CARRY,'Keep points']];
 function headStartText(m,q,ids,S0){
   if(m<2) return 'With one finalist there is no final game.';
   if(q===HS_CARRY){
@@ -1612,10 +1691,10 @@ function headStartText(m,q,ids,S0){
 
 function hsBullets(m,q){
   const pay=Array.from({length:m},(_,k)=>fmt(10*FINAL_W*(m-1-k)/(m-1))).join(' / ');
-  if(q===HS_CARRY) return ['Qualifying points carry into the final.','The final adds '+pay+' points for 1st to last (more if the finalists are far apart).','Highest combined total wins. Ties go to the higher seed.'];
-  if(q<=0) return ['Clean slate: only the final game counts.','A tie for first means a rematch.'];
+  if(q===HS_CARRY) return ['Points from the rounds carry into the final.','The final adds '+pay+' points for 1st to last (more if the finalists are far apart).','Highest combined total wins. A tie goes to whoever ranked higher.'];
+  if(q<=0) return ['Clean slate: only the final game counts.','A tie for first means a tiebreaker rematch.'];
   const b=finalBonuses(m,q);
-  return ['The final pays '+pay+' points for 1st to last.','Seed bonus: '+b.map((v,i)=>'seed '+(i+1)+' +'+fmt(v)).join(', ')+'.','Ties go to the higher seed.'];
+  return ['The final pays '+pay+' points for 1st to last.','Small bonus for top ranks: '+b.map((v,i)=>'rank '+(i+1)+' +'+fmt(v)).join(', ')+'.','A tie goes to whoever ranked higher.'];
 }
 /* ---------- setup ---------- */
 function lookEditor(p){
@@ -1646,7 +1725,85 @@ function rosterSync(p){
   if(mine&&!other){mine.name=nm;return;}
   const e={rid:'r'+(S.rseq=(S.rseq||0)+1),name:nm};if(p.look) e.look={...p.look};S.roster.push(e);p.rid=e.rid;
 }
+/* ---------- setup v2: Who's playing, How long, Start. Everything else is folded under More settings. ---------- */
 function viewSetup(){
+  const n=S.players.length, locked=S.started, maxF=Math.min(4,n-1);
+  if(S.finalists>maxF) S.finalists=maxF;
+  const ws=S.winnerStays!==false, ord=S.order||'smart';
+  const players=S.players.map((p,i)=>`<li class="prow2"><button type="button" class="avb" data-act="look" data-a="${p.id}" aria-label="Customize ${esc(p.name)}'s meeple" aria-expanded="${ui.lookFor===p.id}">${meeple(pcol(p.id),38,lookOf(p.id))}</button><div class="nmwrap"><input class="inp" id="pn-${p.id}" value="${p.name==='Player '+(i+1)?'':esc(p.name)}" placeholder="Player ${i+1}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name" autocomplete="off" autocapitalize="words"><div class="sug" id="sg-${p.id}" role="listbox" hidden></div></div></li>${ui.lookFor===p.id?lookEditor(p):''}`).join('');
+  const fopts=[];for(let k=1;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
+  const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${q===0.5?((S.headStart||0)===0.5||S.headStart===1):(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
+  let total=0,valid=0,skipped=[],sit=[],picked=[]; const minsList=[];
+  const games=S.games.map((g,i)=>{
+    const d=describeLayout(n,g,ws);
+    if(g.on&&d.ok){const rm=roundMinutes(g,d.k,d.ladder);total+=rm;minsList.push(rm);valid++;picked.push(g.name);const LL=layout(n,g.min,g.max,ws);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
+    const open=ui.gedit===g.id;
+    const wts=[1,2,3].map(w=>`<button type="button" aria-pressed="${g.weight===w}" data-act="gweight" data-a="${g.id}|${w}" aria-label="${esc(g.name)} worth ${w}">×${w}</button>`).join('');
+    const rm=d.ok?roundMinutes(g,d.k,d.ladder):0;
+    const sum=(g.min===g.max?g.min:g.min+'–'+g.max)+' players · '+g.mins+' min · worth ×'+g.weight;
+    const more=open?`<div class="gmore"><div class="gmeta mono">Luck ${g.luck} of 5</div>
+      <div class="gplan${d.ok?'':' bad'}">${esc(d.text)}${d.ok?` · about ${hm(rm)} a round`:''}</div>
+      <div class="gctl"><div class="seg" role="group" aria-label="Worth">${wts}</div>
+      <div class="cp" role="group" aria-label="Copies we own of ${esc(g.name)}"><span class="mono">copies we own</span><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|-1" aria-label="Fewer copies"${copiesOf(g)<=1?' disabled':''}>−</button><b class="mono">${copiesOf(g)}</b><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|1" aria-label="More copies"${copiesOf(g)>=6?' disabled':''}>+</button></div>
+      <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button><button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}" aria-label="Delete ${esc(g.name)}">Delete</button>`}</div></div></div>`:'';
+    return `<li class="game cg${g.on?'':' off'}"><label class="gname"><input type="checkbox" data-act="gtoggle" data-a="${g.id}"${g.on?' checked':''}${locked?' disabled':''}><span>${esc(g.name)}</span></label>
+      <span class="gsum mono">${sum}${d.ok?'':' · needs more players'}</span><button type="button" class="btn sm ghost" data-act="gedit" data-a="${g.id}" aria-expanded="${open}">${open?'Close':'Edit'}</button>${more}</li>`;
+  }).join('');
+  const addForm=locked?'':`<details class="add"><summary>Add a game</summary>
+    <label class="fld wide cats"><span>Search ${catalog().length} family games, including dice, cards and pen-and-paper</span><input class="inp" id="cat-q" type="search" placeholder="Try Catan, Azul or Sushi Go" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+    <div id="cat-res" class="catres" role="listbox" aria-label="Matching games"></div>
+    <p class="hint" id="cat-note">Pick a match to fill the boxes below, change anything that doesn't fit your copy, then add it. Or type your own.</p>
+    <div class="addgrid">
+      <label class="fld wide"><span>Name</span><input class="inp" id="ng-name" maxlength="30" placeholder="Uno Flip"></label>
+      <label class="fld"><span>Min players</span><input class="inp" id="ng-min" type="number" min="2" max="12" value="2"></label>
+      <label class="fld"><span>Max players</span><input class="inp" id="ng-max" type="number" min="2" max="12" value="4"></label>
+      <label class="fld"><span>Minutes</span><input class="inp" id="ng-mins" type="number" min="5" max="240" value="30"></label>
+      <label class="fld"><span>Copies we own</span><input class="inp" id="ng-copies" type="number" min="1" max="6" value="1"></label>
+      <label class="fld"><span>Worth</span><select class="sel" id="ng-w"><option value="1">×1 light</option><option value="2">×2 medium</option><option value="3">×3 heavy</option></select></label>
+    </div><p style="margin-top:12px"><button type="button" class="btn" data-act="addgame">Add to list</button></p></details>`;
+  const rules=locked?'':`<h3>Table rules</h3>
+    <div class="cardhead"><span>Odd one out in a 2-player game</span><div class="seg" role="group" aria-label="Odd one out in a 2-player game"><button type="button" aria-pressed="${ws}" data-act="ws" data-a="1">Winner stays on</button><button type="button" aria-pressed="${!ws}" data-act="ws" data-a="0">Sits out</button></div></div>
+    <p class="muted">${ws?'With an odd number of players, three of them share one table in a 2-player game. Two play, the winner stays on against whoever sat out, and the first to 2 wins takes 1st. Everyone plays and nobody gets free points. It takes about three games of time.':'The odd player sits out and gets half marks, the same as an average result. The draw rotates who sits out.'}</p>
+    <div class="cardhead"><span>Order of the games</span><div class="seg" role="group" aria-label="Order of the games"><button type="button" aria-pressed="${ord==='smart'}" data-act="ord" data-a="smart">Mixed</button><button type="button" aria-pressed="${ord==='weight'}" data-act="ord" data-a="weight">Big games last</button><button type="button" aria-pressed="${ord==='list'}" data-act="ord" data-a="list">My list order</button></div></div>
+    <p class="muted">${ord==='smart'?'Mixed order builds toward the games that can swing the most points (heavy and luck-driven ones), and spreads 2-player games between group games so fewer people wait. The standings stay visible the whole time.':ord==='weight'?'Rounds run ×1 games first, then ×2, then ×3. The standings stay visible the whole time.':'Rounds follow the game list below, top to bottom. Use Edit on a game to move it.'}</p>`;
+  const nh=[2,3,4,5,6].map(hr=>`<button type="button" aria-pressed="${(S.nightHours||3)===hr}" data-act="nh" data-a="${hr}">${hr}</button>`).join('');
+  const nights=planNights(minsList,S.nightHours||3);
+  const stepper=`<div class="step2" role="group" aria-label="How many players"><button type="button" class="btn" data-act="pcount" data-a="-1" aria-label="One fewer player"${n<=MINP?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${n}</b><button type="button" class="btn" data-act="pcount" data-a="1" aria-label="One more player"${n>=MAXP?' disabled':''}>+</button></div>`;
+  const hl=[1,2,3].map(k=>`<button type="button" aria-pressed="${!S.howManual&&S.howLong===k}" data-act="howlong" data-a="${k}">${k} night${k>1?'s':''}</button>`).join('');
+  let top;
+  if(locked){
+    top=`<section class="card"><h2>Gauntlet in progress</h2><p class="muted">${esc(gStatus(S))}. Players and the game list are locked. Worth, copies we own and game night length can still change. Add a round from the Rounds tab.</p>
+      <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div></section>
+      <section class="card"><div class="cardhead"><h2 class="chip c-blue">Players</h2><span class="muted mono">${n}</span></div><ul class="plist">${players}</ul><p class="muted">Players are locked during a gauntlet.</p></section>`;
+  }else{
+    top=`<section class="card"><div class="cardhead"><h2 class="chip c-blue">Who's playing?</h2></div>
+      <div class="cardhead"><span class="qs">How many players?</span>${stepper}</div>
+      <ul class="plist" style="margin-top:12px">${players}</ul>
+      <p class="hint" style="margin-top:8px">Names are optional. Tap a meeple to pick a colour and a hat.</p>
+      ${rosterChips()}</section>
+    <section class="card"><div class="cardhead"><h2 class="chip c-green">How long?</h2><div class="seg" role="group" aria-label="How long">${hl}</div></div>
+      <p class="muted" style="margin-top:8px">${S.howManual?'You chose the games yourself. Tap a length to let the app choose again.':'The app picks games to fill about '+(S.howLong*(S.nightHours||3))+' hours.'}</p>
+      <div class="plan" style="margin-top:12px"><div><strong class="mono">${valid} round${valid===1?'':'s'}</strong><p class="muted">About ${hm(total)} of play over ${nights.length} night${nights.length===1?'':'s'}.</p></div>
+      <button type="button" class="btn primary big" data-act="build"${valid?'':' disabled'}>Start gauntlet</button></div>
+      <div class="pk">${picked.map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+      ${skipped.length?`<p class="muted" style="margin-top:8px">Skipped for ${n} players: ${esc(skipped.join(', '))}.</p>`:''}
+      ${sit.length?`<p class="muted" style="margin-top:8px">With ${n} players, ${esc(sit.join(', '))} can't seat everyone, so someone sits out each time. A sit-out earns half marks, the same as an average result.</p>`:''}
+      <p class="hint" style="margin-top:8px">Want different games? Open More settings below.</p></section>`;
+  }
+  const more=`<details class="card sbox" data-ui="moreOpen"${ui.moreOpen?' open':''}><summary><h2 class="chip c-coral">More settings</h2></summary><div class="mbody">
+    ${locked?'':`<div class="cardhead"><span>Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div>`}
+    <h3>Players in the final</h3>
+    <div class="seg" role="group" aria-label="Players in the final">${fopts.join('')}</div>
+    ${S.finalists===1?`<ul class="bul"><li>No final game.</li><li>Points leader after the last round wins.</li><li>A tie for first gets a tiebreaker.</li></ul>`:`<ul class="bul"><li>Top ${S.finalists} play one final game.</li><li>A tie at the cut gets a tiebreaker game.</li></ul>
+    <h3>Final scoring</h3><div class="seg" role="group" aria-label="Final scoring">${hsb}</div>
+    <ul class="bul">${hsBullets(S.finalists,S.headStart||0).map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`}
+    ${rules}
+    <h3>Games</h3><p class="muted">Worth ×1, ×2 or ×3: bigger games count more. Tap Edit on a game for copies we own and order.</p>
+    <ul class="glist">${games}</ul>${addForm}</div></details>`;
+  return top+more;
+}
+/* The original Setup screen, kept so it can be put back: change viewSetup to viewSetupV1 in render() (and gauntletsCard/Start over come back with it). */
+function viewSetupV1(){
   const n=S.players.length, locked=S.started, maxF=Math.min(4,n-1);
   if(S.finalists>maxF) S.finalists=maxF;
   const players=S.players.map((p,i)=>`<li class="prow2"><button type="button" class="avb" data-act="look" data-a="${p.id}" aria-label="Customize ${esc(p.name)}'s meeple" aria-expanded="${ui.lookFor===p.id}">${meeple(pcol(p.id),38,lookOf(p.id))}</button><div class="nmwrap"><input class="inp" id="pn-${p.id}" value="${p.name==='Player '+(i+1)?'':esc(p.name)}" placeholder="Player ${i+1}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name" autocomplete="off" autocapitalize="words"><div class="sug" id="sg-${p.id}" role="listbox" hidden></div></div>${locked||n<=MINP?'':`<button type="button" class="btn sm ghost" data-act="delplayer" data-a="${p.id}" aria-label="Remove ${esc(p.name)}">Remove</button>`}</li>${ui.lookFor===p.id?lookEditor(p):''}`).join('');
@@ -1729,7 +1886,7 @@ function viewRounds(){
       body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,t.ids.length>g.max?'Winner stays':(g.min===2&&g.max===2?'Match '+(ti+1):(k>1?'Table '+(ti+1):'')))).join('')}
         ${r.tables.some(t=>t.ids.length>g.max)?`<p class="bye">Winner stays: two players start. The winner stays on and plays whoever sat out, and so on. First to 2 wins is 1st. The other two rank by wins, and level wins share the place.</p>`:''}
         ${r.byes.length?`<p class="bye">Sitting out: ${esc(r.byes.map(pname).join(', '))}. ${done?'Each gets +'+fmt(5*g.weight)+', half marks, the same as an average result.':'They get half marks when the round finishes, the same as an average result.'}</p>`:''}
-        ${!S.finale.length&&!r.tables.some(hasPlaces)?`<div class="rfoot">${(r.tables.length>1||r.byes.length)?`<button type="button" class="btn sm" data-act="redraw" data-a="${r.id}">Re-draw seats</button>`:''}<button type="button" class="btn sm ghost" data-act="delround" data-a="${r.id}">Remove this round</button></div>`:''}</div>`;
+        ${!S.finale.length&&!r.tables.some(hasPlaces)?`<div class="rfoot">${(r.tables.length>1||r.byes.length)?`<button type="button" class="btn sm" data-act="redraw" data-a="${r.id}">Reshuffle seats</button>`:''}<button type="button" class="btn sm ghost" data-act="delround" data-a="${r.id}">Remove this round</button></div>`:''}</div>`;
     }
     const nh=nightAt[i]?`<div class="night"><h3 class="chip c-purple">Night ${nightAt[i].k+1}</h3><span class="muted">${nightAt[i].nt.count} round${nightAt[i].nt.count>1?'s':''}, about ${hm(nightAt[i].nt.mins)}</span></div>`:'';
     return `${nh}<article class="round${open?' open':''}${i===cur?' cur':''}" id="rd-${r.id}"><button type="button" class="rh" data-act="open" data-a="${r.id}" aria-expanded="${open}">
@@ -1749,7 +1906,9 @@ function viewRounds(){
     <li>Small tables are eased toward the middle, so a 2-player match can't swing the board more than a 6-player game.</li>
     <li>Games with one copy take turns.</li>
     <li>Seats are drawn at random, avoiding repeat opponents and rotating sit-outs.</li>${locked}</ul></div></details>`;
-  return `${rules}${redrawable?`<p><button type="button" class="btn" data-act="redrawall">Re-draw all unscored rounds</button></p>`:''}${cards}${add}`;
+  const noScores=!S.rounds.some(r=>r.tables.some(hasPlaces))&&!S.finale.length;
+  const howto=noScores?`<div class="card tip"><b>How to score</b><p class="muted">Tap each player's finishing place. Yellow is 1st. Give two players the same number for a tie. The next round opens by itself.</p></div>`:'';
+  return `${howto}${rules}${redrawable?`<p><button type="button" class="btn" data-act="redrawall">Reshuffle seats in all unscored rounds</button></p>`:''}${cards}${add}`;
 }
 
 /* ---------- standings ---------- */
@@ -1757,18 +1916,19 @@ function viewStandings(){
   if(!S.started) return empty('Standings begin with round one','Build the rounds in Setup first.',`<p><button type="button" class="btn primary" data-act="tab" data-a="setup">Go to setup</button></p>`);
   const rows=computeStandings(S), ph=phaseOf(S), cut=resolveCut(rows,S.finalists,S.tiebreaks);
   const fin=new Set(cut.finalists||[]), tied=new Set(ph==='tie'&&cut.group?cut.group:[]);
-  const max=Math.max(1,...rows.map(r=>r.pts)),streaks=winStreaks(S);
+  const max=Math.max(1,...rows.map(r=>r.pts)),streaks=winStreaks(S),none=!rows.some(r=>r.pts>0);
   let list='';
   rows.forEach((r,i)=>{
-    list+=`<li class="srow${r.rank===1&&r.pts>0?' lead':''}${fin.has(r.id)&&ph!=='qual'?' fin':''}${tied.has(r.id)?' tied':''}" data-id="${r.id}"><span class="rk r${Math.min(r.rank,4)} mono">${r.rank}</span>
+    list+=`<li class="srow${r.rank===1&&r.pts>0?' lead':''}${fin.has(r.id)&&ph!=='qual'?' fin':''}${tied.has(r.id)?' tied':''}" data-id="${r.id}"><span class="rk r${Math.min(r.rank,4)} mono">${none?'–':r.rank}</span>
       <span class="who"><span class="nm">${pdot(r.id)}${esc(r.name)}${tied.has(r.id)?'<span class="tag">TIED</span>':''}${streaks[r.id]>=2?`<span class="flame" title="${streaks[r.id]} round wins in a row" aria-label="${streaks[r.id]} round wins in a row">${FLAMESVG}${streaks[r.id]}</span>`:''}</span><span class="bar"><i style="width:${(r.pts/max*100).toFixed(1)}%;background:${pcol(r.id)}"></i></span></span>
       <span class="pts mono">${fmt(r.pts)}</span><span class="mini mono">${r.wins}</span><span class="mini mono">${r.played}</span></li>`;
-    if(i===S.finalists-1&&rows.length>S.finalists) list+=`<li class="cutline" role="presentation"><span>Finale cut · top ${S.finalists}</span></li>`;
+    if(!none&&i===S.finalists-1&&rows.length>S.finalists) list+=`<li class="cutline" role="presentation"><span>Top ${S.finalists} reach the final</span></li>`;
   });
   const hdr=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return `<th title="${esc(g.name)}">${esc(g.short||g.name.slice(0,5))}<small>×${g.weight}</small></th>`;}).join('');
   const body=rows.map(r=>`<tr><td>${esc(r.name)}</td>${S.rounds.map(rd=>r.per[rd.id]!==undefined?`<td class="mono">${fmt(r.per[rd.id])}</td>`:`<td class="mono none">–</td>`).join('')}<td class="mono"><b>${fmt(r.pts)}</b></td></tr>`).join('');
-  const note=ph==='tie'?`<div class="card warn"><h3>Tie at the cut line</h3><p>${esc(cut.group.map(pname).join(', '))} finished level on points. A playoff decides who gets the last ${cut.pending.spots===1?'spot':cut.pending.spots+' spots'} in the final.</p><p><button type="button" class="btn" data-act="tab" data-a="finale">Go to the playoff</button></p></div>`:'';
-  return `${note}${podiumHTML(rows)}<section class="card flat"><ul class="slist"><li class="shead" role="presentation"><span>#</span><span>Player</span><span>Pts</span><span>Wins</span><span>Played</span></li>${list}</ul></section>
+  const note=ph==='tie'?`<div class="card warn"><h3>Tie at the cut line</h3><p>${esc(cut.group.map(pname).join(', '))} finished level on points. A tiebreaker game decides who gets the last ${cut.pending.spots===1?'spot':cut.pending.spots+' spots'} in the final.</p><p><button type="button" class="btn" data-act="tab" data-a="finale">Go to the tiebreaker</button></p></div>`:'';
+  const wait=none&&ph==='qual'?`<div class="card tip"><b>No points yet</b><p class="muted">The standings fill in as soon as round 1 is scored.</p></div>`:'';
+  return `${note}${wait}${podiumHTML(rows)}<section class="card flat"><ul class="slist"><li class="shead" role="presentation"><span>#</span><span>Player</span><span>Pts</span><span>Wins</span><span>Played</span></li>${list}</ul></section>
     <section class="card"><h3>Round by round</h3><div class="scroll"><table class="mx"><thead><tr><th>Player</th>${hdr}<th>Total</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
 }
 
@@ -1790,40 +1950,41 @@ function viewFinale(){
   let out='';
   if(ph==='qual'){
     const left=S.rounds.filter(r=>!roundDone(r)).length;
-    out+=`<div class="card"><h2>Finale unlocks after the last round</h2><p class="muted">${left} round${left>1?'s':''} to go. Right now the top ${S.finalists} are:</p>
-      <div class="seeds">${rows.slice(0,S.finalists).map((r,i)=>`<span class="seed"><span class="mono">#${i+1}</span>${pdot(r.id)}${esc(r.name)}</span>`).join('')}</div></div>`;
+    const anyPts=rows.some(r=>r.pts>0);
+    out+=`<div class="card"><h2>The final unlocks after the last round</h2><p class="muted">${left} round${left>1?'s':''} to go.${anyPts?' Right now the top '+S.finalists+' are:':''}</p>
+      <div class="seeds"${anyPts?'':' hidden'}>${rows.slice(0,S.finalists).map((r,i)=>`<span class="seed"><span class="mono">#${i+1}</span>${pdot(r.id)}${esc(r.name)}</span>`).join('')}</div></div>`;
   }
   if(ph==='tie'){
     const p=cut.pending;
-    out+=`<div class="card warn"><h2>Playoff for the last spot${p.spots>1?'s':''}</h2>
+    out+=`<div class="card warn"><h2>Tiebreaker for the last spot${p.spots>1?'s':''}</h2>
       <p>${esc(p.ids.map(pname).join(', '))} are level on points. ${p.spots===1?'One of them':p.spots+' of them'} reach the final.</p></div>`;
     if(p.tb){
       const g=gameOf(S,p.tb.gameId);
-      out+=`<div class="card"><div class="cardhead"><h3>${esc(g?g.name:'Playoff')}</h3>${hasPlaces(p.tb)?'':`<button type="button" class="btn sm ghost" data-act="tbundo" data-a="${p.tb.id}">Change game</button>`}</div>${tableBlock('t',p.tb.id,0,p.tb,0,'')}</div>`;
+      out+=`<div class="card"><div class="cardhead"><h3>${esc(g?g.name:'Tiebreaker')}</h3>${hasPlaces(p.tb)?'':`<button type="button" class="btn sm ghost" data-act="tbundo" data-a="${p.tb.id}">Change game</button>`}</div>${tableBlock('t',p.tb.id,0,p.tb,0,'')}</div>`;
     }else{
       const opts=gameOptions(p.ids.length);
-      out+=`<div class="card"><h3>Pick a playoff game</h3><p class="muted">Quick games first.</p>
+      out+=`<div class="card"><h3>Pick a tiebreaker game</h3><p class="muted">Quick games first.</p>
         ${opts.length?`<label class="fld"><span>Game</span><select class="sel" id="tb-game">${opts.map(g=>`<option value="${g.id}">${esc(g.name)} · ${g.mins} min</option>`).join('')}</select></label>
-        <p><button type="button" class="btn primary" data-act="tbstart">Start playoff</button></p>`:`<p class="muted">No game on the list fits ${p.ids.length} players. Add one in Setup.</p>`}</div>`;
+        <p><button type="button" class="btn primary" data-act="tbstart">Start tiebreaker</button></p>`:`<p class="muted">No game on the list fits ${p.ids.length} players. Add one in Setup.</p>`}</div>`;
     }
   }
   const first=S.finale[0];
   if(S.finalists!==1&&(ph==='pickfinal'||ph==='final'||ph==='champion'||ph==='rematch')){
     const ids=first?first.ids:cut.finalists;
-    out+=`<div class="card"><h3>Finalists, by qualifying rank</h3><div class="seeds">${ids.map((id,i)=>{const r=rows.find(x=>x.id===id);return `<span class="seed"><span class="mono">#${i+1}</span>${pdot(id)}${esc(r.name)}<span class="mono"> ${fmt(r.pts)}</span></span>`;}).join('')}</div></div>`;
+    out+=`<div class="card"><h3>Finalists, ranked after the rounds</h3><div class="seeds">${ids.map((id,i)=>{const r=rows.find(x=>x.id===id);return `<span class="seed"><span class="mono">#${i+1}</span>${pdot(id)}${esc(r.name)}<span class="mono"> ${fmt(r.pts)}</span></span>`;}).join('')}</div></div>`;
   }
   if(ph==='pickfinal'){
     const m=cut.finalists.length, opts=gameOptions(m);
     const score=g=>-Math.abs(g.mins-35)/10-Math.abs(g.luck-2)*1.2;
     const top=new Set(opts.slice().sort((a,b)=>score(b)-score(a)).slice(0,3).map(g=>g.id));
     out+=`<div class="card"><h2>Choose the final game</h2><p class="muted">Games that seat exactly ${m} players. Suggested ones take about half an hour and let skill beat luck.</p>
-      <p class="muted">${esc(headStartText(m,S.headStart||0,cut.finalists,S))}</p>
-      <div>${opts.sort((a,b)=>score(b)-score(a)).map(g=>`<div class="cand"><div class="info"><b>${esc(g.name)}${top.has(g.id)?'<span class="badge">Suggested</span>':''}</b><small class="mono">${g.mins} min · luck ${dots(g.luck)}</small></div><button type="button" class="btn${top.has(g.id)?' primary':''}" data-act="finpick" data-a="${g.id}">Play this</button></div>`).join('')}</div>
+      <ul class="bul">${hsBullets(m,S.headStart||0).map(t=>`<li>${esc(t)}</li>`).join('')}</ul>
+      <div>${opts.sort((a,b)=>score(b)-score(a)).map(g=>`<div class="cand"><div class="info"><b>${esc(g.name)}${top.has(g.id)?'<span class="badge">Suggested</span>':''}</b><small class="mono">${g.mins} min · luck ${g.luck} of 5</small></div><button type="button" class="btn${top.has(g.id)?' primary':''}" data-act="finpick" data-a="${g.id}">Play this</button></div>`).join('')}</div>
       ${opts.length?'':`<p class="muted">No game on the list seats ${m} players. Add one in Setup.</p>`}</div>`;
   }
   if(ph==='rematch'){
     const last=S.finale[S.finale.length-1], w=winnersOf(last), opts=gameOptions(w.length);
-    out+=`<div class="card warn"><h2>Sudden-death rematch</h2><p>${esc(w.map(pname).join(' and '))} tied for first. Play one more game to settle it.</p>
+    out+=`<div class="card warn"><h2>Tiebreaker rematch</h2><p>${esc(w.map(pname).join(' and '))} tied for first. Play one more game to settle it.</p>
       ${opts.length?`<label class="fld"><span>Game</span><select class="sel" id="rm-game">${opts.map(g=>`<option value="${g.id}">${esc(g.name)} · ${g.mins} min</option>`).join('')}</select></label><p><button type="button" class="btn primary" data-act="rematch">Start rematch</button></p>`:''}</div>`;
   }
   const scored=S.headStart>0&&first&&tableDone(first)?finalScores(S,first):null;
@@ -1835,23 +1996,23 @@ function viewFinale(){
         <div class="twrap"><img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}. Tap to save to Photos." data-act="photo" role="button" tabindex="0" style="cursor:pointer" hidden><div class="tglint" hidden></div></div>
         <div class="rfoot"><button type="button" class="btn primary" data-act="share">Share trophy</button></div><p class="hint">Sends the trophy as a picture sized for a phone. Choose a chat or app, or Save Image to keep it in Photos.</p>
         <p class="muted" id="dl-msg">Tap the picture to save it to Photos. If that is not offered here, press and hold it instead.</p></div>
-      <div class="card"${VIEW?' hidden':''}><h3>Done with this tournament?</h3><p class="muted">Saves it to History with its trophy and clears the rounds. Players stay, and the game list goes back to the original staples.</p><p><button type="button" class="btn" data-act="newt">Start a new tournament</button></p></div>`+out;
+      <div class="card"${VIEW?' hidden':''}><h3>Done with this gauntlet?</h3><p class="muted">Saves it to History with its trophy and clears the rounds. Players stay, and the game list goes back to the original staples.</p><p><button type="button" class="btn" data-act="newt">Start a new gauntlet</button></p></div>`+out;
   }
   if(S.finale.length){
     S.finale.forEach((f,i)=>{
       const g=gameOf(S,f.gameId);
       let subs=null;
-      if(S.headStart>0&&i===0){const b=hsCarry(S)?f.ids.map(id=>(rows.find(r=>r.id===id)||{pts:0}).pts):finalBonuses(f.ids.length,S.headStart);subs={};f.ids.forEach((id,s)=>{subs[id]='Seed '+(s+1)+' · starts '+(hsCarry(S)?'at ':'+')+fmt(b[s]);});}
+      if(S.headStart>0&&i===0){const b=hsCarry(S)?f.ids.map(id=>(rows.find(r=>r.id===id)||{pts:0}).pts):finalBonuses(f.ids.length,S.headStart);subs={};f.ids.forEach((id,s)=>{subs[id]='Rank '+(s+1)+' · starts '+(hsCarry(S)?'at ':'+')+fmt(b[s]);});}
       out+=`<div class="card"><div class="cardhead"><h3>${i===0?'Final':'Rematch'} · ${esc(g?g.name:'')}</h3>${!hasPlaces(f)&&i===S.finale.length-1?`<button type="button" class="btn sm ghost" data-act="finundo" data-a="${f.id}">Change game</button>`:''}</div>${tableBlock('f',f.id,0,f,0,'',subs)}</div>`;
       if(i===0&&scored){
-        out+=`<div class="card"><h3>Final scores</h3>${scored.map((x,k)=>`<div class="pr"><div class="pn"><span class="nm">${pdot(x.id)}${esc(pname(x.id))}${k===0?'<span class="badge">Champion</span>':''}</span><span class="pp mono">${ord(x.place)} place +${fmt(x.base)} · ${hsCarry(S)?'qualifying':'head start'} +${fmt(x.bonus)}</span></div><span class="pts mono">${fmt(x.total)}</span></div>`).join('')}</div>`;
+        out+=`<div class="card"><h3>Final scores</h3>${scored.map((x,k)=>`<div class="pr"><div class="pn"><span class="nm">${pdot(x.id)}${esc(pname(x.id))}${k===0?'<span class="badge">Champion</span>':''}</span><span class="pp mono">${ord(x.place)} place +${fmt(x.base)} · ${hsCarry(S)?'points from rounds':'bonus'} +${fmt(x.bonus)}</span></div><span class="pts mono">${fmt(x.total)}</span></div>`).join('')}</div>`;
       }
     });
   }
   const resolved=S.tiebreaks.filter(tb=>ph!=='tie'||!(cut.pending&&cut.pending.tb&&cut.pending.tb.id===tb.id));
   resolved.forEach(tb=>{
     const g=gameOf(S,tb.gameId);
-    out+=`<div class="card"><h3>Playoff · ${esc(g?g.name:'')}</h3>${tableBlock('t',tb.id,0,tb,0,'')}</div>`;
+    out+=`<div class="card"><h3>Tiebreaker · ${esc(g?g.name:'')}</h3>${tableBlock('t',tb.id,0,tb,0,'')}</div>`;
   });
   return out;
 }
@@ -1885,7 +2046,7 @@ function statsList(){
     const hs=T.filter(t=>t.stars>=3).sort((a,b)=>b.stars-a.stars||b.rounds-a.rounds)[0];
     if(hs) add(60+hs.stars*5,'star','Toughest gauntlet',`${'★'.repeat(hs.stars)} ${hs.rounds} rounds, ${hs.players} players, won by ${hs.champ.name}`);
     const hp=T.slice().sort((a,b)=>b.champ.pts-a.champ.pts)[0];
-    add(62,'chart','Highest points total',`${hp.champ.name} piled up ${hp.champ.pts.toFixed(1)} points in one tournament`);
+    add(62,'chart','Highest points total',`${hp.champ.name} piled up ${hp.champ.pts.toFixed(1)} points in one gauntlet`);
     add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${T.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
   }
   /* round records, from every saved tournament plus the one in progress */
@@ -1936,7 +2097,7 @@ const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-cora
 const statIcon=(n,sz)=>`<svg class="sico" width="${sz}" height="${sz}" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="#3B3540" stroke-width="3.500" stroke-linejoin="round" stroke-linecap="round">${STAT_ICON[n]||''}</svg>`;
 function statInner(){
   const L=ui.statList||[],n=L.length;
-  if(!n) return `<div class="shead2"><span class="hofl">Hall of fame</span></div><p class="muted">Records and fun stats show up here once you have finished a few rounds and saved a tournament.</p>`;
+  if(!n) return `<div class="shead2"><span class="hofl">Hall of fame</span></div><p class="muted">Records and fun stats show up here once you have finished a few rounds and saved a gauntlet.</p>`;
   const i=(ui.statIdx||0)%n,x=L[i],el=Math.min(9.5,(Date.now()-(ui.statT||Date.now()))/1000);
   return `<div class="shead2"><span class="hofl">Hall of fame</span><span class="sdots" aria-hidden="true">${L.map((_,j)=>`<i${j===i?' class="on"':''}></i>`).join('')}</span></div>
     <div class="sbody">${statIcon(x.icon,60)}<div class="stxt"><span class="chip ${STAT_COL[x.icon]||'c-purple'}">${esc(x.head)}</span><div class="sval">${esc(x.body)}</div></div></div>
@@ -1961,7 +2122,7 @@ setInterval(()=>{if(document.hidden) return;if(!document.getElementById('statcar
 function viewHistory(){
   const items=[];
   S.rounds.forEach((r,i)=>{if(roundDone(r))items.push({o:i,ts:r.doneAt||0,html:histCard('R'+(i+1),gameOf(S,r.gameId),r.doneAt,r.tables.map((t,ti)=>({label:r.tables.length>1?(gameOf(S,r.gameId).max===2?'Match ':'Table ')+(ti+1):'',t})),gameOf(S,r.gameId).weight,r.byes,'hr-'+r.id)});});
-  S.tiebreaks.forEach((t,i)=>{if(tableDone(t))items.push({o:1000+i,ts:t.doneAt||0,html:histCard('Playoff',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
+  S.tiebreaks.forEach((t,i)=>{if(tableDone(t))items.push({o:1000+i,ts:t.doneAt||0,html:histCard('Tiebreaker',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
   const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
@@ -1969,9 +2130,9 @@ function viewHistory(){
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
     const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
-      ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished tournaments are saved here with their trophies.</p>`;
+      ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished gauntlets are saved here with their trophies.</p>`;
   ui.statList=statsList();if((ui.statIdx||0)>=ui.statList.length) ui.statIdx=0;if(!ui.statT) ui.statT=Date.now();
-  return `<section class="card statcard swap" id="statcard" role="button" tabindex="0" aria-label="Hall of fame. Tap or swipe for another stat.">${statInner()}</section><section class="stack"><h2 class="chip c-purple">This tournament</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past tournaments</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
+  return `<section class="card statcard swap" id="statcard" role="button" tabindex="0" aria-label="Hall of fame. Tap or swipe for another stat.">${statInner()}</section><section class="stack"><h2 class="chip c-purple">This gauntlet</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past gauntlets</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
 function histCard(tag,g,ts,tables,w,byes,eid){
   return `<article class="card hist"${eid?` id="${eid}"`:''}><div class="cardhead"><h3>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</h3><span class="muted">${ts?esc(dstr(ts,true)):''}</span></div>
@@ -2230,7 +2391,7 @@ function fxConfetti(){
 }
 function fxSparkle(el){
   if(!el||fxReduced()) return;const r=el.getBoundingClientRect();
-  fxBurst(fxMake(r.left+r.width/2,r.top+r.height/2,22,{angle:-Math.PI/2,spread:6.28,speed:6,size:7,shapes:['star','dot'],g:.18,life:55}),1500);
+  fxBurst(fxMake(r.left+r.width/2,r.top+r.height/2,28,{angle:-Math.PI/2,spread:6.28,speed:6,size:10,shapes:['star','star','dot'],g:.16,life:70}),1800);
 }
 document.addEventListener('pointerdown',ev=>{
   if(fxReduced()) return;
@@ -2273,16 +2434,49 @@ function fxSound(kind){
   if(a.state!=='running'){a.resume().then(()=>{if(a.state==='running') fxPlay(a,kind);}).catch(()=>{});return;}
   fxPlay(a,kind);
 }
+/* Winning fanfare: one planned phrase in C major on a steady grid (s seconds a step).
+   Two key runs (C chord, then D minor), a short breath on a G bass, three rising dings on C chord tones, then bells climbing the C triad as everything fades.
+   Variations are stored below; FX_FANFARE.bright is the one in use. The others are kept on purpose, to swap in by changing the name used in fxPlay. */
+const FX_FANFARE_BASE={s:.1,ring:1,w:1,chord:.05,tg:.13,tv:1,extra:[]};
+const FX_FANFARE={
+  original:{...FX_FANFARE_BASE},                                              /* "number 5" */
+  warm:{...FX_FANFARE_BASE,w:.45,chord:.065},                                  /* rounder dings, fuller chord */
+  roomy:{...FX_FANFARE_BASE,s:.108,ring:1.25,tg:.15},                          /* slightly slower, longer rings */
+  bright:{...FX_FANFARE_BASE,w:1.35,tg:.115,tv:1.15,extra:[2637]}              /* shinier, quicker bells, one extra on top (IN USE) */
+};
+function fxFanfare(a,t0,o){
+  const F={C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880,C6:1046.5,D6:1174.66,E6:1318.5,G6:1568,C7:2093};
+  const key=(t,f,v,d)=>{fxTone(a,t,f,d,'triangle',v);fxTone(a,t,f*2,d*.6,'sine',v*.4);fxTone(a,t,f/2,d,'sine',v*.3);};
+  const ding=(t,f,v,d,w)=>{fxTone(a,t,f,d,'sine',v);fxTone(a,t,f*2.76,d*.35,'sine',v*.3*w);fxTone(a,t,f*5.4,d*.12,'sine',v*.12*w);fxTone(a,t,f,d*.5,'triangle',v*.35);};
+  const s=o.s,u=t0+.03,T=n=>u+n*s,C3=130.81,D3=146.83,G3=196,C4=261.63,E4=329.63,G4=392,r=o.ring,w=o.w;
+  [F.C5,F.E5,F.G5,F.C6,F.E6,F.G6,F.E6,F.C6].forEach((f,i)=>key(T(i),f,i%4===0?.075:.06,.38));
+  [F.D5,F.F5,F.A5,F.D6,F.F5*2,F.D6,F.A5,F.F5].forEach((f,i)=>key(T(8+i),f,i%4===0?.08:.065,.38));
+  fxTone(a,T(0),C3,.78*s/.1,'triangle',.09);fxTone(a,T(8),D3,.78*s/.1,'triangle',.09);fxTone(a,T(16),G3,.2,'triangle',.09);
+  const n0=17;
+  fxTone(a,T(n0),C3,1.3*r,'triangle',.1);
+  [[n0,[F.C5,F.C6,F.G6],.08,1],[n0+2,[F.E5,F.E6,F.C7],.08,1],[n0+4,[F.G5,F.G6,F.C7*1.26],.09,1.8]].forEach(([n,fs,v,d],i)=>{
+    fs.forEach(f=>ding(T(n),f,v/1.6,d*.9*r,w));if(i<2) fxTone(a,T(n),i?E4:C3*2,.4,'triangle',.05);});
+  [C4,E4,G4,F.C5].forEach(f=>fxTone(a,T(n0+4),f,1.2*r,'triangle',o.chord));fxNoise(a,T(n0+4),.2,.035,6000);
+  [F.C6,F.E6,F.G6,F.C7,F.E6*2,F.G6*2,F.C7*2].concat(o.extra||[]).forEach((f,i)=>ding(T(n0+4)+.15+i*o.tg,f,.05*o.tv*Math.pow(.88,i),(.9+i*.08)*r,w));
+}
 function fxPlay(a,kind){
   const t=a.currentTime+0.02;
   const N={C5:523.25,E5:659.25,G5:783.99,C6:1046.5,E6:1318.5,G6:1568,D5:587.33,A5:880};
   if(kind==='tap'){fxTone(a,t,520,0.07,'triangle',0.06,780);}
   else if(kind==='pop'){fxNoise(a,t,0.18,0.12,3000);fxTone(a,t,300,0.12,'sine',0.12,90);}
   else if(kind==='chime'){const u=t+0.1;fxTone(a,u,N.G5,0.35,'triangle',0.09);fxTone(a,u+0.09,N.C6,0.5,'triangle',0.09);}
-  else if(kind==='fanfare'){
-    const u=t+0.12;
-    [[N.C5,0],[N.E5,0.14],[N.G5,0.28],[N.C6,0.46]].forEach(([f,d])=>{fxTone(a,u+d,f,0.32,'square',0.07);fxTone(a,u+d,f*2,0.32,'triangle',0.05);});
-    [N.C5,N.E5,N.G5,N.C6].forEach(f=>{fxTone(a,u+0.8,f,1.6,'triangle',0.08);fxTone(a,u+0.8,f/2,1.6,'sine',0.05);});
+  else if(kind==='fanfare'){fxFanfare(a,t,FX_FANFARE.bright);}
+  else if(kind==='fanfare_old'){/* earlier bouncy horn fanfare, kept in case it is wanted back; rename to 'fanfare' to use it */
+    /* bouncy 8-bit horn call: quick da-da-da-DAA, a hopping run up, then a short bright held chord and sparkle */
+    const u=t+0.08;
+    const horn=(f,d,dur,v)=>{fxTone(a,u+d,f,dur,'square',v);fxTone(a,u+d,f*1.007,dur,'sawtooth',v*0.5);fxTone(a,u+d,f*2,dur,'triangle',v*0.45);};
+    horn(N.G5,0,0.07,0.065);horn(N.G5,0.09,0.07,0.065);horn(N.G5,0.18,0.07,0.065);horn(N.C6,0.27,0.24,0.08);
+    horn(N.E5,0.54,0.06,0.06);horn(N.G5,0.61,0.06,0.06);horn(N.C6,0.68,0.06,0.065);horn(N.E6,0.75,0.07,0.07);
+    horn(N.D5*2,0.84,0.07,0.065);horn(N.E6,0.92,0.07,0.07);horn(N.G6,1.0,0.6,0.08);
+    [N.C5,N.E5,N.G5,N.C6].forEach(f=>{fxTone(a,u+1.0,f,1.1,'triangle',0.07);});
+    fxTone(a,u+1.0,N.C5/2,1.1,'square',0.05);
+    [N.C6,N.E6,N.G6,N.C6*2,N.G6,N.C6*2].forEach((f,i)=>fxTone(a,u+1.3+i*0.055,f,0.18,'square',0.04));
+    fxNoise(a,u+1.0,0.35,0.05,5000);
   }
   else if(kind==='beep'){fxTone(a,t,440,0.22,'triangle',0.12);fxTone(a,t,220,0.22,'sine',0.08);}
   else if(kind==='go'){fxTone(a,t,N.G5,0.35,'triangle',0.1);fxTone(a,t+0.13,N.C6,0.55,'triangle',0.1);}
@@ -2428,7 +2622,7 @@ function trLabel(T){return T.champ.name+' · '+dstr(T.date);}
 function daysLeft(t){return Math.max(1,Math.ceil((t.at+TRASH_MS-Date.now())/864e5));}
 function dmBtn(key,act,a,label,sure,extra){
   const on=ui.confirm===key;
-  return `<span class="dmb"><button type="button" class="btn sm danger${on?' armed':''}" data-act="${act}" data-a="${a}"${extra||''}>${on?sure:label}</button>${on?'<button type="button" class="btn sm ghost" data-act="dmcancel">Cancel</button>':''}</span>`;
+  return `<span class="dmb"><button type="button" class="btn sm danger${on?' armed':''}" data-act="${act}" data-a="${a}"${extra||''}>${on?sure:label}</button><button type="button" class="btn sm ghost${on?'':' inv'}" data-act="dmcancel"${on?'':' tabindex="-1" disabled aria-hidden="true"'}>Cancel</button></span>`;
 }
 function dataMgmtHTML(){
   const cur=`<div class="dmr"><div><b>Current gauntlet</b><span class="muted">${S.started?S.players.length+' players · '+S.rounds.length+' rounds':'Nothing in progress'}</span></div>${dmBtn('clearcur','clearcur','x','Clear it','Are you sure? Tap again',S.started?'':' disabled')}</div>`;
@@ -2437,7 +2631,7 @@ function dataMgmtHTML(){
   const tr=(S.trash||[]).map(t=>{
     const snap=(t.kind==='current'||t.kind==='all'),need=snap&&(S.started||(t.kind==='all'&&(S.archive.length||(S.roster||[]).length)));
     const on=ui.confirm==='restore:'+t.id;
-    return `<div class="dmr"><div><b>${esc(t.kind==='tournament'?t.label:t.label)}</b><span class="muted">${t.kind==='tournament'?'Past gauntlet':t.kind==='slot'?'Saved gauntlet':t.kind==='all'?'Everything':'In-progress gauntlet'} · ${daysLeft(t)} day${daysLeft(t)===1?'':'s'} left</span></div><span class="dmb"><button type="button" class="btn sm${on?' danger armed':''}" data-act="restore" data-a="${t.id}">${on?'Replaces what is here. Tap again':'Restore'}</button>${on?'<button type="button" class="btn sm ghost" data-act="dmcancel">Cancel</button>':''}</span></div>`;}).join('');
+    return `<div class="dmr"><div><b>${esc(t.kind==='tournament'?t.label:t.label)}</b><span class="muted">${t.kind==='tournament'?'Past gauntlet':t.kind==='slot'?'Saved gauntlet':t.kind==='all'?'Everything':'In-progress gauntlet'} · ${daysLeft(t)} day${daysLeft(t)===1?'':'s'} left</span></div><span class="dmb"><button type="button" class="btn sm${on?' danger armed':''}" data-act="restore" data-a="${t.id}">${on?'Replaces what is here. Tap again':'Restore'}</button><button type="button" class="btn sm ghost${on?'':' inv'}" data-act="dmcancel"${on?'':' tabindex="-1" disabled aria-hidden="true"'}>Cancel</button></span></div>`;}).join('');
   return `<h3>Data management</h3>
     <p class="hint">Deleting asks twice. Anything deleted waits 7 days under Recently deleted, so you can bring it back.</p>
     <div class="dm">${cur}${all}</div>
@@ -2459,7 +2653,7 @@ function sharePanel(){
 }
 function doClear(kind){
   if(kind==='cur'){trashPush('current','Gauntlet ('+S.players.length+' players, '+S.rounds.length+' rounds)',snapOf());startOver(true);}
-  else{trashPush('all','Everything ('+S.archive.length+' past, '+S.players.length+' players)',snapOf());const f=fresh();f.trash=S.trash;S=f;ui.open={};ui.view='setup';ui.tkey=null;ui.turl=null;ui.touched=true;}
+  else{trashPush('all','Everything ('+S.archive.length+' past, '+S.players.length+' players)',snapOf());const f=freshPicked();f.trash=S.trash;S=f;ui.open={};ui.view='setup';ui.tkey=null;ui.turl=null;ui.touched=true;}
   ui.pimg={};ui.confirm=null;ui.top=false;ui.view='setup';touch();
 }
 function doRestore(id){
@@ -2493,7 +2687,7 @@ function gNew(){
   if(!S.started) return;
   if(phaseOf(S)==='champion') startOver();
   else{gPark();startOver(true);}
-  ui.view='setup';ui.top=true;
+  ui.view='setup';ui.top=true;ui.gmenu=false;
 }
 function gOpen(id){
   const i=(S.slots||[]).findIndex(x=>x.id===id);if(i<0) return;
@@ -2502,13 +2696,23 @@ function gOpen(id){
   else if(gHasWork()) gPark();
   const keep={archive:S.archive,roster:S.roster,rseq:S.rseq,rv:S.rv,trash:S.trash,slots:S.slots};
   S=ensureDefaults({...JSON.parse(JSON.stringify(it.snap)),...keep});
-  ui.open={};ui.tkey=null;ui.turl=null;ui.pimg={};ui.confirm=null;ui.lookFor=null;ui.view=S.started?'rounds':'setup';ui.touched=true;ui.top=true;
+  ui.open={};ui.tkey=null;ui.turl=null;ui.pimg={};ui.confirm=null;ui.lookFor=null;ui.view=S.started?'rounds':'setup';ui.touched=true;ui.top=true;ui.gmenu=false;
 }
 function gauntletsCard(){
   const sl=(S.slots||[]).map(x=>`<div class="dmr"><div><b>${esc(x.name||gLabel(x.snap))}</b><span class="muted">${esc(gStatus(x.snap))}</span></div><span class="dmb"><button type="button" class="btn sm primary" data-act="gopen" data-a="${x.id}">Open</button>${dmBtn('delslot:'+x.id,'delslot',x.id,'Delete','Sure? Tap again')}</span></div>`).join('');
   const fin=S.started&&phaseOf(S)==='champion';
   return `<section class="card"><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2></div>
     <label class="fld wide"><span>This gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
+    <p class="muted">${esc(gStatus(S))}</p>
+    ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
+    ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
+}
+function gmenuPanel(){
+  if(!ui.gmenu||(typeof VIEW!=='undefined'&&VIEW)) return '';
+  const sl=(S.slots||[]).map(x=>`<div class="dmr"><div><b>${esc(x.name||gLabel(x.snap))}</b><span class="muted">${esc(gStatus(x.snap))}</span></div><span class="dmb"><button type="button" class="btn sm primary" data-act="gopen" data-a="${x.id}">Open</button>${dmBtn('delslot:'+x.id,'delslot',x.id,'Delete','Sure? Tap again')}</span></div>`).join('');
+  const fin=S.started&&phaseOf(S)==='champion';
+  return `<section class="card gmenu" role="dialog" aria-label="Gauntlets"><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2><button type="button" class="btn sm ghost" data-act="gmenu">Close</button></div>
+    <label class="fld wide"><span>Name of this gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
     <p class="muted">${esc(gStatus(S))}</p>
     ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
     ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
@@ -2538,18 +2742,21 @@ function render(){
   if(S.started){
     const cur=S.rounds.findIndex(r=>!roundDone(r)), done=S.rounds.filter(roundDone).length, ph=phaseOf(S);
     const segs=S.rounds.map((r,i)=>`<button type="button" class="seg2 ${roundDone(r)?'done':(i===cur?'cur':'')}" style="--sc:${BR[i%6]};--i:${i}" data-act="goround" data-a="${r.id}" aria-label="Round ${i+1}, ${roundDone(r)?'done, view results':(i===cur?'in play':'not played yet')}"></button>`).join('')+`<button type="button" class="seg2 fin${ph==='champion'?' done':''}" data-act="goround" data-a="fin" aria-label="The final"></button>`;
-    const lbl={qual:'Round '+Math.min(done+1,S.rounds.length)+' of '+S.rounds.length,tie:'Playoff for the cut line',pickfinal:'Choose the final game',final:'Final in play',rematch:'Sudden-death rematch',champion:'We have a champion'}[ph];
+    const lbl={qual:'Round '+Math.min(done+1,S.rounds.length)+' of '+S.rounds.length,tie:'Tiebreaker for the last spot',pickfinal:'Choose the final game',final:'Final in play',rematch:'Tiebreaker rematch',champion:'We have a champion'}[ph];
     road=`<div class="road">${segs}</div><div class="roadlbl"><span>${lbl}</span><span class="mono">${done}/${S.rounds.length} done</span></div>`;
   }
   document.getElementById('roadwrap').innerHTML=road;
-  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button type="button" class="tab t-${k}" data-act="tab" data-a="${k}"${ui.view===k?' aria-current="page"':''}>${l}</button>`).join('');
+  const LOCKSVG='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.600" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor" fill-opacity=".25"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  const finLock=!S.started||phaseOf(S)==='qual';
+  document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>{const lk=k==='finale'&&finLock;return `<button type="button" class="tab t-${k}${lk?' lockd':''}" data-act="tab" data-a="${k}"${ui.view===k?' aria-current="page"':''}>${l}${lk?LOCKSVG:''}</button>`;}).join('');
   stickMeasure();
   const anEl=ui.pop?document.querySelector(ui.pop):null,anTop=anEl?anEl.getBoundingClientRect().top:null,anSel=ui.pop;
-  app.innerHTML=backupBanner()+(ui.view==='setup'?viewSetup():ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory());
+  document.body.classList.toggle('slim',!!S.started);
+  const gb=document.getElementById('gmbtn');if(gb){gb.hidden=!!(typeof VIEW!=='undefined'&&VIEW);gb.setAttribute('aria-expanded',String(!!ui.gmenu));}
+  app.innerHTML=gmenuPanel()+backupBanner()+(ui.view==='setup'?viewSetup()+((typeof VIEW!=='undefined'&&VIEW)?'':sharePanel()):ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory());
   if(ui.top){window.scrollTo(0,0);ui.top=false;}
   else if(ui.scrollTo||ui.scrollEl){const el=document.getElementById(ui.scrollEl||('rd-'+ui.scrollTo));ui.scrollTo=null;ui.scrollEl=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1700);}}
   else{window.scrollTo(0,y);if(anTop!==null){const n2=document.querySelector(anSel);if(n2){const d=n2.getBoundingClientRect().top-anTop;if(Math.abs(d)>0.5) window.scrollTo(0,y+d);}}}
-  if(ui.view==='setup'&&!(typeof VIEW!=='undefined'&&VIEW)) app.insertAdjacentHTML('beforeend',sharePanel());
   stickCheck();
   afterRender();
 }
@@ -2569,6 +2776,8 @@ function startOver(discard){
   const staples=DEFAULT_GAMES.map(g=>({...g,copies:Math.max(1,own[g.id]||1)}));
   const extras=S.games.filter(g=>g.custom).map(g=>({...g,on:false}));
   f.games=staples.concat(extras);
+  f.howLong=S.howLong===undefined?2:S.howLong;f.howManual=!!S.howManual;f.nightHours=S.nightHours||3;f.winnerStays=S.winnerStays;
+  if(!f.howManual&&f.howLong) pickGames(f);
   f.roster=S.roster;f.rseq=S.rseq;f.rv=1;f.players=S.players;f.pseq=S.pseq;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.order=S.order;f.archive=arch.slice(0,50);f.trash=S.trash||[];f.slots=S.slots||[];f.born=Date.now();
   S=f;ui.open={};ui.confirm=null;ui.view=T?'history':'setup';ui.touched=true;ui.top=true;ui.tkey=null;ui.turl=null;
 }
@@ -2580,9 +2789,9 @@ function act(name,a,el){
       const rd=S.rounds.find(r=>r.id===a[0]);if(!rd) break;
       ui.view='rounds';ui.scrollEl='rd-'+rd.id;ui.open[rd.id]=true;
       break;}
-    case 'tab':ui.view=a[0];ui.touched=true;ui.top=true;break;
+    case 'tab':ui.view=a[0];ui.gmenu=false;ui.touched=true;ui.top=true;break;
     case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;break;}
-    case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});syncGamesToCount();touch();}break;
+    case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});syncCount();touch();}break;
     case 'look':ui.lookFor=ui.lookFor===a[0]?null:a[0];break;
     case 'lookc':case 'lookh':case 'looki':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
       p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else p.look.i=k;
@@ -2592,11 +2801,19 @@ function act(name,a,el){
     case 'addrost':{const r=(S.roster||[]).find(q=>q.rid===a[0]);if(!r||S.started||S.players.some(q=>q.rid===r.rid)) break;
       let p=S.players.find(q=>!q.rid&&/^Player \d+$/.test(q.name));
       if(!p){if(S.players.length>=MAXP) break;p={id:'p'+(S.pseq++),name:''};S.players.push(p);}
-      p.name=r.name;p.rid=r.rid;if(r.look) p.look={...r.look};else delete p.look;syncGamesToCount();touch();break;}
-    case 'delplayer':if(S.players.length>MINP&&!S.started){S.players=S.players.filter(p=>p.id!==a[0]);S.finalists=Math.max(1,Math.min(S.finalists,Math.min(4,S.players.length-1)));syncGamesToCount();touch();}break;
+      p.name=r.name;p.rid=r.rid;if(r.look) p.look={...r.look};else delete p.look;syncCount();touch();break;}
+    case 'delplayer':if(S.players.length>MINP&&!S.started){S.players=S.players.filter(p=>p.id!==a[0]);S.finalists=Math.max(1,Math.min(S.finalists,Math.min(4,S.players.length-1)));syncCount();touch();}break;
     case 'fin':S.finalists=+a[0];touch();break;
     case 'hs':S.headStart=+a[0];touch();break;
-    case 'nh':S.nightHours=+a[0];touch();break;
+    case 'nh':S.nightHours=+a[0];if(!S.howManual&&!S.started&&S.howLong) pickGames(S);touch();break;
+    case 'pcount':{if(S.started) break;const d=+a[0];
+      if(d>0&&S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});}
+      else if(d<0&&S.players.length>MINP){S.players.pop();S.finalists=Math.max(1,Math.min(S.finalists,Math.min(4,S.players.length-1)));ui.lookFor=null;}
+      else break;
+      syncCount();touch();break;}
+    case 'howlong':{if(S.started) break;S.howLong=+a[0];S.howManual=false;pickGames(S);touch();break;}
+    case 'gedit':ui.gedit=ui.gedit===a[0]?null:a[0];break;
+    case 'gmenu':ui.gmenu=!ui.gmenu;if(ui.gmenu) ui.top=true;break;
     case 'ws':S.winnerStays=a[0]==='1';touch();break;
     case 'ord':S.order=a[0];touch();break;
     case 'bklater':ui.bkLater=nightMarks();break;
@@ -2604,16 +2821,16 @@ function act(name,a,el){
     case 'gweight':{const g=gameOf(S,a[0]);if(g){g.weight=+a[1];touch();}break;}
     case 'gcopy':{const g=gameOf(S,a[0]);if(g){g.copies=Math.max(1,Math.min(6,copiesOf(g)+ +a[1]));touch();}break;}
     case 'gmove':{const i=S.games.findIndex(g=>g.id===a[0]),j=i+ +a[1];if(i>=0&&j>=0&&j<S.games.length){[S.games[i],S.games[j]]=[S.games[j],S.games[i]];touch();}break;}
-    case 'gdel':S.games=S.games.filter(g=>g.id!==a[0]);touch();break;
+    case 'gdel':S.games=S.games.filter(g=>g.id!==a[0]);S.howManual=true;touch();break;
     case 'addgame':{
       const name=document.getElementById('ng-name').value.trim();
       let mn=Math.max(2,Math.min(12,+document.getElementById('ng-min').value||2)),mx=Math.max(2,Math.min(12,+document.getElementById('ng-max').value||4));
       if(mx<mn) mx=mn;
       const mins=Math.max(5,Math.min(240,+document.getElementById('ng-mins').value||30)),w=+document.getElementById('ng-w').value||1,cp=Math.max(1,Math.min(6,+document.getElementById('ng-copies').value||1));
       if(!name){document.getElementById('ng-name').focus();return false;}
-      S.games.push({id:'g'+(S.seq++),name,short:name.split(/\s+/)[0].slice(0,6),min:mn,max:mx,weight:w,mins,luck:(ui.catName===name&&ui.catLuck)||3,copies:cp,on:true,custom:true});ui.catName=null;ui.catLuck=null;touch();break;
+      S.games.push({id:'g'+(S.seq++),name,short:name.split(/\s+/)[0].slice(0,6),min:mn,max:mx,weight:w,mins,luck:(ui.catName===name&&ui.catLuck)||3,copies:cp,on:true,custom:true});ui.catName=null;ui.catLuck=null;S.howManual=true;touch();break;
     }
-    case 'build':if(buildRounds(S)){ui.open={};ui.view='rounds';ui.top=true;touch();}break;
+    case 'build':if(buildRounds(S)){ui.gmenu=false;ui.open={};ui.view='rounds';ui.top=true;touch();}break;
     case 'reset':
       if(ui.confirm==='reset'){startOver();touch();}
       else{ui.confirm='reset';setTimeout(()=>{if(ui.confirm==='reset'){ui.confirm=null;render();}},5000);}
@@ -2678,7 +2895,7 @@ document.addEventListener('change',e=>{
   if(VIEW) return;
   const el=e.target;
   if(el.dataset&&el.dataset.act==='setname'){const p=S.players.find(q=>q.id===el.dataset.a);if(p){rosterSync(p);touch();if(ui.down) ui.dirty=true;else renderSafe();}}
-  if(el.dataset&&el.dataset.act==='gtoggle'){const g=gameOf(S,el.dataset.a);if(g){g.on=el.checked;delete g.auto;touch();render();}}
+  if(el.dataset&&el.dataset.act==='gtoggle'){const g=gameOf(S,el.dataset.a);if(g){g.on=el.checked;delete g.auto;S.howManual=true;touch();render();}}
 });
 document.addEventListener('input',e=>{
   if(VIEW) return;
@@ -2722,6 +2939,8 @@ document.addEventListener('click',e=>{
 });
 (function(){
   const sp=document.getElementById('splash'),lg=document.querySelector('.logo');if(!sp) return;
+  let seen=false;try{seen=localStorage.getItem('ubg-seen')==='1';localStorage.setItem('ubg-seen','1');}catch(e){}
+  if(seen&&!/[?&]splash/.test(location.search)){sp.remove();return;}
   if(lg) document.getElementById('splogo').innerHTML=lg.innerHTML;
   const t0=Date.now(),min=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?0:3000;
   const done=()=>setTimeout(()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),500);},Math.max(0,min-(Date.now()-t0)));
@@ -2761,7 +2980,7 @@ async function ghPublish(){
       if(g.ok) sha=(await g.json()).sha;
       else if(g.status===401||g.status===403) throw new Error('auth');
       else if(g.status!==404) throw new Error('http '+g.status);
-      const body={message:'Update tournament',content:btoa(unescape(encodeURIComponent(snapshot))),branch:GH.branch};
+      const body={message:'Update gauntlet',content:btoa(unescape(encodeURIComponent(snapshot))),branch:GH.branch};
       if(sha) body.sha=sha;
       const p=await fetch(url,{method:'PUT',headers:H,body:JSON.stringify(body)});
       if(p.ok){ok=true;ghNote='Published to GitHub at '+clock()+'.';}
@@ -2791,12 +3010,14 @@ function shareCard(){
   let bk=0;try{bk=+localStorage.getItem(BKK)||0;}catch(e){}
   const bkt=bk?'Last backup file saved '+new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'.':'No backup file saved yet.';
   return `<div class="share">
-    <p class="hint">Publishing puts a copy of the tournament on GitHub so family can follow along with the viewer link. Only this device, with your token, can change anything.</p>
+    <p class="hint">Publishing puts a copy of the gauntlet on GitHub so family can follow along with the viewer link. Only this device, with your token, can change anything.</p>
+    <details class="host" data-ui="hostOpen"${ui.hostOpen?' open':''}><summary><b>Host setup (advanced)</b></summary>
     <label class="fld">GitHub repo<input class="inp" data-gh="repo" value="${esc(GH.repo||'')}" placeholder="yourname/game-night" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <label class="fld">Branch<input class="inp" data-gh="branch" value="${esc(GH.branch||'main')}" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <label class="fld">Access token (stays on this device)<input class="inp" type="password" data-gh="token" value="${esc(GH.token||'')}" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <label class="chk"><input type="checkbox" data-gh="auto"${GH.auto?' checked':''}> Publish automatically after each change</label>
     <div class="rfoot"><button type="button" class="btn sm primary" data-ghb="publish">Publish now</button><button type="button" class="btn sm ghost" data-ghb="restore">Restore from published copy</button></div>
+    </details>
     <h3>Viewer link</h3>
     <div class="linkbox mono" id="gh-link">${esc(viewLink())}</div>
     <div class="rfoot"><button type="button" class="btn sm" data-ghb="copy">Copy link</button><button type="button" class="btn sm" data-ghb="share">Share…</button></div>
@@ -2818,7 +3039,7 @@ document.addEventListener('change',e=>{
     f.text().then(t=>{
       const o=JSON.parse(t);
       if(!(o&&o.v===1&&Array.isArray(o.players))) throw new Error('bad');
-      if(S.started&&!confirm('Replace the tournament on this device with the one in that file?')) return;
+      if(S.started&&!confirm('Replace the gauntlet on this device with the one in that file?')) return;
       adopt(o);
     }).catch(()=>ghMsg('That file is not a Game Night Gauntlet backup.'));
   }
@@ -2833,7 +3054,7 @@ document.addEventListener('click',async e=>{
     }else if(k==='restore'){
       ghMsg('Looking for the published copy…');
       const o=await ghRestore();
-      if(S.started&&!confirm('Replace the tournament on this device with the published copy?')){ghMsg('');return;}
+      if(S.started&&!confirm('Replace the gauntlet on this device with the published copy?')){ghMsg('');return;}
       adopt(o);
     }else if(k==='copy'){
       await navigator.clipboard.writeText(viewLink());ghMsg('Link copied.');
@@ -2855,7 +3076,7 @@ document.addEventListener('click',async e=>{
 async function viewPoll(){
   try{
     const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
-    if(r.status===404) viewMsg='The host has not published a tournament yet.';
+    if(r.status===404) viewMsg='The host has not published a gauntlet yet.';
     else if(r.ok){
       const o=await r.json();
       if(o&&o.v===1){
