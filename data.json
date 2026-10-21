@@ -1,35 +1,29 @@
 {
   "v": 1,
-  "t": 1792545685130,
+  "t": 1792548765423,
   "seq": 93,
   "pseq": 16,
   "tid": "t1792296829659",
   "players": [
     {
       "id": "p1",
-      "name": "Player 1",
+      "name": "Shawn",
       "look": {
         "c": 3,
         "h": 2,
         "i": 2
-      }
+      },
+      "rid": "r1"
     },
     {
       "id": "p2",
-      "name": "Player 2",
-      "look": {
-        "h": 3,
-        "i": 3
-      }
+      "name": "Danna",
+      "rid": "r7"
     },
     {
       "id": "p15",
-      "name": "Player 3",
-      "look": {
-        "c": 4,
-        "h": 4,
-        "i": 2
-      }
+      "name": "Kris",
+      "rid": "r6"
     }
   ],
   "roster": [
