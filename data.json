@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "t": 1792548813375,
+  "t": 1792548835090,
   "seq": 93,
   "pseq": 19,
   "tid": null,
@@ -365,7 +365,7 @@
       "custom": true
     }
   ],
-  "finalists": 2,
+  "finalists": 3,
   "headStart": 2,
   "nightHours": 3,
   "winnerStays": true,
