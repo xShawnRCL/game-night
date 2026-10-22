@@ -1,8 +1,8 @@
 {
   "v": 1,
-  "t": 1792679786671,
+  "t": 1792679838701,
   "seq": 97,
-  "pseq": 19,
+  "pseq": 22,
   "tid": null,
   "players": [
     {
@@ -26,7 +26,12 @@
       "rid": "r6"
     },
     {
-      "id": "p16",
+      "id": "p19",
+      "name": "Kaiden",
+      "rid": "r3"
+    },
+    {
+      "id": "p20",
       "name": "Eilon",
       "rid": "r8",
       "look": {
@@ -34,12 +39,7 @@
       }
     },
     {
-      "id": "p17",
-      "name": "Kaiden",
-      "rid": "r3"
-    },
-    {
-      "id": "p18",
+      "id": "p21",
       "name": "Truman",
       "rid": "r5",
       "look": {
@@ -365,7 +365,7 @@
       "custom": true
     }
   ],
-  "finalists": 3,
+  "finalists": 2,
   "headStart": 2,
   "nightHours": 2,
   "howLong": 2,
