@@ -1,9 +1,9 @@
 {
   "v": 1,
-  "t": 1792548928975,
+  "t": 1792679786671,
   "seq": 97,
   "pseq": 19,
-  "tid": "t1792548889612",
+  "tid": null,
   "players": [
     {
       "id": "p1",
@@ -97,7 +97,7 @@
       "weight": 1,
       "mins": 15,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -109,7 +109,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -121,7 +121,7 @@
       "weight": 2,
       "mins": 35,
       "luck": 2,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -133,7 +133,7 @@
       "weight": 1,
       "mins": 30,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -145,7 +145,7 @@
       "weight": 2,
       "mins": 40,
       "luck": 2,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -157,7 +157,7 @@
       "weight": 2,
       "mins": 50,
       "luck": 3,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -313,7 +313,7 @@
       "weight": 2,
       "mins": 30,
       "luck": 0,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -325,7 +325,7 @@
       "weight": 1,
       "mins": 15,
       "luck": 0,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -349,7 +349,7 @@
       "weight": 2,
       "mins": 45,
       "luck": 3,
-      "on": false
+      "on": true
     },
     {
       "id": "g49",
@@ -368,60 +368,42 @@
   "finalists": 3,
   "headStart": 2,
   "nightHours": 2,
+  "howLong": 2,
+  "howManual": true,
   "winnerStays": true,
   "order": "smart",
   "gv": 1,
   "bkNights": 0,
-  "started": true,
-  "rounds": [
-    {
-      "id": "r93",
-      "gameId": "skipbo",
-      "tables": [
-        {"ids":["p2","p17","p1","p18","p16","p15"],"places":{"p2":1,"p17":2,"p1":3,"p18":4,"p16":5,"p15":6}}
-      ],
-      "byes": [],
-      "doneAt": 1792548897060
-    },
-    {
-      "id": "r94",
-      "gameId": "blokus",
-      "tables": [
-        {"ids":["p2","p17","p16"],"places":{"p2":1,"p17":2,"p16":3}},
-        {"ids":["p15","p18","p1"],"places":{"p15":1,"p18":2,"p1":3}}
-      ],
-      "byes": [],
-      "doneAt": 1792548901127
-    },
-    {
-      "id": "r95",
-      "gameId": "uno",
-      "tables": [
-        {"ids":["p1","p2","p15","p18","p17","p16"],"places":{"p1":1,"p2":2,"p15":3,"p18":4,"p17":5,"p16":6}}
-      ],
-      "byes": [],
-      "doneAt": 1792548904590
-    }
-  ],
+  "started": false,
+  "rounds": [],
   "tiebreaks": [],
-  "finale": [
-    {
-      "id": "f96",
-      "gameId": "carc",
-      "ids": [
-        "p2",
-        "p15",
-        "p17"
-      ],
-      "places": {
-        "p2": 1,
-        "p15": 2,
-        "p17": 3
-      },
-      "doneAt": 1792548928974
-    }
-  ],
+  "finale": [],
   "archive": [
+    {
+      "id": "t1792548889612",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1792548928975,
+        "champ": {"name":"Danna","color":"#7CC6F5","pts":36.4,"wins":2,"rank":1,"played":3},
+        "played": ["Skip-Bo","Blokus","Uno","Final: Carcassonne"],
+        "rlist": [{"n":"Skip-Bo","w":1},{"n":"Blokus","w":2},{"n":"Uno","w":1}],
+        "cw": 2,
+        "best": {"v":18.4,"game":"Blokus"},
+        "finalGame": "Carcassonne",
+        "solo": false,
+        "stars": 1,
+        "runner": "Kris",
+        "margin": 12,
+        "scored": true,
+        "carry": true,
+        "final": [{"name":"Danna","place":1,"seed":1,"base":27,"bonus":36.4,"total":63.4},{"name":"Kris","place":2,"seed":2,"base":13.5,"bonus":24.4,"total":37.9},{"name":"Kaiden","place":3,"seed":3,"base":0,"bonus":20,"total":20}],
+        "standings": [{"name":"Danna","pts":36.4,"rank":1,"color":"#7CC6F5","look":{"h":0,"i":0},"champ":true},{"name":"Kris","pts":24.4,"rank":2,"color":"#FFD84D","look":{"h":0,"i":0},"champ":false},{"name":"Kaiden","pts":20,"rank":3,"color":"#C4A8F7","look":{"h":0,"i":0},"champ":false},{"name":"Truman","pts":18,"rank":4,"color":"#FF8A78","look":{"h":0,"i":0},"champ":false},{"name":"Shawn","pts":17.6,"rank":5,"color":"#7ED9A6","look":{"h":2,"i":2},"champ":false},{"name":"Eilon","pts":3.6,"rank":6,"color":"#FFB05C","look":{"h":0,"i":0},"champ":false}],
+        "log": [{"g":"Skip-Bo","w":1,"t":[[{"n":"Danna","r":"r7","p":1,"v":10},{"n":"Kaiden","r":"r3","p":2,"v":8},{"n":"Shawn","r":"r1","p":3,"v":6},{"n":"Truman","r":"r5","p":4,"v":4},{"n":"Eilon","r":"r8","p":5,"v":2},{"n":"Kris","r":"r6","p":6,"v":0}]]},{"g":"Blokus","w":2,"t":[[{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Kaiden","r":"r3","p":2,"v":10},{"n":"Eilon","r":"r8","p":3,"v":1.6}],[{"n":"Kris","r":"r6","p":1,"v":18.4},{"n":"Truman","r":"r5","p":2,"v":10},{"n":"Shawn","r":"r1","p":3,"v":1.6}]]},{"g":"Uno","w":1,"t":[[{"n":"Shawn","r":"r1","p":1,"v":10},{"n":"Danna","r":"r7","p":2,"v":8},{"n":"Kris","r":"r6","p":3,"v":6},{"n":"Truman","r":"r5","p":4,"v":4},{"n":"Kaiden","r":"r3","p":5,"v":2},{"n":"Eilon","r":"r8","p":6,"v":0}]]}],
+        "rounds": 3,
+        "players": 6,
+        "games": 3
+      }
+    },
     {
       "id": "t1792296829659",
       "data": {
@@ -580,6 +562,5 @@
   ],
   "trash": [],
   "slots": [],
-  "born": 1792548777700,
-  "finishedAt": 1792548928975
+  "born": 1792679786671
 }
