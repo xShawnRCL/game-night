@@ -354,6 +354,11 @@ details.add summary{cursor:pointer;font-weight:700}
 .qbtn[aria-expanded="true"]{background:var(--c-yellow)}
 .qnote{margin:6px 0 2px;padding:8px 12px;border-radius:10px;background:var(--bg);border:2px solid var(--line);font-size:.9rem;max-width:62ch;color:var(--ink)}
 .qrow{display:block;margin:2px 0 4px}
+.hist .hsum{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hist .hsum b{font-family:var(--f-display);font-size:1rem;line-height:1.2}
+.hist .hsum .muted{font-size:.85rem}
+.hist.sbox[open]>summary{margin-bottom:8px}
+.hist{scroll-margin-top:130px}
 @media (prefers-reduced-motion:reduce){.fxc{display:none}.fxr{display:none}}
 
 @media (max-width:420px){.shead,.srow{grid-template-columns:30px minmax(0,1fr) 3.2rem 2rem 2rem;gap:6px;padding-inline:10px}.meeple{width:46px;height:46px}}
@@ -2190,9 +2195,11 @@ function viewHistory(){
   return `<section class="card statcard swap" id="statcard" role="button" tabindex="0" aria-label="Hall of fame. Tap or swipe for another stat.">${statInner()}</section><section class="stack"><h2 class="chip c-purple">This gauntlet</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past gauntlets</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
 function histCard(tag,g,ts,tables,w,byes,eid){
-  return `<article class="card hist"${eid?` id="${eid}"`:''}><div class="cardhead"><h3>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</h3><span class="muted">${ts?esc(dstr(ts,true)):''}</span></div>
+  const hk=eid||('x'+tag+(g?g.id:'')),op=!!(ui.hopen&&ui.hopen[hk]);
+  const wins=[].concat(...tables.map(x=>x.t.ids.filter(id=>x.t.places[id]===1))).map(pname);
+  return `<details class="card hist sbox" data-hk="${esc(hk)}"${eid?` id="${eid}"`:''}${op?' open':''}><summary><span class="hsum"><b>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</b><span class="muted">${wins.length?'Won by '+esc(wins.join(', ')):''}${ts?(wins.length?' · ':'')+esc(dstr(ts,true)):''}</span></span></summary>
     ${tables.map(x=>`<div>${x.label?`<div class="tbh2">${x.label}</div>`:''}${resultLines(x.t,w)}</div>`).join('')}
-    ${byes&&byes.length?`<p class="bye">Sat out: ${esc(byes.map(pname).join(', '))}</p>`:''}</article>`;
+    ${byes&&byes.length?`<p class="bye">Sat out: ${esc(byes.map(pname).join(', '))}</p>`:''}</details>`;
 }
 
 /*TROPHY-START*/
@@ -2814,7 +2821,7 @@ function stickCheck(){
   st.classList.toggle('stuck',ph.getBoundingClientRect().top<=0);
 }
 (function(){let q=0;addEventListener('scroll',()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stickCheck();});},{passive:true});addEventListener('resize',()=>{stickMeasure();stickCheck();});})();
-document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ui) ui[d.dataset.ui]=d.open;},true);
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ui) ui[d.dataset.ui]=d.open;if(d&&d.dataset&&d.dataset.hk){ui.hopen=ui.hopen||{};ui.hopen[d.dataset.hk]=d.open;}},true);
 const TABS=(VIEW?[]:[['setup','Setup']]).concat([['rounds','Rounds'],['standings','Standings'],['finale','Finale'],['history','History']]);
 function render(){
   const y=window.scrollY;ui.dirty=false;
@@ -2867,8 +2874,8 @@ function act(name,a,el){
   switch(name){
     case 'goround':{
       if(a[0]==='fin'){ui.view='finale';ui.top=true;break;}
-      if(phaseOf(S)==='champion'){ui.view='finale';ui.top=true;break;}
       const rd=S.rounds.find(r=>r.id===a[0]);if(!rd) break;
+      if(phaseOf(S)==='champion'){ui.view='history';ui.hopen={['hr-'+rd.id]:true};ui.scrollEl='hr-'+rd.id;break;}
       ui.view='rounds';ui.scrollEl='rd-'+rd.id;ui.open[rd.id]=true;
       break;}
     case 'tab':ui.view=a[0];ui.gmenu=false;ui.touched=true;ui.top=true;break;
@@ -3151,7 +3158,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792876403';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792876600';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3398,7 +3405,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792876403';let shown=false,last=0;
+  const B='1792876600';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
