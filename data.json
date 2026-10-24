@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "t": 1792880415121,
+  "t": 1792880438060,
   "seq": 118,
   "pseq": 23,
   "tid": null,
@@ -112,7 +112,7 @@
       "weight": 2,
       "mins": 40,
       "luck": 2,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -148,7 +148,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -172,7 +172,7 @@
       "weight": 1,
       "mins": 25,
       "luck": 4,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -208,7 +208,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -220,7 +220,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -232,7 +232,7 @@
       "weight": 1,
       "mins": 15,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -244,7 +244,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -256,7 +256,7 @@
       "weight": 3,
       "mins": 90,
       "luck": 3,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -328,7 +328,7 @@
       "mins": 45,
       "luck": 4,
       "copies": 1,
-      "on": false,
+      "on": true,
       "custom": true
     }
   ],
@@ -472,6 +472,6 @@
   ],
   "born": 1792878152293,
   "hv": 1,
-  "pickHours": 9,
-  "pickSeed": 947980726
+  "pickHours": 7,
+  "pickSeed": 412065642
 }
