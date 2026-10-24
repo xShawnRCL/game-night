@@ -1,0 +1,476 @@
+{
+  "v": 1,
+  "t": 1792880394498,
+  "seq": 118,
+  "pseq": 23,
+  "tid": null,
+  "players": [
+    {
+      "id": "p1",
+      "name": "Shawn",
+      "look": {
+        "c": 3,
+        "h": 2,
+        "i": 2
+      },
+      "rid": "r1"
+    },
+    {
+      "id": "p2",
+      "name": "Danna",
+      "rid": "r7"
+    },
+    {
+      "id": "p15",
+      "name": "Kris",
+      "rid": "r6"
+    },
+    {
+      "id": "p19",
+      "name": "Kaiden",
+      "rid": "r3"
+    },
+    {
+      "id": "p20",
+      "name": "Eilon",
+      "rid": "r8",
+      "look": {
+        "c": 5
+      }
+    },
+    {
+      "id": "p21",
+      "name": "Truman",
+      "rid": "r5",
+      "look": {
+        "c": 0
+      }
+    },
+    {
+      "id": "p22",
+      "name": "Player 7"
+    }
+  ],
+  "rseq": 8,
+  "rv": 1,
+  "games": [
+    {
+      "copies": 1,
+      "id": "ek",
+      "name": "Exploding Kittens",
+      "short": "EK",
+      "min": 2,
+      "max": 5,
+      "weight": 1,
+      "mins": 15,
+      "luck": 5,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "kotd",
+      "name": "King of Tokyo Duel",
+      "short": "KoTD",
+      "min": 2,
+      "max": 2,
+      "weight": 1,
+      "mins": 20,
+      "luck": 4,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "carc",
+      "name": "Carcassonne",
+      "short": "Carc",
+      "min": 2,
+      "max": 5,
+      "weight": 2,
+      "mins": 35,
+      "luck": 2,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "kot",
+      "name": "King of Tokyo",
+      "short": "KoT",
+      "min": 2,
+      "max": 6,
+      "weight": 1,
+      "mins": 30,
+      "luck": 4,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "7w",
+      "name": "7 Wonders",
+      "short": "7W",
+      "min": 3,
+      "max": 7,
+      "weight": 2,
+      "mins": 40,
+      "luck": 2,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "ttr",
+      "name": "Ticket to Ride",
+      "short": "TtR",
+      "min": 2,
+      "max": 5,
+      "weight": 2,
+      "mins": 50,
+      "luck": 3,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "skipbo",
+      "name": "Skip-Bo",
+      "short": "Skip",
+      "min": 2,
+      "max": 6,
+      "weight": 1,
+      "mins": 25,
+      "luck": 4,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "uno",
+      "name": "Uno",
+      "short": "Uno",
+      "min": 2,
+      "max": 10,
+      "weight": 1,
+      "mins": 20,
+      "luck": 5,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "unoteams",
+      "name": "Uno Teams",
+      "short": "UnoT",
+      "min": 4,
+      "max": 4,
+      "weight": 1,
+      "mins": 20,
+      "luck": 4,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "unogolf",
+      "name": "Uno Golf",
+      "short": "UnoG",
+      "min": 2,
+      "max": 6,
+      "weight": 1,
+      "mins": 25,
+      "luck": 4,
+      "on": true
+    },
+    {
+      "copies": 1,
+      "id": "unoflip",
+      "name": "Uno Flip",
+      "short": "UnoF",
+      "min": 2,
+      "max": 10,
+      "weight": 1,
+      "mins": 20,
+      "luck": 5,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "uno99",
+      "name": "Uno 99",
+      "short": "U99",
+      "min": 2,
+      "max": 6,
+      "weight": 1,
+      "mins": 20,
+      "luck": 4,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "unoflex",
+      "name": "Uno Flex",
+      "short": "UnoX",
+      "min": 2,
+      "max": 10,
+      "weight": 1,
+      "mins": 20,
+      "luck": 5,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "unowild",
+      "name": "Uno All Wild",
+      "short": "UnoW",
+      "min": 2,
+      "max": 10,
+      "weight": 1,
+      "mins": 20,
+      "luck": 5,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "unodos",
+      "name": "Uno Dos",
+      "short": "Dos",
+      "min": 2,
+      "max": 4,
+      "weight": 1,
+      "mins": 15,
+      "luck": 4,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "flip7",
+      "name": "Flip 7",
+      "short": "F7",
+      "min": 3,
+      "max": 18,
+      "weight": 1,
+      "mins": 20,
+      "luck": 5,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "mono",
+      "name": "Monopoly",
+      "short": "Mono",
+      "min": 2,
+      "max": 6,
+      "weight": 3,
+      "mins": 90,
+      "luck": 3,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "blokus",
+      "name": "Blokus",
+      "short": "Blok",
+      "min": 2,
+      "max": 4,
+      "weight": 2,
+      "mins": 25,
+      "luck": 1,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "chess",
+      "name": "Chess",
+      "short": "Chess",
+      "min": 2,
+      "max": 2,
+      "weight": 2,
+      "mins": 30,
+      "luck": 0,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "checkers",
+      "name": "Checkers",
+      "short": "Chkrs",
+      "min": 2,
+      "max": 2,
+      "weight": 1,
+      "mins": 15,
+      "luck": 0,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "risk",
+      "name": "Risk",
+      "short": "Risk",
+      "min": 2,
+      "max": 6,
+      "weight": 3,
+      "mins": 90,
+      "luck": 4,
+      "on": false
+    },
+    {
+      "copies": 1,
+      "id": "clue",
+      "name": "Clue",
+      "short": "Clue",
+      "min": 3,
+      "max": 6,
+      "weight": 2,
+      "mins": 45,
+      "luck": 3,
+      "on": false
+    },
+    {
+      "id": "g49",
+      "name": "King of Tokyo",
+      "short": "King",
+      "min": 2,
+      "max": 7,
+      "weight": 2,
+      "mins": 45,
+      "luck": 4,
+      "copies": 1,
+      "on": false,
+      "custom": true
+    }
+  ],
+  "finalists": 2,
+  "headStart": 2,
+  "nightHours": 6,
+  "howLong": 4,
+  "howManual": false,
+  "winnerStays": true,
+  "order": "smart",
+  "gv": 1,
+  "bkNights": 0,
+  "started": false,
+  "rounds": [],
+  "tiebreaks": [],
+  "finale": [],
+  "archive": [
+    {
+      "id": "t1792548889612",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1792548928975,
+        "champ": {"name":"Danna","color":"#7CC6F5","pts":36.4,"wins":2,"rank":1,"played":3},
+        "played": ["Skip-Bo","Blokus","Uno","Final: Carcassonne"],
+        "rlist": [{"n":"Skip-Bo","w":1},{"n":"Blokus","w":2},{"n":"Uno","w":1}],
+        "cw": 2,
+        "best": {"v":18.4,"game":"Blokus"},
+        "finalGame": "Carcassonne",
+        "solo": false,
+        "stars": 1,
+        "runner": "Kris",
+        "margin": 12,
+        "scored": true,
+        "carry": true,
+        "final": [{"name":"Danna","place":1,"seed":1,"base":27,"bonus":36.4,"total":63.4},{"name":"Kris","place":2,"seed":2,"base":13.5,"bonus":24.4,"total":37.9},{"name":"Kaiden","place":3,"seed":3,"base":0,"bonus":20,"total":20}],
+        "standings": [{"name":"Danna","pts":36.4,"rank":1,"color":"#7CC6F5","look":{"h":0,"i":0},"champ":true},{"name":"Kris","pts":24.4,"rank":2,"color":"#FFD84D","look":{"h":0,"i":0},"champ":false},{"name":"Kaiden","pts":20,"rank":3,"color":"#C4A8F7","look":{"h":0,"i":0},"champ":false},{"name":"Truman","pts":18,"rank":4,"color":"#FF8A78","look":{"h":0,"i":0},"champ":false},{"name":"Shawn","pts":17.6,"rank":5,"color":"#7ED9A6","look":{"h":2,"i":2},"champ":false},{"name":"Eilon","pts":3.6,"rank":6,"color":"#FFB05C","look":{"h":0,"i":0},"champ":false}],
+        "log": [{"g":"Skip-Bo","w":1,"t":[[{"n":"Danna","r":"r7","p":1,"v":10},{"n":"Kaiden","r":"r3","p":2,"v":8},{"n":"Shawn","r":"r1","p":3,"v":6},{"n":"Truman","r":"r5","p":4,"v":4},{"n":"Eilon","r":"r8","p":5,"v":2},{"n":"Kris","r":"r6","p":6,"v":0}]]},{"g":"Blokus","w":2,"t":[[{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Kaiden","r":"r3","p":2,"v":10},{"n":"Eilon","r":"r8","p":3,"v":1.6}],[{"n":"Kris","r":"r6","p":1,"v":18.4},{"n":"Truman","r":"r5","p":2,"v":10},{"n":"Shawn","r":"r1","p":3,"v":1.6}]]},{"g":"Uno","w":1,"t":[[{"n":"Shawn","r":"r1","p":1,"v":10},{"n":"Danna","r":"r7","p":2,"v":8},{"n":"Kris","r":"r6","p":3,"v":6},{"n":"Truman","r":"r5","p":4,"v":4},{"n":"Kaiden","r":"r3","p":5,"v":2},{"n":"Eilon","r":"r8","p":6,"v":0}]]}],
+        "rounds": 3,
+        "players": 6,
+        "games": 3
+      }
+    },
+    {
+      "id": "t1792296829659",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1792338407432,
+        "champ": {"name":"Danna","color":"#7CC6F5","pts":102.5,"wins":6,"rank":1,"played":12},
+        "played": ["Checkers","King of Tokyo","King of Tokyo Duel","Skip-Bo","Blokus","Exploding Kittens","Uno","Carcassonne","7 Wonders","Ticket to Ride","Chess","Clue","Final: Blokus"],
+        "rlist": [{"n":"Checkers","w":1},{"n":"King of Tokyo","w":1},{"n":"King of Tokyo Duel","w":1},{"n":"Skip-Bo","w":1},{"n":"Blokus","w":2},{"n":"Exploding Kittens","w":1},{"n":"Uno","w":1},{"n":"Carcassonne","w":2},{"n":"7 Wonders","w":2},{"n":"Ticket to Ride","w":2},{"n":"Chess","w":2},{"n":"Clue","w":2}],
+        "cw": 1,
+        "best": {"v":18.4,"game":"7 Wonders"},
+        "finalGame": "Blokus",
+        "solo": false,
+        "stars": 4,
+        "runner": "Shawn",
+        "margin": 16.7,
+        "scored": true,
+        "carry": true,
+        "final": [{"name":"Danna","place":1,"seed":1,"base":27,"bonus":102.5,"total":129.5},{"name":"Shawn","place":2,"seed":2,"base":0,"bonus":85.8,"total":85.8}],
+        "standings": [{"name":"Danna","pts":102.5,"rank":1,"color":"#7CC6F5","look":{"h":0,"i":0},"champ":true},{"name":"Shawn","pts":85.8,"rank":2,"color":"#7ED9A6","look":{"h":2,"i":2},"champ":false},{"name":"Kris","pts":81.6,"rank":3,"color":"#FFD84D","look":{"h":0,"i":0},"champ":false}],
+        "log": [{"g":"Checkers","w":1,"t":[[{"n":"Shawn","r":"r1","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5},{"n":"Danna","r":"r7","p":3,"v":0.8}]]},{"g":"King of Tokyo","w":1,"t":[[{"n":"Kris","r":"r6","p":1,"v":9.2},{"n":"Shawn","r":"r1","p":2,"v":5},{"n":"Danna","r":"r7","p":3,"v":0.8}]]},{"g":"King of Tokyo Duel","w":1,"t":[[{"n":"Danna","r":"r7","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5},{"n":"Shawn","r":"r1","p":3,"v":0.8}]]},{"g":"Skip-Bo","w":1,"t":[[{"n":"Kris","r":"r6","p":1,"v":9.2},{"n":"Danna","r":"r7","p":2,"v":5},{"n":"Shawn","r":"r1","p":3,"v":0.8}]]},{"g":"Blokus","w":2,"t":[[{"n":"Shawn","r":"r1","p":1,"v":18.4},{"n":"Kris","r":"r6","p":2,"v":10},{"n":"Danna","r":"r7","p":3,"v":1.6}]]},{"g":"Exploding Kittens","w":1,"t":[[{"n":"Shawn","r":"r1","p":3,"v":0.8},{"n":"Danna","r":"r7","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5}]]},{"g":"Uno","w":1,"t":[[{"n":"Danna","r":"r7","p":1,"v":9.2},{"n":"Kris","r":"r6","p":2,"v":5},{"n":"Shawn","r":"r1","p":3,"v":0.8}]]},{"g":"Carcassonne","w":2,"t":[[{"n":"Shawn","r":"r1","p":1,"v":18.4},{"n":"Danna","r":"r7","p":2,"v":10},{"n":"Kris","r":"r6","p":3,"v":1.6}]]},{"g":"7 Wonders","w":2,"t":[[{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Shawn","r":"r1","p":2,"v":10},{"n":"Kris","r":"r6","p":3,"v":1.6}]]},{"g":"Ticket to Ride","w":2,"t":[[{"n":"Shawn","r":"r1","p":2,"v":10},{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Kris","r":"r6","p":3,"v":1.6}]]},{"g":"Chess","w":2,"t":[[{"n":"Kris","r":"r6","p":1,"v":18.4},{"n":"Shawn","r":"r1","p":2,"v":10},{"n":"Danna","r":"r7","p":3,"v":1.6}]]},{"g":"Clue","w":2,"t":[[{"n":"Danna","r":"r7","p":1,"v":18.4},{"n":"Kris","r":"r6","p":2,"v":10},{"n":"Shawn","r":"r1","p":3,"v":1.6}]]}],
+        "rounds": 12,
+        "players": 3,
+        "games": 12
+      }
+    },
+    {
+      "id": "t1792291321307",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1792295742635,
+        "champ": {"name":"Shawn","color":"#7ED9A6","pts":47.5,"wins":2,"rank":1,"played":3},
+        "played": ["Blokus","Exploding Kittens","Ticket to Ride","Chess","Risk","Final: Ticket to Ride"],
+        "rlist": [{"n":"Blokus","w":2},{"n":"Exploding Kittens","w":1},{"n":"Ticket to Ride","w":2},{"n":"Chess","w":2},{"n":"Risk","w":3}],
+        "cw": 1,
+        "best": {"v":27.5,"game":"Risk"},
+        "finalGame": "Ticket to Ride",
+        "solo": false,
+        "stars": 2,
+        "runner": "Lukas",
+        "margin": 12.5,
+        "scored": true,
+        "carry": true,
+        "final": [{"name":"Shawn","place":1,"seed":1,"base":35,"bonus":47.5,"total":82.5},{"name":"Eilon","place":2,"seed":2,"base":0,"bonus":22.5,"total":22.5}],
+        "standings": [{"name":"Shawn","pts":47.5,"rank":1,"color":"#7ED9A6","look":{"h":2,"i":2},"champ":true},{"name":"Lukas","pts":35,"rank":2,"color":"#7CC6F5","look":{"h":3,"i":3},"champ":false},{"name":"Eilon","pts":22.5,"rank":3,"color":"#C4A8F7","look":{"h":4,"i":2},"champ":false}],
+        "log": [{"g":"Blokus","w":2,"t":[[{"n":"Lukas","p":1,"v":18.4},{"n":"Eilon","p":2,"v":10},{"n":"Shawn","r":"r1","p":3,"v":1.6}]]},{"g":"Ticket to Ride","w":2,"t":[[{"n":"Eilon","p":2,"v":10},{"n":"Shawn","r":"r1","p":1,"v":18.4},{"n":"Lukas","p":3,"v":1.6}]]},{"g":"Risk","w":3,"t":[[{"n":"Lukas","p":2,"v":15},{"n":"Shawn","r":"r1","p":1,"v":27.5},{"n":"Eilon","p":3,"v":2.5}]]}],
+        "rounds": 5,
+        "players": 3,
+        "games": 5
+      }
+    },
+    {
+      "id": "t1792008703860",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1792008734822,
+        "champ": {"name":"Shawn","color":"#FF8A78","pts":83.7,"wins":7,"rank":1,"played":10},
+        "played": ["Checkers","King of Tokyo","King of Tokyo Duel","Skip-Bo","Blokus","Exploding Kittens","Uno","Carcassonne","Ticket to Ride","Chess"],
+        "rlist": [{"n":"Checkers","w":1},{"n":"King of Tokyo","w":1},{"n":"King of Tokyo Duel","w":1},{"n":"Skip-Bo","w":1},{"n":"Blokus","w":2},{"n":"Exploding Kittens","w":1},{"n":"Uno","w":1},{"n":"Carcassonne","w":2},{"n":"Ticket to Ride","w":2},{"n":"Chess","w":2}],
+        "cw": 3,
+        "best": {"v":16.8,"game":"Ticket to Ride"},
+        "finalGame": "",
+        "solo": true,
+        "stars": 2,
+        "runner": "Lukas",
+        "margin": 27.4,
+        "scored": false,
+        "carry": true,
+        "final": [],
+        "standings": [{"name":"Shawn","pts":83.7,"rank":1,"color":"#FF8A78","champ":true},{"name":"Lukas","pts":56.3,"rank":2,"color":"#7CC6F5","champ":false}],
+        "rounds": 10,
+        "players": 2,
+        "games": 10
+      }
+    },
+    {
+      "id": "t1791870293707",
+      "data": {
+        "title": "Game Night Gauntlet",
+        "date": 1791870370563,
+        "champ": {"name":"Truman","color":"#F5A98B","pts":20,"wins":1,"rank":1,"played":1},
+        "played": ["King of Tokyo","Final: King of Tokyo"],
+        "rlist": [{"n":"King of Tokyo","w":2}],
+        "cw": 1,
+        "best": {"v":20,"game":"King of Tokyo"},
+        "finalGame": "King of Tokyo",
+        "solo": false,
+        "stars": 1,
+        "runner": "Kaiden",
+        "margin": 3.3,
+        "scored": false,
+        "carry": false,
+        "final": [{"name":"Truman","place":1,"seed":1},{"name":"Kaiden","place":2,"seed":2}],
+        "standings": [{"name":"Truman","pts":20,"rank":1,"color":"#F5A98B","champ":true},{"name":"Kaiden","pts":16.7,"rank":2,"color":"#F7A8CF","champ":false},{"name":"Eilon","pts":13.3,"rank":3,"color":"#9FA9F7","champ":false},{"name":"Kris","pts":10,"rank":4,"color":"#5FD3C6","champ":false},{"name":"Danna","pts":6.7,"rank":5,"color":"#B9DB6A","champ":false},{"name":"Shawn","pts":3.3,"rank":6,"color":"#FF8A78","champ":false},{"name":"Lukas","pts":0,"rank":7,"color":"#7CC6F5","champ":false}],
+        "rounds": 1,
+        "players": 7,
+        "games": 1
+      }
+    }
+  ],
+  "born": 1792878152293,
+  "hv": 1,
+  "pickHours": 9
+}
