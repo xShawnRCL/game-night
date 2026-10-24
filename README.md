@@ -263,7 +263,6 @@ flowchart LR
 | `version.json` | A small file the app checks to find out when a newer version is out. |
 | `manifest.webmanifest` | Lets the app be added to a phone's home screen. |
 | `icon-*.png`, `icon.svg`, `favicon-*.png` | The crossed-swords icons. |
-| `data.json` | An old published copy from an earlier sharing method. Safe to ignore. |
 
 ---
 
