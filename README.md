@@ -271,6 +271,7 @@ flowchart LR
 - Rules and scoring help for games that do not normally have them, such as pen-and-paper games.
 - Optional email sign-in to find your gauntlets on any device.
 - Player stats across many gauntlets.
+- A wide-screen layout for laptops and iPads that shows more at once, instead of the phone layout stretched wider.
 
 ---
 
