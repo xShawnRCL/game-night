@@ -70,7 +70,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .road .seg2.fin{flex:0 0 30px;height:26px;border-radius:8px;border-color:var(--edge);position:relative}
 .road .seg2.fin::after{content:"";position:absolute;inset:0;background:var(--edge);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12.00,2.00 14.76,9.20 22.46,9.60 16.47,14.45 18.47,21.90 12.00,17.70 5.53,21.90 7.53,14.45 1.54,9.60 9.24,9.20' fill='%23000' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/auto 62% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12.00,2.00 14.76,9.20 22.46,9.60 16.47,14.45 18.47,21.90 12.00,17.70 5.53,21.90 7.53,14.45 1.54,9.60 9.24,9.20' fill='%23000' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/auto 62% no-repeat}
 .road .seg2.fin.done{background:var(--c-yellow)}
-.roadlbl{max-height:30px;overflow:hidden;display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
 
 /* tabs */
 .stick{background:var(--bg);z-index:5;display:flow-root}
@@ -79,13 +78,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .stin{max-width:760px;margin:0 auto}
 .tabs{display:flex;gap:4px;margin-top:14px;padding-block:10px;background:var(--bg)}
 .stick.nomo,.stick.nomo *{transition:none!important}
-.stick .tabs,.stick .road,.stick .road .seg2,.stick .roadlbl{transition:margin .14s linear,padding .14s linear,height .14s linear,flex-basis .14s linear,max-height .14s linear,opacity .14s linear,transform .14s linear}
+.stick .tabs,.stick .road,.stick .road .seg2{transition:margin .14s linear,padding .14s linear,height .14s linear,flex-basis .14s linear,max-height .14s linear,opacity .14s linear,transform .14s linear}
 .stick.stuck .tabs{margin-top:calc(14px - 10px*var(--p,1));padding-block:calc(10px - 4px*var(--p,1))}
 .stick.stuck .road{margin-top:calc(16px - 10px*var(--p,1));padding-top:calc(4px - 2px*var(--p,1))}
 .stick.stuck .road .seg2{height:calc(18px - 8px*var(--p,1))}
 .stick.stuck .road .seg2.fin{flex-basis:calc(30px - 8px*var(--p,1));height:calc(26px - 10px*var(--p,1))}
 .stick.stuck .road .seg2.cur{transform:translateY(calc(-3px + 2px*var(--p,1)));box-shadow:0 calc(3px - 1px*var(--p,1)) 0 var(--shadow)}
-.stick.stuck .roadlbl{margin-top:calc(8px*(1 - var(--p,1)));max-height:calc(30px*(1 - var(--p,1)));opacity:calc(1 - var(--p,1)*1.5);overflow:hidden}
 .tab{flex:1 1 auto;min-width:0;padding:9px 6px;border:2px solid transparent;border-radius:12px;background:transparent;font-weight:700;font-size:clamp(.72rem,3.6vw,.92rem);color:var(--muted);white-space:nowrap;text-align:center}
 .tab[aria-current="page"]{color:var(--on-bright);border-color:var(--edge);box-shadow:0 3px 0 var(--shadow)}
 .t-setup[aria-current="page"]{background:var(--c-blue)}
@@ -2898,7 +2896,7 @@ function render(){
     const cur=S.rounds.findIndex(r=>!roundDone(r)), done=S.rounds.filter(roundDone).length, ph=phaseOf(S);
     const segs=S.rounds.map((r,i)=>`<button type="button" class="seg2 ${roundDone(r)?'done':(i===cur?'cur':'')}" style="--sc:${BR[i%6]};--i:${i}" data-act="goround" data-a="${r.id}" aria-label="Round ${i+1}, ${roundDone(r)?'done, view results':(i===cur?'in play':'not played yet')}"></button>`).join('')+`<button type="button" class="seg2 fin${ph==='champion'?' done':''}" data-act="goround" data-a="fin" aria-label="The final"></button>`;
     const lbl={qual:'Round '+Math.min(done+1,S.rounds.length)+' of '+S.rounds.length,tie:'Tiebreaker for the last spot',pickfinal:'Choose the final game',final:'Final in play',rematch:'Tiebreaker rematch',champion:'We have a champion'}[ph];
-    road=`<div class="road">${segs}</div><div class="roadlbl"><span>${lbl}</span><span class="mono">${done}/${S.rounds.length} done</span></div>`;
+    road=`<div class="road" role="group" aria-label="${esc(lbl)}, ${done} of ${S.rounds.length} done">${segs}</div>`;
   }
   document.getElementById('roadwrap').innerHTML=road;
   const LOCKSVG='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.600" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor" fill-opacity=".25"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
@@ -3234,7 +3232,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882574';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882679';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3483,7 +3481,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792882574';let shown=false,last=0;
+  const B='1792882679';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
