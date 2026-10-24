@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "t": 1792876684675,
+  "t": 1792876813501,
   "seq": 110,
   "pseq": 22,
   "tid": null,
@@ -120,7 +120,7 @@
       "weight": 2,
       "mins": 50,
       "luck": 3,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -156,7 +156,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -264,7 +264,7 @@
       "weight": 2,
       "mins": 25,
       "luck": 1,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -276,7 +276,7 @@
       "weight": 2,
       "mins": 30,
       "luck": 0,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -288,7 +288,7 @@
       "weight": 1,
       "mins": 15,
       "luck": 0,
-      "on": true
+      "on": false
     },
     {
       "copies": 1,
@@ -312,7 +312,7 @@
       "weight": 2,
       "mins": 45,
       "luck": 3,
-      "on": true
+      "on": false
     },
     {
       "id": "g49",
@@ -331,8 +331,8 @@
   "finalists": 2,
   "headStart": 2,
   "nightHours": 2,
-  "howLong": 2,
-  "howManual": true,
+  "howLong": 3,
+  "howManual": false,
   "winnerStays": true,
   "order": "smart",
   "gv": 1,
