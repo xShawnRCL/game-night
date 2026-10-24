@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "t": 1792875897377,
+  "t": 1792875991397,
   "seq": 110,
   "pseq": 22,
   "tid": "t1792704023908",
@@ -596,63 +596,6 @@
         "rounds": 1,
         "players": 7,
         "games": 1
-      }
-    },
-    {
-      "id": "t1791869322942",
-      "data": {
-        "title": "Game Night Gauntlet",
-        "date": 1791869390642,
-        "champ": {"name":"Shawn","color":"#FF8A78","pts":153.4,"wins":8,"rank":1,"played":20},
-        "played": ["Checkers","King of Tokyo","King of Tokyo Duel","Skip-Bo","Uno Golf","Uno 99","Uno Dos","Blokus","Exploding Kittens","Uno","Uno Flip","Uno Flex","Uno All Wild","Flip 7","Carcassonne","7 Wonders","Ticket to Ride","Chess","Monopoly","Risk","Final: Blokus"],
-        "rlist": [{"n":"Checkers","w":1},{"n":"King of Tokyo","w":1},{"n":"King of Tokyo Duel","w":1},{"n":"Skip-Bo","w":1},{"n":"Uno Golf","w":1},{"n":"Uno 99","w":1},{"n":"Uno Dos","w":1},{"n":"Blokus","w":2},{"n":"Exploding Kittens","w":1},{"n":"Uno","w":1},{"n":"Uno Flip","w":1},{"n":"Uno Flex","w":1},{"n":"Uno All Wild","w":1},{"n":"Flip 7","w":1},{"n":"Carcassonne","w":2},{"n":"7 Wonders","w":2},{"n":"Ticket to Ride","w":2},{"n":"Chess","w":2},{"n":"Monopoly","w":3},{"n":"Risk","w":3}],
-        "cw": 1,
-        "best": {"v":27.5,"game":"Risk"},
-        "finalGame": "Blokus",
-        "scored": false,
-        "final": [{"name":"Shawn","place":1,"seed":1},{"name":"Kaiden","place":2,"seed":2}],
-        "standings": [{"name":"Shawn","pts":153.4,"rank":1,"color":"#FF8A78","champ":true},{"name":"Kaiden","pts":153.4,"rank":1,"color":"#F7A8CF","champ":false},{"name":"Lukas","pts":128.3,"rank":3,"color":"#7CC6F5","champ":false}],
-        "rounds": 20,
-        "players": 3,
-        "games": 20
-      }
-    },
-    {
-      "id": "t1791869131156",
-      "data": {
-        "title": "Game Night Gauntlet",
-        "date": 1791869175623,
-        "champ": {"name":"Kaiden","color":"#F7A8CF","pts":53.4,"wins":2,"rank":1,"played":7},
-        "played": ["Checkers","King of Tokyo","King of Tokyo Duel","Skip-Bo","Exploding Kittens","Carcassonne","Clue","Final: Ticket to Ride"],
-        "rlist": [{"n":"Checkers","w":1},{"n":"King of Tokyo","w":1},{"n":"King of Tokyo Duel","w":1},{"n":"Skip-Bo","w":1},{"n":"Exploding Kittens","w":1},{"n":"Carcassonne","w":2},{"n":"Clue","w":2}],
-        "cw": 2,
-        "best": {"v":18.4,"game":"Clue"},
-        "finalGame": "Ticket to Ride",
-        "scored": true,
-        "final": [{"name":"Kaiden","place":1,"seed":1,"base":20,"bonus":20,"total":40},{"name":"Shawn","place":2,"seed":2,"base":0,"bonus":0,"total":0}],
-        "standings": [{"name":"Kaiden","pts":53.4,"rank":1,"color":"#F7A8CF","champ":true},{"name":"Shawn","pts":45,"rank":2,"color":"#FF8A78","champ":false},{"name":"Lukas","pts":36.6,"rank":3,"color":"#7CC6F5","champ":false}],
-        "rounds": 7,
-        "players": 3,
-        "games": 7
-      }
-    },
-    {
-      "id": "t1791868882770",
-      "data": {
-        "title": "Game Night Gauntlet",
-        "date": 1791868921582,
-        "champ": {"name":"Kaiden","color":"#FFD84D","pts":44.5,"wins":2,"rank":1,"played":5},
-        "played": ["King of Tokyo","Skip-Bo","Exploding Kittens","Uno","Clue","Final: Carcassonne"],
-        "rlist": [{"n":"King of Tokyo","w":1},{"n":"Skip-Bo","w":1},{"n":"Exploding Kittens","w":1},{"n":"Uno","w":1},{"n":"Clue","w":2}],
-        "cw": 2,
-        "best": {"v":18.4,"game":"Clue"},
-        "finalGame": "Carcassonne",
-        "scored": false,
-        "final": [{"name":"Kaiden","place":1,"seed":1},{"name":"Shawn","place":2,"seed":2},{"name":"Lukas","place":3,"seed":3}],
-        "standings": [{"name":"Kaiden","pts":44.5,"rank":1,"color":"#FFD84D","champ":true},{"name":"Shawn","pts":40.2,"rank":2,"color":"#FF8A78","champ":false},{"name":"Lukas","pts":34.6,"rank":3,"color":"#7CC6F5","champ":false},{"name":"Kris","pts":31.2,"rank":4,"color":"#FFB05C","champ":false},{"name":"Truman","pts":27.5,"rank":5,"color":"#C4A8F7","champ":false},{"name":"Danna","pts":19.6,"rank":6,"color":"#F7A8CF","champ":false},{"name":"Eilon","pts":12.5,"rank":7,"color":"#7ED9A6","champ":false}],
-        "rounds": 5,
-        "players": 7,
-        "games": 5
       }
     }
   ],
