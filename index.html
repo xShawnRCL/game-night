@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .road .seg2.fin{flex:0 0 30px;height:26px;border-radius:8px;border-color:var(--edge);position:relative}
 .road .seg2.fin::after{content:"";position:absolute;inset:0;background:var(--edge);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12.00,2.00 14.76,9.20 22.46,9.60 16.47,14.45 18.47,21.90 12.00,17.70 5.53,21.90 7.53,14.45 1.54,9.60 9.24,9.20' fill='%23000' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/auto 62% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12.00,2.00 14.76,9.20 22.46,9.60 16.47,14.45 18.47,21.90 12.00,17.70 5.53,21.90 7.53,14.45 1.54,9.60 9.24,9.20' fill='%23000' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/auto 62% no-repeat}
 .road .seg2.fin.done{background:var(--c-yellow)}
-.roadlbl{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
+.roadlbl{max-height:30px;overflow:hidden;display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
 
 /* tabs */
 .stick{background:var(--bg);z-index:5;display:flow-root}
@@ -79,7 +79,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .stin{max-width:760px;margin:0 auto}
 .tabs{display:flex;gap:4px;margin-top:14px;padding-block:10px;background:var(--bg)}
 .stick.nomo,.stick.nomo *{transition:none!important}
-.stick.stuck .tabs,.stick.stuck .road,.stick.stuck .road .seg2,.stick.stuck .roadlbl{transition:margin .14s linear,padding .14s linear,height .14s linear,flex-basis .14s linear,max-height .14s linear,opacity .14s linear,transform .14s linear}
+.stick .tabs,.stick .road,.stick .road .seg2,.stick .roadlbl{transition:margin .14s linear,padding .14s linear,height .14s linear,flex-basis .14s linear,max-height .14s linear,opacity .14s linear,transform .14s linear}
 .stick.stuck .tabs{margin-top:calc(14px - 10px*var(--p,1));padding-block:calc(10px - 4px*var(--p,1))}
 .stick.stuck .road{margin-top:calc(16px - 10px*var(--p,1));padding-top:calc(4px - 2px*var(--p,1))}
 .stick.stuck .road .seg2{height:calc(18px - 8px*var(--p,1))}
@@ -3234,7 +3234,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882270';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882517';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3482,7 +3482,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792882270';let shown=false,last=0;
+  const B='1792882517';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
