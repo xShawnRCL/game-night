@@ -73,10 +73,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .roadlbl{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
 
 /* tabs */
-.stick{background:var(--bg);z-index:5}
+.stick{background:var(--bg);z-index:5;display:flow-root}
+#stickph{display:flow-root}
 .stick.stuck{position:fixed;top:0;left:0;right:0;padding:env(safe-area-inset-top,0px) var(--sx,16px) 0;box-shadow:0 2px 0 color-mix(in srgb,var(--line) calc(var(--p,1)*100%),transparent)}
 .stin{max-width:760px;margin:0 auto}
 .tabs{display:flex;gap:4px;margin-top:14px;padding-block:10px;background:var(--bg)}
+.stick.stuck .tabs,.stick.stuck .road,.stick.stuck .road .seg2,.stick.stuck .roadlbl{transition:margin .14s linear,padding .14s linear,height .14s linear,flex-basis .14s linear,max-height .14s linear,opacity .14s linear,transform .14s linear}
 .stick.stuck .tabs{margin-top:calc(14px - 10px*var(--p,1));padding-block:calc(10px - 4px*var(--p,1))}
 .stick.stuck .road{margin-top:calc(16px - 10px*var(--p,1));padding-top:calc(4px - 2px*var(--p,1))}
 .stick.stuck .road .seg2{height:calc(18px - 8px*var(--p,1))}
@@ -2881,7 +2883,7 @@ function stickCheck(){
   const st=document.getElementById('stick'),ph=document.getElementById('stickph');if(!st||!ph) return;
   const ap=document.getElementById('app');if(ap) st.style.setProperty('--sx',ap.getBoundingClientRect().left+'px');
   const top=ph.getBoundingClientRect().top,on=top<=0;
-  st.style.setProperty('--p',on?Math.min(1,-top/56).toFixed(3):'0');
+  st.style.setProperty('--p',on?Math.min(1,-top/84).toFixed(3):'0');
   st.classList.toggle('stuck',on);
 }
 (function(){let q=0;addEventListener('scroll',()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stickCheck();});},{passive:true});addEventListener('resize',()=>{stickMeasure();stickCheck();});})();
@@ -3232,7 +3234,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881363';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881604';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3480,7 +3482,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792881363';let shown=false,last=0;
+  const B='1792881604';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
