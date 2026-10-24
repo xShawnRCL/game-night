@@ -511,7 +511,15 @@ body.view .rost{display:none}
 .share details.host>summary{cursor:pointer}
 .share .rfoot{margin-top:10px;justify-content:flex-start}
 .share .hint{margin-top:8px}
-.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}</style>
+.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}#home{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+#home .hin{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+#home .hbrand{display:flex;align-items:center;gap:14px;margin-bottom:4px}
+#home .hbrand .logo{flex:none}
+#home .hcode{display:flex;gap:8px}
+#home .hcode .inp{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.18em;font-family:var(--f-mono);font-weight:700;text-align:center}
+#home .hmsg{color:var(--warn-ink);font-weight:700;font-size:.9rem;margin:0}
+.vhome{display:inline-flex;align-items:center;gap:6px}
+</style>
 
 <div id="splash" aria-hidden="true"><svg class="sl" id="splogo" viewBox="1 2 62 60"></svg><div class="sn">Game Night Gauntlet</div><div class="sb"><i style="--k:0;--c:var(--c-coral)"></i><i style="--k:1;--c:var(--c-blue)"></i><i style="--k:2;--c:var(--c-yellow)"></i><i style="--k:3;--c:var(--c-green)"></i><i style="--k:4;--c:var(--c-purple)"></i><i style="--k:5;--c:var(--c-orange)"></i></div></div>
 <div class="wrap">
@@ -2776,7 +2784,7 @@ function gmenuPanel(){
   const fin=S.started&&phaseOf(S)==='champion';
   const gin=ui.gmAnim?' gm-in':'';ui.gmAnim=false;
   return `<section class="card gmenu${gin}" role="dialog" aria-label="Gauntlets"><button type="button" class="gmgrab" id="gmgrab" aria-label="Drag up to close"></button><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2><button type="button" class="btn sm ghost" data-act="gmenu">Close</button></div>
-    <label class="fld wide"><span>Name of this gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
+    <p class="hint"><button type="button" class="btn sm ghost" data-homeb="open">Start screen</button></p><label class="fld wide"><span>Name of this gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
     <p class="muted">${esc(gStatus(S))}</p>
     ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
     ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
@@ -3078,17 +3086,17 @@ function shareCard(){
   const bkt=bk?'Last backup file saved '+new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'.':'No backup file saved yet.';
   return `<div class="share">
     ${sbCard()}
-    <p class="hint">Publishing puts a copy of the gauntlet on GitHub so family can follow along with the viewer link. Only this device, with your token, can change anything.</p>
-    <details class="host" data-ui="hostOpen"${ui.hostOpen?' open':''}><summary><b>Host setup (advanced)</b></summary>
+    <details class="host" data-ui="hostOpen"${ui.hostOpen?' open':''}><summary><b>GitHub backup (advanced)</b></summary>
+    <p class="hint">Optional. Keeps a copy of the gauntlet in your own GitHub repo and gives the older viewer link. Live sharing above is simpler for family.</p>
     <label class="fld">GitHub repo<input class="inp" data-gh="repo" value="${esc(GH.repo||'')}" placeholder="yourname/game-night" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <label class="fld">Branch<input class="inp" data-gh="branch" value="${esc(GH.branch||'main')}" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <label class="fld">Access token (stays on this device)<input class="inp" type="password" data-gh="token" value="${esc(GH.token||'')}" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false"></label>
     <label class="chk"><input type="checkbox" data-gh="auto"${GH.auto?' checked':''}> Publish automatically after each change</label>
     <div class="rfoot"><button type="button" class="btn sm primary" data-ghb="publish">Publish now</button><button type="button" class="btn sm ghost" data-ghb="restore">Restore from published copy</button></div>
-    </details>
-    <h3>Viewer link</h3>
+    <h3>Older viewer link</h3>
     <div class="linkbox mono" id="gh-link">${esc(viewLink())}</div>
     <div class="rfoot"><button type="button" class="btn sm" data-ghb="copy">Copy link</button><button type="button" class="btn sm" data-ghb="share">Share…</button></div>
+    </details>
     <h3>Backup file</h3>
     <p class="hint" id="gh-bk">${esc(bkt)} Save one after each game night. If this device ever clears its data, load it back here.</p>
     <div class="rfoot"><button type="button" class="btn sm" data-ghb="export">Export progress</button><button type="button" class="btn sm" data-ghb="import">Import file</button><input type="file" id="gh-file" accept=".json,application/json" hidden></div>
@@ -3144,7 +3152,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792871619';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792873613';
 let SBS={};try{SBS=JSON.parse(localStorage.getItem(SBK))||{};}catch(e){}
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
@@ -3161,7 +3169,7 @@ const sbMeta=()=>({players:S.players.length,rounds:S.rounds.length,started:!!S.s
 function joinLink(code){return location.origin+location.pathname.replace(/index\.html$/,'')+'?join='+(code||SBS.code);}
 function sbSchedule(){
   if(VIEW||!SBS.code||!(S.t>0)) return;
-  clearTimeout(sbTimer);sbTimer=setTimeout(sbPush,3000);
+  clearTimeout(sbTimer);sbTimer=setTimeout(sbPush,600);
 }
 async function sbPush(){
   sbTimer=null;
@@ -3171,11 +3179,33 @@ async function sbPush(){
   try{
     const ok=await sbRpc('update_gauntlet',{p_code:SBS.code,p_secret:SBS.secret,p_data:S,p_fmt:SB_FMT,p_meta:sbMeta(),p_app:SB_APP});
     if(ok===false) sbMsg('The live copy was not found. Tap Stop sharing, then start again.');
-    else{SBS.pushed=S.t;sbSave();sbMsg('Live copy updated at '+clock()+'.');}
+    else{SBS.pushed=S.t;sbSave();sbMsg('Live copy updated at '+clock()+'.');sbPing();}
   }catch(e){sbMsg('Could not update the live copy, probably offline. It tries again on the next change.');}
   sbBusy=false;
   if(sbPending){sbPending=false;sbSchedule();}
 }
+
+/* ---------- near-instant updates: a tiny "changed" ping over a Supabase live channel ---------- */
+let sbLib=null,sbCli=null,sbCh=null;
+function sbLoad(){
+  if(window.supabase&&window.supabase.createClient) return Promise.resolve(window.supabase);
+  return sbLib||(sbLib=new Promise((res,rej)=>{
+    const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.75.0/dist/umd/supabase.js';
+    s.onload=()=>res(window.supabase);s.onerror=()=>{sbLib=null;rej(new Error('lib'));};document.head.appendChild(s);
+  }));
+}
+async function sbChan(code,onPing){
+  const lib=await sbLoad();
+  if(!sbCli) sbCli=lib.createClient(SB_URL,SB_KEY);
+  if(sbCh&&sbCh._code===code) return sbCh;
+  if(sbCh){try{sbCli.removeChannel(sbCh);}catch(e){}sbCh=null;}
+  const ch=sbCli.channel('g-'+code,{config:{broadcast:{self:false,ack:false}}});
+  if(onPing) ch.on('broadcast',{event:'ping'},()=>onPing());
+  ch._code=code;
+  await new Promise((res,rej)=>{ch.subscribe(st=>{if(st==='SUBSCRIBED')res();else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')rej(new Error(st));});});
+  sbCh=ch;return ch;
+}
+function sbPing(){sbChan(SBS.code).then(ch=>ch.send({type:'broadcast',event:'ping',payload:{t:S.t}})).catch(()=>{});}
 async function sbStart(){
   const AL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   sbMsg('Starting…');
@@ -3218,8 +3248,56 @@ document.addEventListener('click',async e=>{
 });
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&sbTimer){clearTimeout(sbTimer);sbPush();}});
 
+
+/* ---------- Start screen: new gauntlet, join with a code, or continue the one on this phone ---------- */
+const homeHas=()=>S.t>0||S.started||(S.slots&&S.slots.length>0);
+let homeOpen=!VIEW&&!homeHas(),homeErr='';
+function homeHtml(){
+  const logo=document.querySelector('.brand .logo');
+  const has=homeHas();
+  const cont=has?`<section class="card"><div class="cardhead"><h2 class="chip c-green">Continue</h2></div>
+      <p><b>${esc(S.gname||gLabel({born:S.born,t:S.t}))}</b></p><p class="muted">${esc(gStatus(S))}</p>
+      <p><button type="button" class="btn primary" data-homeb="cont">Continue</button></p></section>`:'';
+  const mk=`<section class="card"><div class="cardhead"><h2 class="chip c-yellow">New gauntlet</h2></div>
+      <p class="muted">${has?'Your current gauntlet is saved first, so nothing is lost.':'Set up your own players and games. You can share it live afterwards.'}</p>
+      <p><button type="button" class="btn${has?'':' primary'}" data-homeb="new">Start a new gauntlet</button></p></section>`;
+  const join=`<section class="card"><div class="cardhead"><h2 class="chip c-blue">Watch one live</h2></div>
+      <p class="muted">Enter the 6-character code from the host. You can only watch.</p>
+      <div class="hcode"><input class="inp" id="home-code" maxlength="60" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Join code"><button type="button" class="btn" data-homeb="join">Watch</button></div>
+      <p class="hmsg" id="home-msg" role="status">${esc(homeErr)}</p></section>`;
+  return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="72" height="72" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<div><h1>Game Night <span class="hl">Gauntlet</span></h1></div></div>${cont}${mk}${join}</div>`;
+}
+function homeSync(){
+  let el=document.getElementById('home');
+  if(VIEW||!homeOpen){if(el)el.remove();return;}
+  if(!el){el=document.createElement('div');el.id='home';el.setAttribute('role','dialog');el.setAttribute('aria-label','Start');document.body.appendChild(el);}
+  el.innerHTML=homeHtml();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-homeb]');if(!b) return;
+  const k=b.dataset.homeb;
+  if(k==='open'){ui.gmenu=false;homeOpen=true;homeErr='';render();homeSync();}
+  else if(k==='cont'){homeOpen=false;homeSync();}
+  else if(k==='new'){
+    if(S.started){try{act('gnew',[],null);}catch(err){}}
+    homeOpen=false;ui.view='setup';ui.top=true;ui.gmenu=false;render();homeSync();
+  }else if(k==='join'){
+    const raw=(document.getElementById('home-code').value||'').trim();
+    const m=raw.match(/join=([A-Za-z0-9]{6})/)||raw.match(/^([A-Za-z0-9]{6})$/);
+    if(!m){homeErr='That does not look right. A code is 6 letters and numbers.';const el=document.getElementById('home-msg');if(el)el.textContent=homeErr;return;}
+    location.href=location.pathname+'?join='+m[1].toUpperCase();
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target&&e.target.id==='home-code'){const j=document.querySelector('[data-homeb=join]');if(j) j.click();}
+});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-vhome]');if(b) location.href=location.pathname;
+});
+let viewBusy=false;
 async function viewPoll(){
   if(JOIN){
+    if(viewBusy) return;viewBusy=true;
     try{
       const rows=await sbRpc('get_gauntlet',{p_code:JOIN});
       if(!rows||!rows.length) viewMsg='No gauntlet found for code '+JOIN+'. Check the link.';
@@ -3231,7 +3309,7 @@ async function viewPoll(){
         }
       }
     }catch(e){viewMsg='Could not reach the live copy right now. Trying again.';}
-    setStatus();return;
+    viewBusy=false;setStatus();return;
   }
   try{
     const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
@@ -3250,7 +3328,9 @@ function startGh(){
   document.body.classList.toggle('view',VIEW);
   if(VIEW){
     document.title='Game Night Gauntlet · live';
-    viewPoll();setInterval(viewPoll,JOIN?10000:45000);
+    const hb=document.getElementById('hbtns');if(hb){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-vhome','1');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Start screen';hb.prepend(v);}
+    viewPoll();setInterval(viewPoll,JOIN?15000:45000);
+    if(JOIN) sbChan(JOIN,()=>viewPoll()).catch(()=>{});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden) viewPoll();});
   }else{
     try{if(navigator.storage&&navigator.storage.persist) navigator.storage.persist();}catch(e){}
@@ -3271,10 +3351,12 @@ function startGh(){
 render();
 initDb();
 startGh();
+homeSync();
+if(!VIEW&&SBS.code) sbChan(SBS.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792871619';let shown=false,last=0;
+  const B='1792873613';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const chk=async()=>{if(shown||Date.now()-last<60000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B)show();}catch(e){}};
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk();});
