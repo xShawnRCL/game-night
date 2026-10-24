@@ -78,6 +78,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .stick.stuck{position:fixed;top:0;left:0;right:0;padding:env(safe-area-inset-top,0px) var(--sx,16px) 0;box-shadow:0 2px 0 color-mix(in srgb,var(--line) calc(var(--p,1)*100%),transparent)}
 .stin{max-width:760px;margin:0 auto}
 .tabs{display:flex;gap:4px;margin-top:14px;padding-block:10px;background:var(--bg)}
+.stick.nomo,.stick.nomo *{transition:none!important}
 .stick.stuck .tabs,.stick.stuck .road,.stick.stuck .road .seg2,.stick.stuck .roadlbl{transition:margin .14s linear,padding .14s linear,height .14s linear,flex-basis .14s linear,max-height .14s linear,opacity .14s linear,transform .14s linear}
 .stick.stuck .tabs{margin-top:calc(14px - 10px*var(--p,1));padding-block:calc(10px - 4px*var(--p,1))}
 .stick.stuck .road{margin-top:calc(16px - 10px*var(--p,1));padding-top:calc(4px - 2px*var(--p,1))}
@@ -2872,9 +2873,11 @@ function gmenuPanel(){
 /* ---------- sticky round bar ---------- */
 function stickMeasure(){
   const st=document.getElementById('stick'),ph=document.getElementById('stickph');if(!st||!ph) return;
-  const was=st.classList.contains('stuck');st.classList.remove('stuck');
+  const was=st.classList.contains('stuck');
+  st.classList.add('nomo');st.classList.remove('stuck');
   ph.style.height=st.offsetHeight+'px';
   if(was) st.classList.add('stuck');
+  void st.offsetHeight;requestAnimationFrame(()=>st.classList.remove('nomo'));
 }
 function stickCheck(){
   const st=document.getElementById('stick'),ph=document.getElementById('stickph');if(!st||!ph) return;
@@ -2883,7 +2886,7 @@ function stickCheck(){
   st.style.setProperty('--p',on?Math.min(1,-top/84).toFixed(3):'0');
   st.classList.toggle('stuck',on);
 }
-(function(){let q=0;addEventListener('scroll',()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stickCheck();});},{passive:true});addEventListener('resize',()=>{stickMeasure();stickCheck();});})();
+(function(){let q=0;addEventListener('scroll',()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stickCheck();});},{passive:true});let lw=innerWidth;addEventListener('resize',()=>{if(innerWidth!==lw){lw=innerWidth;stickMeasure();}stickCheck();});})();
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ui) ui[d.dataset.ui]=d.open;if(d&&d.dataset&&d.dataset.hk){ui.hopen=ui.hopen||{};ui.hopen[d.dataset.hk]=d.open;}},true);
 const TABS=(VIEW?[]:[['setup','Setup']]).concat([['rounds','Rounds'],['standings','Standings'],['finale','Finale'],['history','History']]);
 function render(){
@@ -3231,7 +3234,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881949';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882088';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3479,7 +3482,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792881949';let shown=false,last=0;
+  const B='1792882088';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
