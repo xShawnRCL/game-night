@@ -432,7 +432,7 @@ details.add summary{cursor:pointer;font-weight:700}
   .tglint::after{content:"";position:absolute;top:-10%;bottom:-10%;left:0;width:45%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.35) 30%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.35) 70%,transparent 100%);transform:translateX(-450%) skewX(-20deg);animation:glint4 var(--gd,4.4s) ease-in-out var(--gl,0s) infinite}
   @keyframes glint4{0%,55%{transform:translateX(-450%) skewX(-20deg)}100%{transform:translateX(550%) skewX(-20deg)}}
   .crsh{opacity:.9;animation:crsh var(--gd,4.2s) ease-in-out var(--gl,0s) infinite}
-  @keyframes crsh{0%,50%{transform:translateX(-240px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
+  @keyframes crsh{0%,50%{transform:translateX(-350px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
 }
 
 #splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;transition:opacity .45s ease}
@@ -2154,9 +2154,6 @@ function statsList(){
     const ru={},rd2={};T.forEach(t=>{if(t.runner){const k=key(t.runner);ru[k]=(ru[k]||0)+1;rd2[k]=t.runner;}});
     const rk=Object.keys(ru).sort((a,b)=>ru[b]-ru[a])[0];
     if(rk&&ru[rk]>=2) add(54+ru[rk],'silver','Always the bridesmaid',`${rd2[rk]} has finished runner-up ${ru[rk]} times`);
-    const ev={},evd={};T.forEach(t=>{(t.standings||[]).forEach(r=>{const k=key(r.name);ev[k]=(ev[k]||0)+1;evd[k]=r.name;});});
-    const vk=Object.keys(ev).sort((a,b)=>ev[b]-ev[a])[0];
-    if(vk&&ev[vk]>=3) add(48,'people','Veteran',`${evd[vk]} has played in ${ev[vk]} gauntlets`);
     const hrs=t=>t.mins>0?t.mins/60:(t.rounds||0)*0.6;
     const lg=T.slice().sort((a,b)=>hrs(b)-hrs(a))[0];
     if(lg&&hrs(lg)>=2) add(56,'clock','Marathon',`The longest gauntlet ran ${lg.rounds} rounds, about ${Math.round(hrs(lg))} hours of play`);
@@ -2250,7 +2247,7 @@ function viewHistory(){
   S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
   const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
-  const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><mask id="cc${k}" maskUnits="userSpaceOnUse" x="0" y="0" width="520" height="520"><path d="${CROWN_D}" fill="#fff" stroke="#fff" stroke-width="22" stroke-linejoin="round"/></mask><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g mask="url(#cc${k})"><rect class="crsh" x="0" y="100" width="220" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
+  const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><mask id="cc${k}" maskUnits="userSpaceOnUse" x="0" y="0" width="520" height="520"><path d="${CROWN_D}" fill="#fff" stroke="#fff" stroke-width="22" stroke-linejoin="round"/></mask><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".25" stop-color="#fff" stop-opacity=".12"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset=".75" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g mask="url(#cc${k})"><rect class="crsh" x="0" y="100" width="330" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
     const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
@@ -3234,7 +3231,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881604';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881949';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3482,7 +3479,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792881604';let shown=false,last=0;
+  const B='1792881949';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
