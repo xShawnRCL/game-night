@@ -481,6 +481,10 @@ body.slim .brand{gap:10px}
 .cg.cr>.btn{grid-row:2;grid-column:2}
 .cg.cr .gsum,.cg.cr .gmore{padding-left:0}
 .cg.cr .gname{font-weight:700}
+.mrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 0}
+.mst{display:flex;align-items:center;gap:8px}
+.mst b{min-width:38px;text-align:center;font:800 1.05rem var(--f-display)}
+.mst .btn.sm{min-width:36px;padding:4px 0}
 .qf{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .pk span{padding:2px 10px;border:2px solid var(--line);border-radius:999px;font-size:.8rem;font-weight:700;background:var(--raise)}
 .btn.big{padding:12px 20px;font-size:1.05rem}
@@ -1846,14 +1850,16 @@ function viewSetup(){
     <p class="muted">${ws?'With an odd number of players, three of them share one table in a 2-player game. Two play, the winner stays on against whoever sat out, and the first to 2 wins takes 1st. Everyone plays and nobody gets free points. It takes about three games of time.':'The odd player sits out and gets half marks, the same as an average result. The draw rotates who sits out.'}</p>
     <div class="cardhead"><span>Order of the games</span><div class="seg" role="group" aria-label="Order of the games"><button type="button" aria-pressed="${ord==='smart'}" data-act="ord" data-a="smart">Mixed</button><button type="button" aria-pressed="${ord==='weight'}" data-act="ord" data-a="weight">Big games last</button><button type="button" aria-pressed="${ord==='list'}" data-act="ord" data-a="list">My list order</button></div></div>
     <p class="muted">${ord==='smart'?'Mixed order builds toward the games that can swing the most points (heavy and luck-driven ones), and spreads 2-player games between group games so fewer people wait. The standings stay visible the whole time.':ord==='weight'?'Rounds run ×1 games first, then ×2, then ×3. The standings stay visible the whole time.':'Rounds follow the game list below, top to bottom. Use Edit on a game to move it.'}</p>`;
-  const nh=[2,3,4,5,6].map(hr=>`<button type="button" aria-pressed="${(S.nightHours||3)===hr}" data-act="nh" data-a="${hr}">${hr}</button>`).join('');
+  const hrs=S.nightHours||3, nn=S.howLong||2;
+  const mini=(lbl,val,act,dn,up)=>`<div class="mrow"><span class="qs">${lbl}</span><div class="mst" role="group" aria-label="${lbl}"><button type="button" class="btn sm" data-act="${act}" data-a="-1" aria-label="Fewer"${dn?' disabled':''}>−</button><b class="mono" aria-live="polite">${val}</b><button type="button" class="btn sm" data-act="${act}" data-a="1" aria-label="More"${up?' disabled':''}>+</button></div></div>`;
+  const nh=mini('Hours per game night',hrs,'hrs',hrs<=1,hrs>=24);
   const nights=planNights(minsList,S.nightHours||3);
   const stepper=`<div class="step2" role="group" aria-label="How many players"><button type="button" class="btn" data-act="pcount" data-a="-1" aria-label="One fewer player"${n<=MINP?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${n}</b><button type="button" class="btn" data-act="pcount" data-a="1" aria-label="One more player"${n>=MAXP?' disabled':''}>+</button></div>`;
   const hl=[1,2,3].map(k=>`<button type="button" aria-pressed="${!S.howManual&&S.howLong===k}" data-act="howlong" data-a="${k}">${k} night${k>1?'s':''}</button>`).join('');
   let top, startCard='';
   if(locked){
     top=`<section class="card"><h2>Gauntlet in progress</h2><p class="muted">${esc(gStatus(S))}. Players and the game list are locked. Worth, copies we own and game night length can still change. Add a round from the Rounds tab.</p>
-      <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div></section>
+      ${nh}</section>
       <details class="card sbox" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Players</h2><span class="muted mono" style="margin-left:auto">${n}</span></summary><ul class="plist">${players}</ul><p class="muted">Players are locked during a gauntlet.</p></details>`;
   }else{
     const roundsSum=valid+' round'+(valid===1?'':'s')+' · about '+hm(total)+' · '+nights.length+' night'+(nights.length===1?'':'s');
@@ -1863,7 +1869,8 @@ function viewSetup(){
       <p class="hint" style="margin-top:8px">Names are optional. Tap a meeple to pick a colour and a hat.</p>
       ${rosterChips()}</details>
     <details class="card sbox wsum" data-ui="roundsOpen"${ui.roundsOpen?' open':''}><summary><h2 class="chip c-green">Rounds</h2><span class="muted mono" style="margin-left:auto">${valid} round${valid===1?'':'s'}</span><div class="pk">${picked.length?picked.map(x=>`<span>${esc(x)}</span>`).join(''):'<span>No games chosen</span>'}</div></summary>
-      <div class="qf" style="margin-bottom:0"><span class="qs">Fill about</span><div class="step2" role="group" aria-label="Game nights"><button type="button" class="btn" data-act="nights" data-a="-1" aria-label="Fewer nights"${(S.howLong||2)<=1?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${S.howLong||2}</b><button type="button" class="btn" data-act="nights" data-a="1" aria-label="More nights"${(S.howLong||2)>=10?' disabled':''}>+</button></div><span class="qs">night${(S.howLong||2)===1?'':'s'}</span></div><div class="qf"><span class="qs">of</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div><span class="qs">hours a night</span></div>
+      ${mini('Game nights',nn,'nights',nn<=1,nn>=365)}
+      ${nh}
       <p style="margin:8px 0 4px"><button type="button" class="btn shine" data-act="howauto">Auto-pick games</button></p>
       <p class="muted">${S.howManual?'You chose the lineup yourself. Auto-pick replaces it with games that fit.':'The app picked games to fill about '+((S.howLong||2)*(S.nightHours||3))+' hours. Change any game below to make it your own.'}</p>
       <div class="qh"><h3>Your lineup</h3>${qbtn('worth')}</div>${qnote('worth')}
@@ -2924,7 +2931,8 @@ function act(name,a,el){
       else break;
       syncCount();touch();break;}
     case 'greps':{if(S.started) break;const g=gameOf(S,a[0]);if(!g) break;const cur=repsOf(g),tot=S.games.reduce((x,y)=>x+repsOf(y),0);let nx=cur+ +a[1];nx=Math.max(0,Math.min(REP_MAX,nx));if(nx>cur&&tot>=ROUNDS_MAX) break;if(nx<1){g.on=false;delete g.reps;}else{g.on=true;g.reps=nx;}delete g.auto;S.howManual=true;touch();break;}
-    case 'nights':{if(S.started) break;S.howLong=Math.max(1,Math.min(10,(S.howLong||2)+ +a[0]));if(!S.howManual) pickGames(S);touch();break;}
+    case 'hrs':{S.nightHours=Math.max(1,Math.min(24,(S.nightHours||3)+ +a[0]));if(!S.howManual&&!S.started&&S.howLong) pickGames(S);touch();break;}
+    case 'nights':{if(S.started) break;S.howLong=Math.max(1,Math.min(365,(S.howLong||2)+ +a[0]));if(!S.howManual) pickGames(S);touch();break;}
     case 'howauto':{if(S.started) break;S.howManual=false;pickGames(S);touch();break;}
     case 'howlong':{if(S.started) break;S.howLong=+a[0];S.howManual=false;pickGames(S);touch();break;}
     case 'gedit':ui.gedit=ui.gedit===a[0]?null:a[0];break;
@@ -3184,7 +3192,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792878128';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792878396';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3432,7 +3440,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792878128';let shown=false,last=0;
+  const B='1792878396';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
