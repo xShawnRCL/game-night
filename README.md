@@ -81,7 +81,7 @@ The five tabs along the top follow the same path.
 | Tab | What it is for |
 |---|---|
 | **Setup** | Name the players, build the game lineup and set the final and rules. |
-| **Rounds** | Play each game. Tap each player's finishing place and the points are worked out for you. |
+| **Rounds** | Play each game. Tap each player's finishing place. The points are worked out for you and shown in Standings. |
 | **Standings** | The live leaderboard, with a round-by-round breakdown. |
 | **Finale** | Locked until the last round is done. Then the top players meet for the final game, and the champion is crowned. |
 | **History** | Every round of this gauntlet, plus past gauntlets, trophies and the Hall of Fame. |
