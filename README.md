@@ -41,7 +41,7 @@ It was made for one family that owns single copies of most of its games, so peop
 |---|---|
 | **Fair across different games** | Every game is worth x1, x2 or x3, so a quick card game never counts as much as a long strategy game. |
 | **A final that always matters** | Qualifying points stay close enough that nobody can clinch before the last game. |
-| **Picks the games for you** | Say how many nights you have. The app fills them from a catalog of 625 family games, fitted to your player count. |
+| **Picks the games for you** | Say about how many hours you have and tap Auto-pick. The app chooses games from a catalog of 625 family games, fitted to your player count. Or build the lineup yourself, with as many rounds of each game as you like. |
 | **Watch live** | Family can follow along from their own phones with a short code. They can only watch. |
 | **Saved automatically** | Everything lives on your phone, with an online copy so a lost phone does not lose the gauntlet. |
 | **Trophies and history** | Finished gauntlets are kept with a printable trophy, a star rating and fun records. |
@@ -54,7 +54,7 @@ The app starts on a **start screen**. From there you have three ways in.
 
 | I want to... | Do this |
 |---|---|
-| **Run a gauntlet** | Tap **Start a new gauntlet**. Pick who is playing and how many nights you have, then tap **Start gauntlet**. |
+| **Run a gauntlet** | Tap **Start a new gauntlet**. Name the players, check the game lineup, then tap **Start gauntlet**. |
 | **Carry on with one I already started** | Pick it from **Your gauntlets**. It opens right where you left off. |
 | **Watch someone else's** | Type the host's code under **Have a code?**, or open the link they sent you. |
 
@@ -67,7 +67,7 @@ The app starts on a **start screen**. From there you have three ways in.
 
 ```mermaid
 flowchart LR
-    A[Setup<br/>players, nights] --> B[Rounds<br/>one game each]
+    A[Setup<br/>players, lineup] --> B[Rounds<br/>one game each]
     B --> C[Standings<br/>live leaderboard]
     C --> D{Final<br/>needed?}
     D -- yes --> E[Finale<br/>top players, one game]
@@ -80,7 +80,7 @@ The five tabs along the top follow the same path.
 
 | Tab | What it is for |
 |---|---|
-| **Setup** | Choose who is playing, how long you have, and tweak the games and rules if you want to. |
+| **Setup** | Name the players, build the game lineup and set the final and rules. |
 | **Rounds** | Play each game. Tap each player's finishing place and the points are worked out for you. |
 | **Standings** | The live leaderboard, with a round-by-round breakdown. |
 | **Finale** | Locked until the last round is done. Then the top players meet for the final game, and the champion is crowned. |
@@ -90,11 +90,18 @@ The strip of boxes at the top is the **round bar**. Each box is a round. The sta
 
 ### Setting up
 
-1. **Who is playing.** From 2 to 12 players. Names are optional. Tap a meeple to pick a colour, a hat and something to hold.
-2. **How long.** One, two or three game nights. The app picks games to fill the time, based on each game's usual length.
-3. **Start.** Tap **Start gauntlet** to lock in the players and the game list.
+Setup is three collapsible cards, then the **Start gauntlet** button. Each card shows a short summary when it is closed.
 
-Open **More settings** to choose the games yourself, set how many copies of each game you own, change the order of play, or set the hours per game night.
+1. **Who's playing?** From 2 to 12 players. Every player needs a name, and no two can match, or Start stays locked. Tap a meeple to pick a colour, a hat and something to hold.
+2. **Rounds.** Your lineup of games.
+   - Use **− and +** on each game to set how many rounds it gets. 0 leaves it out. Play Uno for 8 rounds, or run a single-game tournament.
+   - **Auto-pick games** fills the lineup for about the number of hours you set. Each press gives a fresh mix, and you can then add, remove or change anything.
+   - Repeated rounds run back to back and read "Uno, round 3 of 8".
+   - You do not choose the number of nights. The app works it out from the lineup and your **hours per game night** (3 by default), and shows the total time and the expected star rating.
+   - A new gauntlet starts with a lineup about as long as your earlier ones.
+3. **Final and rules.** How many players reach the final, final scoring, table rules and the order of play.
+
+The most rounds a game can have is 20, and a gauntlet can have up to 60 rounds in all. A night over 5 hours shows a gentle warning, not a block.
 
 ---
 
@@ -141,7 +148,17 @@ When a round has more players than one table seats, the app splits everyone into
 
 ### Stars
 
-Each finished gauntlet earns **0 to 5 stars**. They rate how big it was. More rounds, heavier games, more players and playing a final all add up. A one-night, light-game gauntlet earns few stars. A long, heavy, full-table one earns five.
+Each finished gauntlet earns **0 to 5 stars**. They rate how big it was. More rounds, heavier games, more players and playing a final all add up. Repeating the same game counts for less each time, so eight rounds of Uno does not earn a big rating. Roughly:
+
+| Stars | About how much play |
+|---|---|
+| 1 | half an hour |
+| 2 | 2 to 3 hours, a short evening |
+| 3 | about 4 hours, a full game night |
+| 4 | about 6 hours, a holiday afternoon |
+| 5 | 8 hours or more, a full day or a few weeks of weeknights |
+
+The rating depends on how much is played, not on how it is split into nights.
 
 ---
 
@@ -206,6 +223,8 @@ The choices are on purpose. This is the reasoning.
 **A tiny "changed" ping for live updates.** The host's phone sends a message with no data in it. Viewers' phones then fetch the new data through the normal secured route. A fake message cannot put fake scores on anyone's screen, and viewers also check every 15 seconds as a backup.
 
 **Self-updating.** When a new version is published, open copies reload themselves. Viewers update on their own. A host in the middle of using the app sees a small "new version" bar instead, so nothing reloads mid-tap. Progress is saved first either way.
+
+**Lineup first, time second.** People think about which games to play, then how long that takes. So the lineup is the main control, and the number of nights is worked out from it.
 
 **Fair scoring over simple scoring.** Worth multipliers, table-size easing and half marks for sitting out exist so that luck of the draw, table size and missed rounds do not decide the winner.
 

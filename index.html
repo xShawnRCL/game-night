@@ -642,7 +642,7 @@ function fresh(){
   return {v:1,t:0,seq:1,pseq:7,tid:null,
     players:[1,2,3,4,5,6].map(i=>({id:'p'+i,name:'Player '+i})),roster:[],rseq:0,rv:1,
     games:DEFAULT_GAMES.map(g=>({...g})),
-    finalists:3,headStart:2,nightHours:3,howLong:2,howManual:false,winnerStays:true,order:'smart',gv:1,bkNights:0,
+    finalists:3,headStart:2,nightHours:3,pickHours:3,howLong:2,howManual:false,winnerStays:true,order:'smart',gv:1,bkNights:0,
     started:false,rounds:[],tiebreaks:[],finale:[],archive:[],trash:[],slots:[],born:Date.now()};
 }
 function freshPicked(){const f=fresh();pickGames(f);return f;}
@@ -660,19 +660,16 @@ function layout(n,min,max,ws){
 /* Games that need more players than are signed up switch off by themselves (and back on when players are added). A manual tick always wins. */
 /* How long: choose games to fill 1, 2 or 3 game nights. Greedy through the list, skipping games that do not fit the players. */
 function pickGames(T){
-  const n=T.players.length, ws=T.winnerStays!==false, N=T.howLong||2, cap=(T.nightHours||3)*60;
-  let nights=1, cur=0, firstOk=null;
-  T.games.forEach(g=>{
-    delete g.auto;delete g.reps;
-    const d=describeLayout(n,g,ws);
-    if(!d.ok){g.on=false;return;}
-    const rm=roundMinutes(g,d.k,d.ladder);
-    if(!firstOk) firstOk=g;
-    if(cur+rm<=cap){cur+=rm;g.on=true;}
-    else if(nights<N&&cur>0){nights++;cur=rm;g.on=true;}
-    else g.on=false;
-  });
-  if(firstOk&&!T.games.some(g=>g.on)) firstOk.on=true;
+  const n=T.players.length, ws=T.winnerStays!==false;
+  const budget=((T.pickHours!=null)?T.pickHours:(T.howLong||2)*(T.nightHours||3))*60;
+  const cand=[];
+  T.games.forEach(g=>{delete g.auto;delete g.reps;g.on=false;const d=describeLayout(n,g,ws);if(d.ok) cand.push({g,rm:roundMinutes(g,d.k,d.ladder)});});
+  let order=cand.slice();
+  if(T.pickSeed){let a=T.pickSeed>>>0;const rnd=()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};
+    for(let k=order.length-1;k>0;k--){const m=Math.floor(rnd()*(k+1));[order[k],order[m]]=[order[m],order[k]];}}
+  let cur=0,cnt=0;
+  order.forEach(c=>{if(cnt<ROUNDS_MAX&&cur+c.rm<=budget){c.g.on=true;cur+=c.rm;cnt++;}});
+  if(cand.length&&!T.games.some(g=>g.on)) order[0].g.on=true;
 }
 function syncCount(){if(!S.howManual&&!S.started&&S.howLong) pickGames(S); else syncGamesToCount();}
 function syncGamesToCount(){const n=S.players.length;S.games.forEach(g=>{if(g.on&&g.min>n){g.on=false;g.auto=true;}else if(!g.on&&g.auto&&g.min<=n){g.on=true;delete g.auto;}});}
@@ -750,6 +747,8 @@ function orderGames(list,mode){
   return list;
 }
 const REP_MAX=20, ROUNDS_MAX=60;
+const hasName=p=>!!(p.name&&p.name.trim()&&!/^Player \d+$/.test(p.name.trim()));
+const nameIssue=pl=>{const un=pl.filter(p=>!hasName(p));if(un.length) return 'Add a name for '+(un.length===1?'the last player':un.length+' more players')+' to start.';const seen={};for(const p of pl){const k=p.name.trim().toLowerCase();if(seen[k]) return 'Two players are both called '+p.name.trim()+'. Give each a different name.';seen[k]=1;}return '';};
 const repsOf=g=>g.on?Math.max(1,Math.min(REP_MAX,g.reps||1)):0;
 /* Name of a round, with its place among repeats of the same game ("Uno, round 3 of 8"). */
 function repInfo(S,r){const same=S.rounds.filter(x=>x.gameId===r.gameId);return {n:same.indexOf(r)+1,m:same.length};}
@@ -934,7 +933,8 @@ function trophyData(S){
     champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
     played,rlist,cw:cw%6,best,finalGame:fg?fg.name:'',solo,stars:gauntletStars(S,!solo),runner:rows[1]?rows[1].name:'',margin:rows[1]?r1(me.pts-rows[1].pts):0,scored:!solo&&S.headStart>0,carry:hsCarry(S),final:fin,
     standings:rows.map(r=>({name:r.name,pts:r.pts,rank:r.rank,color:pcol(r.id),look:lookOf(r.id,S),champ:r.id===champ})),log:roundLog(S),
-    rounds:S.rounds.length,players:S.players.length,games:names.length};
+    rounds:S.rounds.length,players:S.players.length,games:names.length,
+    mins:S.rounds.reduce((a,r)=>{const g=gameOf(S,r.gameId);return a+(g?roundMinutes(g,r.tables.length,r.tables.some(t=>t.ids.length>g.max)):0);},0)};
 }
 /* Saved tournaments pick up settings and games added later. */
 function ensureDefaults(S){
@@ -1814,11 +1814,11 @@ function viewSetup(){
   const players=S.players.map((p,i)=>`<li class="prow2"><button type="button" class="avb" data-act="look" data-a="${p.id}" aria-label="Customize ${esc(p.name)}'s meeple" aria-expanded="${ui.lookFor===p.id}">${meeple(pcol(p.id),38,lookOf(p.id))}</button><div class="nmwrap"><input class="inp" id="pn-${p.id}" value="${p.name==='Player '+(i+1)?'':esc(p.name)}" placeholder="Player ${i+1}" maxlength="24" data-act="setname" data-a="${p.id}" aria-label="Player ${i+1} name" autocomplete="off" autocapitalize="words"><div class="sug" id="sg-${p.id}" role="listbox" hidden></div></div></li>${ui.lookFor===p.id?lookEditor(p):''}`).join('');
   const fopts=[];for(let k=1;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
   const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${q===0.5?((S.headStart||0)===0.5||S.headStart===1):(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
-  let total=0,valid=0,skipped=[],sit=[],picked=[]; const minsList=[];
+  let wsum=0,total=0,valid=0,skipped=[],sit=[],picked=[]; const minsList=[];
   const totalR=S.games.reduce((a,g)=>a+repsOf(g),0);
   const games=S.games.map((g,i)=>{
     const d=describeLayout(n,g,ws);
-    if(g.on&&d.ok){const rm=roundMinutes(g,d.k,d.ladder),rp=repsOf(g);for(let q=0;q<rp;q++){total+=rm;minsList.push(rm);valid++;}picked.push(g.name+(rp>1?' ×'+rp:''));const LL=layout(n,g.min,g.max,ws);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
+    if(g.on&&d.ok){const rm=roundMinutes(g,d.k,d.ladder),rp=repsOf(g);for(let q=0;q<rp;q++){total+=rm;minsList.push(rm);valid++;}wsum+=g.weight*(1+0.4*(rp-1));picked.push(g.name+(rp>1?' ×'+rp:''));const LL=layout(n,g.min,g.max,ws);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
     const open=ui.gedit===g.id;
     const wts=[1,2,3].map(w=>`<button type="button" aria-pressed="${g.weight===w}" data-act="gweight" data-a="${g.id}|${w}" aria-label="${esc(g.name)} worth ${w}">×${w}</button>`).join('');
     const rm=d.ok?roundMinutes(g,d.k,d.ladder):0;
@@ -1854,8 +1854,12 @@ function viewSetup(){
   const mini=(lbl,val,act,dn,up)=>`<div class="mrow"><span class="qs">${lbl}</span><div class="mst" role="group" aria-label="${lbl}"><button type="button" class="btn sm" data-act="${act}" data-a="-1" aria-label="Fewer"${dn?' disabled':''}>−</button><b class="mono" aria-live="polite">${val}</b><button type="button" class="btn sm" data-act="${act}" data-a="1" aria-label="More"${up?' disabled':''}>+</button></div></div>`;
   const nh=mini('Hours per game night',hrs,'hrs',hrs<=1,hrs>=24);
   const nights=planNights(minsList,S.nightHours||3);
-  const stepper=`<div class="step2" role="group" aria-label="How many players"><button type="button" class="btn" data-act="pcount" data-a="-1" aria-label="One fewer player"${n<=MINP?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${n}</b><button type="button" class="btn" data-act="pcount" data-a="1" aria-label="One more player"${n>=MAXP?' disabled':''}>+</button></div>`;
+  const stepperOld=`<div class="step2" role="group" aria-label="How many players"><button type="button" class="btn" data-act="pcount" data-a="-1" aria-label="One fewer player"${n<=MINP?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${n}</b><button type="button" class="btn" data-act="pcount" data-a="1" aria-label="One more player"${n>=MAXP?' disabled':''}>+</button></div>`;
   const hl=[1,2,3].map(k=>`<button type="button" aria-pressed="${!S.howManual&&S.howLong===k}" data-act="howlong" data-a="${k}">${k} night${k>1?'s':''}</button>`).join('');
+  const stepper=mini('How many players?',n,'pcount',n<=MINP,n>=MAXP);
+  const issue=nameIssue(S.players);
+  const fq=Math.min(1.3,Math.max(0.6,Math.sqrt(n/6))), starsE=Math.min(5,Math.floor((wsum*fq+(S.finalists>1?3:0))/3.8));
+  const longNight=nights.some(x=>x.mins>300), ph=S.pickHours!=null?S.pickHours:(S.howLong||2)*(S.nightHours||3);
   let top, startCard='';
   if(locked){
     top=`<section class="card"><h2>Gauntlet in progress</h2><p class="muted">${esc(gStatus(S))}. Players and the game list are locked. Worth, copies we own and game night length can still change. Add a round from the Rounds tab.</p>
@@ -1864,22 +1868,22 @@ function viewSetup(){
   }else{
     const roundsSum=valid+' round'+(valid===1?'':'s')+' · about '+hm(total)+' · '+nights.length+' night'+(nights.length===1?'':'s');
     top=`<details class="card sbox wsum" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Who's playing?</h2><span class="muted mono" style="margin-left:auto">${n} players</span><div class="pk">${S.players.map(p=>`<span>${esc(p.name)}</span>`).join('')}</div></summary>
-      <div class="cardhead"><span class="qs">How many players?</span>${stepper}</div>
+      ${stepper}
       <ul class="plist" style="margin-top:12px">${players}</ul>
-      <p class="hint" style="margin-top:8px">Names are optional. Tap a meeple to pick a colour and a hat.</p>
+      <p class="hint" style="margin-top:8px">Tap a meeple to pick a colour and a hat.</p>
       ${rosterChips()}</details>
     <details class="card sbox wsum" data-ui="roundsOpen"${ui.roundsOpen?' open':''}><summary><h2 class="chip c-green">Rounds</h2><span class="muted mono" style="margin-left:auto">${valid} round${valid===1?'':'s'}</span><div class="pk">${picked.length?picked.map(x=>`<span>${esc(x)}</span>`).join(''):'<span>No games chosen</span>'}</div></summary>
-      ${mini('Game nights',nn,'nights',nn<=1,nn>=365)}
-      ${nh}
+      ${mini('Auto-pick hours',ph,'phrs',ph<=1,ph>=72)}
       <p style="margin:8px 0 4px"><button type="button" class="btn shine" data-act="howauto">Auto-pick games</button></p>
-      <p class="muted">${S.howManual?'You chose the lineup yourself. Auto-pick replaces it with games that fit.':'The app picked games to fill about '+((S.howLong||2)*(S.nightHours||3))+' hours. Change any game below to make it your own.'}</p>
+      <p class="muted">${S.howManual?'You chose the lineup yourself. Auto-pick replaces it with a fresh set of games that fit.':'Picked to fill about '+ph+' hour'+(ph===1?'':'s')+'. Change any game below to make it your own.'}</p>
       <div class="qh"><h3>Your lineup</h3>${qbtn('worth')}</div>${qnote('worth')}
       <p class="muted">Use − and + to set how many rounds of each game. 0 leaves it out. Worth applies to every round of a game.</p>
       <ul class="glist">${games}</ul>${addForm}
       ${skipped.length?`<p class="muted" style="margin-top:8px">Skipped for ${n} players: ${esc(skipped.join(', '))}.</p>`:''}
       ${sit.length?`<p class="muted" style="margin-top:8px">With ${n} players, ${esc(sit.join(', '))} can't seat everyone, so someone sits out each time. A sit-out earns half marks, the same as an average result.</p>`:''}
+      ${nh}
       ${totalR>=ROUNDS_MAX?`<p class="muted" style="margin-top:8px">That is the most rounds a gauntlet can have (${ROUNDS_MAX}).</p>`:''}</details>`;
-    startCard=`<section class="card"><div class="plan"><div><strong class="mono">${valid} round${valid===1?'':'s'}</strong><p class="muted">About ${hm(total)} of play over ${nights.length} night${nights.length===1?'':'s'}.</p></div><button type="button" class="btn primary big" data-act="build"${valid?'':' disabled'}>Start gauntlet</button></div></section>`;
+    startCard=`<section class="card"><div class="plan"><div><strong class="mono">${valid} round${valid===1?'':'s'}</strong><p class="muted">About ${hm(total)} of play, ${nights.length} night${nights.length===1?'':'s'} of ${hrs} hour${hrs===1?'':'s'}.${starsE?' Rating: <span class="stars" aria-label="'+starsE+'-star gauntlet">'+'★'.repeat(starsE)+'</span>':''}</p></div><button type="button" class="btn primary big" data-act="build"${valid&&!issue?'':' disabled'}>Start gauntlet</button></div>${issue?`<p class="muted" role="status">${esc(issue)}</p>`:''}${longNight?`<p class="muted">A night over 5 hours is a long one. Lower the hours per game night to spread it out.</p>`:''}</section>`;
   }
   const more=`<details class="card sbox wsum" data-ui="moreOpen"${ui.moreOpen?' open':''}><summary><h2 class="chip c-coral">${locked?'More settings':'Final and rules'}</h2><span class="muted mono" style="margin-left:auto">${S.finalists===1?'No final':'Top '+S.finalists}</span>${locked?'':`<div class="pk"><span>${S.finalists===1?'No final game':'Final: top '+S.finalists}</span><span>${(HS_OPTS.find(o=>o[0]===(S.headStart===1?0.5:(S.headStart||0)))||[0,'Final only'])[1]}</span><span>${ord==='smart'?'Mixed order':ord==='weight'?'Big games last':'List order'}</span></div>`}</summary><div class="mbody">
     <h3>Players in the final</h3>
@@ -2895,8 +2899,11 @@ function startOver(discard){
   const staples=DEFAULT_GAMES.map(g=>({...g,copies:Math.max(1,own[g.id]||1)}));
   const extras=S.games.filter(g=>g.custom).map(g=>({...g,on:false}));
   f.games=staples.concat(extras);
-  f.howLong=S.howLong===undefined?2:S.howLong;f.howManual=!!S.howManual;f.nightHours=S.nightHours||3;f.winnerStays=S.winnerStays;
-  if(!f.howManual&&f.howLong) pickGames(f);
+  f.nightHours=S.nightHours||3;f.winnerStays=S.winnerStays;f.howManual=false;
+  /* a new gauntlet starts with a lineup about as long as the ones played before */
+  const past=arch.slice(0,5).map(a=>a&&a.data?(a.data.mins>0?a.data.mins/60:(a.data.rounds||0)*0.6):0).filter(x=>x>0).sort((x,y)=>x-y);
+  f.pickHours=past.length?Math.max(1,Math.min(24,Math.round(past[Math.floor(past.length/2)]))):(S.pickHours||3);
+  pickGames(f);
   f.roster=S.roster;f.rseq=S.rseq;f.rv=1;f.players=S.players;f.pseq=S.pseq;f.finalists=S.finalists;f.seq=S.seq;f.headStart=S.headStart;f.nightHours=S.nightHours;f.winnerStays=S.winnerStays;f.order=S.order;f.archive=arch.slice(0,50);f.trash=S.trash||[];f.slots=S.slots||[];f.born=Date.now();
   S=f;ui.open={};ui.confirm=null;ui.view=T?'history':'setup';ui.touched=true;ui.top=true;ui.tkey=null;ui.turl=null;
 }
@@ -2933,7 +2940,8 @@ function act(name,a,el){
     case 'greps':{if(S.started) break;const g=gameOf(S,a[0]);if(!g) break;const cur=repsOf(g),tot=S.games.reduce((x,y)=>x+repsOf(y),0);let nx=cur+ +a[1];nx=Math.max(0,Math.min(REP_MAX,nx));if(nx>cur&&tot>=ROUNDS_MAX) break;if(nx<1){g.on=false;delete g.reps;}else{g.on=true;g.reps=nx;}delete g.auto;S.howManual=true;touch();break;}
     case 'hrs':{S.nightHours=Math.max(1,Math.min(24,(S.nightHours||3)+ +a[0]));if(!S.howManual&&!S.started&&S.howLong) pickGames(S);touch();break;}
     case 'nights':{if(S.started) break;S.howLong=Math.max(1,Math.min(365,(S.howLong||2)+ +a[0]));if(!S.howManual) pickGames(S);touch();break;}
-    case 'howauto':{if(S.started) break;S.howManual=false;pickGames(S);touch();break;}
+    case 'howauto':{if(S.started) break;S.howManual=false;S.pickSeed=1+Math.floor(Math.random()*2147483000);pickGames(S);touch();break;}
+    case 'phrs':{if(S.started) break;const cur=S.pickHours!=null?S.pickHours:(S.howLong||2)*(S.nightHours||3);S.pickHours=Math.max(1,Math.min(72,cur+ +a[0]));S.howManual=false;pickGames(S);touch();break;}
     case 'howlong':{if(S.started) break;S.howLong=+a[0];S.howManual=false;pickGames(S);touch();break;}
     case 'gedit':ui.gedit=ui.gedit===a[0]?null:a[0];break;
     case 'qtip':ui.q=ui.q||{};ui.q[a[0]]=!ui.q[a[0]];break;
@@ -2956,7 +2964,7 @@ function act(name,a,el){
       if(!name){document.getElementById('ng-name').focus();return false;}
       S.games.push({id:'g'+(S.seq++),name,short:name.split(/\s+/)[0].slice(0,6),min:mn,max:mx,weight:w,mins,luck:(ui.catName===name&&ui.catLuck)||3,copies:cp,on:true,custom:true});ui.catName=null;ui.catLuck=null;S.howManual=true;touch();break;
     }
-    case 'build':if(buildRounds(S)){ui.gmenu=false;ui.open={};ui.view='rounds';ui.top=true;touch();}break;
+    case 'build':if(nameIssue(S.players)) break;if(buildRounds(S)){ui.gmenu=false;ui.open={};ui.view='rounds';ui.top=true;touch();}break;
     case 'reset':
       if(ui.confirm==='reset'){startOver();touch();}
       else{ui.confirm='reset';setTimeout(()=>{if(ui.confirm==='reset'){ui.confirm=null;render();}},5000);}
@@ -3192,7 +3200,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792878697';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792879564';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3440,7 +3448,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792878697';let shown=false,last=0;
+  const B='1792879564';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
