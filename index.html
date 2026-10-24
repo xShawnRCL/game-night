@@ -544,7 +544,7 @@ body.homeon{overflow:hidden;background:var(--bg)}
 #home .hnew{width:100%}
 #home .card{padding:12px 14px;gap:8px}
 #home h2.chip{font-size:.95rem;padding:2px 12px}
-#home .hby{text-align:center;color:var(--muted);font-size:.78rem;margin:8px 0 0;letter-spacing:.04em}
+#home .hby{text-align:center;color:var(--muted);opacity:.6;font-size:.78rem;margin:8px 0 0;letter-spacing:normal}
 #home .hcode{display:flex;gap:8px}
 #home .hcode .inp{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.18em;font-family:var(--f-mono);font-weight:700;text-align:center}
 #home .hmsg{color:var(--warn-ink);font-weight:700;font-size:.9rem;margin:0}
@@ -3192,7 +3192,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792878396';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792878697';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3440,7 +3440,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792878396';let shown=false,last=0;
+  const B='1792878697';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
