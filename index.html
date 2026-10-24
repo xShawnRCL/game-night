@@ -68,7 +68,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .road .seg2.done{background:var(--sc);border-color:var(--edge)}
 .road .seg2.cur{background:var(--raise);border-color:var(--edge);transform:translateY(-3px);box-shadow:0 3px 0 var(--shadow)}
 .road .seg2.fin{flex:0 0 30px;height:26px;border-radius:8px;border-color:var(--edge);position:relative}
-.road .seg2.fin::after{content:"★";position:absolute;inset:0;display:grid;place-items:center;font-size:.85rem;font-style:normal;color:var(--edge)}
+.road .seg2.fin::after{content:"";position:absolute;inset:0;background:var(--edge);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12.00,2.00 14.76,9.20 22.46,9.60 16.47,14.45 18.47,21.90 12.00,17.70 5.53,21.90 7.53,14.45 1.54,9.60 9.24,9.20' fill='%23000' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/auto 62% no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12.00,2.00 14.76,9.20 22.46,9.60 16.47,14.45 18.47,21.90 12.00,17.70 5.53,21.90 7.53,14.45 1.54,9.60 9.24,9.20' fill='%23000' stroke='%23000' stroke-width='1.2' stroke-linejoin='round'/%3E%3C/svg%3E") center/auto 62% no-repeat}
 .road .seg2.fin.done{background:var(--c-yellow)}
 .roadlbl{display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:.82rem;font-weight:700;color:var(--muted)}
 
@@ -81,7 +81,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .stick.stuck .road{margin-top:6px;padding-top:2px}
 .stick.stuck .road .seg2{height:10px}
 .stick.stuck .road .seg2.fin{flex-basis:22px;height:16px}
-.stick.stuck .road .seg2.fin::after{font-size:.6rem}
+
 .stick.stuck .road .seg2.cur{transform:translateY(-1px);box-shadow:0 2px 0 var(--shadow)}
 .stick.stuck .roadlbl{display:none}
 .tab{flex:1 1 auto;min-width:0;padding:9px 6px;border:2px solid transparent;border-radius:12px;background:transparent;font-weight:700;font-size:clamp(.72rem,3.6vw,.92rem);color:var(--muted);white-space:nowrap;text-align:center}
@@ -517,8 +517,14 @@ body.view .rost{display:none}
 body.homeon .wrap,body.homeon .sndbtn{display:none}
 body.homeon{overflow:hidden;background:var(--bg)}
 #home .hin{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-#home .hbrand{display:flex;align-items:center;gap:14px;margin-bottom:4px}
-#home .hbrand .logo{flex:none}
+#home .hbrand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;margin:10px 0 6px}
+#home .hbrand .logo{flex:none;width:132px;height:132px;max-width:none}
+#home .hbrand h1{margin:6px 0 0}
+#home .hsub{margin:0;color:var(--muted);font-weight:600}
+#home .hnew{width:100%}
+#home .card{padding:12px 14px;gap:8px}
+#home h2.chip{font-size:.95rem;padding:2px 12px}
+#home .hby{text-align:center;color:var(--muted);font-size:.78rem;margin:8px 0 0;letter-spacing:.04em}
 #home .hcode{display:flex;gap:8px}
 #home .hcode .inp{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.18em;font-family:var(--f-mono);font-weight:700;text-align:center}
 #home .hmsg{color:var(--warn-ink);font-weight:700;font-size:.9rem;margin:0}
@@ -3090,17 +3096,6 @@ function shareCard(){
   const bkt=bk?'Last backup file saved '+new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'.':'No backup file saved yet.';
   return `<div class="share">
     ${sbCard()}
-    <details class="host" data-ui="hostOpen"${ui.hostOpen?' open':''}><summary><b>GitHub backup (advanced)</b></summary>
-    <p class="hint">Optional. Keeps a copy of the gauntlet in your own GitHub repo and gives the older viewer link. Live sharing above is simpler for family.</p>
-    <label class="fld">GitHub repo<input class="inp" data-gh="repo" value="${esc(GH.repo||'')}" placeholder="yourname/game-night" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-    <label class="fld">Branch<input class="inp" data-gh="branch" value="${esc(GH.branch||'main')}" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
-    <label class="fld">Access token (stays on this device)<input class="inp" type="password" data-gh="token" value="${esc(GH.token||'')}" placeholder="github_pat_..." autocomplete="off" autocapitalize="off" spellcheck="false"></label>
-    <label class="chk"><input type="checkbox" data-gh="auto"${GH.auto?' checked':''}> Publish automatically after each change</label>
-    <div class="rfoot"><button type="button" class="btn sm primary" data-ghb="publish">Publish now</button><button type="button" class="btn sm ghost" data-ghb="restore">Restore from published copy</button></div>
-    <h3>Older viewer link</h3>
-    <div class="linkbox mono" id="gh-link">${esc(viewLink())}</div>
-    <div class="rfoot"><button type="button" class="btn sm" data-ghb="copy">Copy link</button><button type="button" class="btn sm" data-ghb="share">Share…</button></div>
-    </details>
     <h3>Backup file</h3>
     <p class="hint" id="gh-bk">${esc(bkt)} Save one after each game night. If this device ever clears its data, load it back here.</p>
     <div class="rfoot"><button type="button" class="btn sm" data-ghb="export">Export progress</button><button type="button" class="btn sm" data-ghb="import">Import file</button><input type="file" id="gh-file" accept=".json,application/json" hidden></div>
@@ -3156,7 +3151,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792875207';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792876403';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3277,20 +3272,19 @@ const homeForce=/[?&]start(&|=|$)/.test(location.search);
 let homeOpen=!VIEW&&(!homeHas()||homeForce||(!homeSeen()&&Date.now()-rlAt>15000)),homeErr='';
 if(!homeOpen) homeMark();
 if(homeForce){try{history.replaceState(null,'',location.pathname);}catch(e){}}
+const homeSub=o=>{const n=o.players.length;return o.started?gStatus(o)+(o.gname?' · '+dstr(o.born||o.t||Date.now()):''):n+' players · still being set up';};
 function homeHtml(){
   const logo=document.querySelector('.brand .logo');
   const has=homeHas();
-  const slots=(S.slots||[]).map(x=>`<div class="dmr"><div><b>${esc(x.name||gLabel(x.snap))}</b><span class="muted">${esc(gStatus(x.snap))}</span></div><span class="dmb"><button type="button" class="btn sm" data-homeb="slot" data-a="${x.id}">Open</button></span></div>`).join('');
-  const cur=has?`<div class="dmr"><div><b>${esc(S.gname||gLabel({born:S.born,t:S.t}))}</b><span class="muted">${esc(gStatus(S))}</span></div><span class="dmb"><button type="button" class="btn sm primary" data-homeb="cont">Open</button></span></div>`:'';
+  const row=(o,btn)=>`<div class="dmr"><div><b>${esc(o.gname||gLabel({born:o.born,t:o.t}))}</b><span class="muted">${esc(homeSub(o))}</span></div><span class="dmb">${btn}</span></div>`;
+  const cur=has?row(S,`<button type="button" class="btn sm primary" data-homeb="cont">Open</button>`):'';
+  const slots=(S.slots||[]).map(x=>row(x.snap,`<button type="button" class="btn sm" data-homeb="slot" data-a="${x.id}">Open</button>`)).join('');
   const mine=(cur||slots)?`<section class="card"><div class="cardhead"><h2 class="chip c-green">Your gauntlets</h2></div><div class="dm">${cur}${slots}</div></section>`:'';
-  const mk=`<section class="card"><div class="cardhead"><h2 class="chip c-yellow">New gauntlet</h2></div>
-      <p class="muted">Start your own, with its own viewer link and admin code.${has?' Your current gauntlet is saved first.':''}</p>
-      <p><button type="button" class="btn${has?'':' primary'}" data-homeb="new">Start a new gauntlet</button></p></section>`;
   const join=`<section class="card"><div class="cardhead"><h2 class="chip c-blue">Have a code?</h2></div>
-      <p class="muted">A viewer code (6 characters) lets you watch live. An admin code lets you continue a gauntlet as the host.</p>
-      <div class="hcode"><input class="inp" id="home-code" maxlength="80" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Viewer or admin code"><button type="button" class="btn" data-homeb="join">Open</button></div>
+      <div class="hcode"><input class="inp" id="home-code" maxlength="80" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Enter a code"><button type="button" class="btn" data-homeb="join">Open</button></div>
       <p class="hmsg" id="home-msg" role="status">${esc(homeErr)}</p></section>`;
-  return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="72" height="72" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<div><h1>Game Night <span class="hl">Gauntlet</span></h1></div></div>${mine}${mk}${join}</div>`;
+  return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="132" height="132" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<h1>Game Night <span class="hl">Gauntlet</span></h1><p class="hsub">Family board game championship</p></div>
+    <button type="button" class="btn big primary hnew" data-homeb="new">Start a new gauntlet</button>${mine}${join}<p class="hby">Created by Shawn RCL</p></div>`;
 }
 function homeSync(){
   let el=document.getElementById('home');
@@ -3404,7 +3398,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792875207';let shown=false,last=0;
+  const B='1792876403';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
