@@ -430,7 +430,7 @@ details.add summary{cursor:pointer;font-weight:700}
   .tglint::after{content:"";position:absolute;top:-10%;bottom:-10%;left:0;width:45%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.35) 30%,rgba(255,255,255,.95) 50%,rgba(255,255,255,.35) 70%,transparent 100%);transform:translateX(-450%) skewX(-20deg);animation:glint4 var(--gd,4.4s) ease-in-out var(--gl,0s) infinite}
   @keyframes glint4{0%,55%{transform:translateX(-450%) skewX(-20deg)}100%{transform:translateX(550%) skewX(-20deg)}}
   .crsh{opacity:.9;animation:crsh var(--gd,4.2s) ease-in-out var(--gl,0s) infinite}
-  @keyframes crsh{0%,50%{transform:translateX(-90px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
+  @keyframes crsh{0%,50%{transform:translateX(-240px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
 }
 
 #splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;transition:opacity .45s ease}
@@ -2145,17 +2145,33 @@ function statsList(){
     if(hs) add(60+hs.stars*5,'star','Toughest gauntlet',`${'★'.repeat(hs.stars)} ${hs.rounds} rounds, ${hs.players} players, won by ${hs.champ.name}`);
     const hp=T.slice().sort((a,b)=>b.champ.pts-a.champ.pts)[0];
     add(62,'chart','Highest points total',`${hp.champ.name} piled up ${hp.champ.pts.toFixed(1)} points in one gauntlet`);
+    const cb=T.filter(t=>t.champ.rank>1).sort((a,b)=>b.champ.rank-a.champ.rank)[0];
+    if(cb) add(70+Math.min(10,cb.champ.rank*3),'climb','Comeback champion',`${cb.champ.name} was ranked #${cb.champ.rank} after the rounds and still won the title`);
+    const mw=T.filter(t=>t.champ.wins>=3).sort((a,b)=>b.champ.wins-a.champ.wins)[0];
+    if(mw&&!sw) add(63,'burst','Most round wins in one gauntlet',`${mw.champ.name} won ${mw.champ.wins} of ${mw.champ.played} rounds on the way to the title`);
+    const ru={},rd2={};T.forEach(t=>{if(t.runner){const k=key(t.runner);ru[k]=(ru[k]||0)+1;rd2[k]=t.runner;}});
+    const rk=Object.keys(ru).sort((a,b)=>ru[b]-ru[a])[0];
+    if(rk&&ru[rk]>=2) add(54+ru[rk],'silver','Always the bridesmaid',`${rd2[rk]} has finished runner-up ${ru[rk]} times`);
+    const ev={},evd={};T.forEach(t=>{(t.standings||[]).forEach(r=>{const k=key(r.name);ev[k]=(ev[k]||0)+1;evd[k]=r.name;});});
+    const vk=Object.keys(ev).sort((a,b)=>ev[b]-ev[a])[0];
+    if(vk&&ev[vk]>=3) add(48,'people','Veteran',`${evd[vk]} has played in ${ev[vk]} gauntlets`);
+    const hrs=t=>t.mins>0?t.mins/60:(t.rounds||0)*0.6;
+    const lg=T.slice().sort((a,b)=>hrs(b)-hrs(a))[0];
+    if(lg&&hrs(lg)>=2) add(56,'clock','Marathon',`The longest gauntlet ran ${lg.rounds} rounds, about ${Math.round(hrs(lg))} hours of play`);
+    const tot=T.reduce((a,t)=>a+hrs(t),0);
+    if(T.length>=2&&tot>=4) add(34,'hourglass','Time at the table',`About ${Math.round(tot)} hours of game night so far`);
     add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${T.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
   }
   /* round records, from every saved tournament plus the one in progress */
   const seq=[];arch.forEach(a=>{if(a.data&&a.data.log) seq.push(a.data.log);});
   if(S.started){const cur=roundLog(S);if(cur.length) seq.push(cur);}
-  const pg={},plays={},wins={},gcount={},display={};let bestRound=null;
+  const pg={},plays={},wins={},gcount={},display={},hv={};let bestRound=null;
   seq.forEach(tour=>tour.forEach(rd=>{
     gcount[rd.g]=(gcount[rd.g]||0)+rd.t.length;
     rd.t.forEach(tab=>{if(!tab.length) return;const top=Math.min(...tab.map(x=>x.p));
       tab.forEach(x=>{const k=key(x.n);display[k]=x.n;
         plays[k]=(plays[k]||0)+1;const w=x.p===top;if(w) wins[k]=(wins[k]||0)+1;
+        if(rd.w===3){const h=hv[k]=hv[k]||{p:0,w:0};h.p++;if(w)h.w++;}
         const pk=k+'|'+rd.g;(pg[pk]=pg[pk]||{k,g:rd.g,seq:[]}).seq.push(w);
         if(!bestRound||x.v>bestRound.v) bestRound={n:x.n,v:x.v,g:rd.g};});});
   }));
@@ -2168,11 +2184,13 @@ function statsList(){
   if(bestRound&&bestRound.v>0) add(66,'up','Best single round',`${bestRound.n} scored +${bestRound.v.toFixed(1)} in ${bestRound.g}`);
   const lead=Object.keys(plays).filter(k=>plays[k]>=6).sort((a,b)=>(wins[b]||0)/plays[b]-(wins[a]||0)/plays[a])[0];
   if(lead&&(wins[lead]||0)>0) add(64,'medal','Round win rate',`${display[lead]} has won ${wins[lead]} of ${plays[lead]} games played`);
+  const hk=Object.keys(hv).filter(k=>hv[k].p>=3&&hv[k].w>=2).sort((a,b)=>hv[b].w/hv[b].p-hv[a].w/hv[a].p)[0];
+  if(hk) add(57,'weight','Heavyweight',`${display[hk]} has won ${hv[hk].w} of ${hv[hk].p} of the big (×3) games`);
   const fav=Object.keys(gcount).sort((a,b)=>gcount[b]-gcount[a])[0];
   if(fav&&gcount[fav]>=3) add(36,'dice','Family favourite',`${fav} has been played ${gcount[fav]} times`);
   out.sort((a,b)=>b.p-a.p);
   const seen=new Set(),kc={},uniq=[];out.forEach(x=>{const kind=x.icon;kc[kind]=(kc[kind]||0)+1;if(!seen.has(x.head)&&kc[kind]<=(x.icon==='target'||x.icon==='bolt'?2:1)){seen.add(x.head);uniq.push(x);}});
-  return uniq.slice(0,8);
+  return uniq.slice(0,12);
 }
 const STAT_STAR=(n,a,b)=>{let d='';for(let k=0;k<n*2;k++){const r=k%2?b:a,t=k*Math.PI/n-Math.PI/2;d+=(k?'L':'M')+(32+r*Math.cos(t)).toFixed(1)+' '+(32+r*Math.sin(t)).toFixed(1);}return d+'Z';};
 const STAT_ICON={
@@ -2189,9 +2207,15 @@ const STAT_ICON={
   bolt:'<path d="M37 5L14 36h14l-4 23 26-33H36z" fill="#FFD84D"/>',
   up:'<path d="M32 7L53 30H41v25H23V30H11z" fill="#7ED9A6"/>',
   medal:'<path d="M18 5l9 20M46 5l-9 20" fill="none"/><circle cx="32" cy="41" r="16" fill="#FFD84D"/><path d="M32 33l2.600 5.400 5.900.8-4.300 4.100 1 5.800-5.200-2.800-5.200 2.800 1-5.800-4.300-4.100 5.900-.8z" fill="#fff" stroke-width="2.500"/>',
+  clock:'<circle cx="32" cy="32" r="25" fill="#C4A8F7"/><path d="M32 18v15l10 6" fill="none" stroke-width="5"/>',
+  hourglass:'<path d="M16 8h32L32 32z" fill="#7CC6F5"/><path d="M32 32L48 56H16z" fill="#FFD84D"/>',
+  weight:'<path d="M22 24a10 10 0 0 1 20 0" fill="none" stroke-width="5"/><path d="M16 56q-6-16 4-28h24q10 12 4 28z" fill="#FF8A78"/>',
+  people:'<circle cx="22" cy="22" r="8" fill="#7CC6F5"/><circle cx="43" cy="24" r="7" fill="#FFD84D"/><path d="M8 54q0-17 14-17t14 17zM33 54q0-14 11-14t12 14z" fill="#7ED9A6"/>',
+  climb:'<path d="M8 54h14V42h14V30h14V16" fill="none" stroke-width="5"/><path d="M42 12h14v14" fill="none" stroke-width="5"/>',
   dice:'<rect x="9" y="9" width="46" height="46" rx="9" fill="#fff"/><path d="M22 22h.1M42 22h.1M32 32h.1M22 42h.1M42 42h.1" fill="none" stroke-width="6"/>'
 };
-const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-coral',close:'c-blue',sweep:'c-green',star:'c-yellow',chart:'c-blue',book:'c-purple',target:'c-green',bolt:'c-purple',up:'c-green',medal:'c-blue',dice:'c-coral'};
+STAT_ICON.silver=STAT_ICON.medal.replace('#FFD84D','#D5D0E0');
+const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-coral',close:'c-blue',sweep:'c-green',star:'c-yellow',chart:'c-blue',book:'c-purple',target:'c-green',bolt:'c-purple',up:'c-green',medal:'c-blue',dice:'c-coral',clock:'c-purple',hourglass:'c-blue',weight:'c-coral',people:'c-green',climb:'c-green',silver:'c-blue'};
 const statIcon=(n,sz)=>`<svg class="sico" width="${sz}" height="${sz}" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="#3B3540" stroke-width="3.500" stroke-linejoin="round" stroke-linecap="round">${STAT_ICON[n]||''}</svg>`;
 function statInner(){
   const L=ui.statList||[],n=L.length;
@@ -2224,7 +2248,7 @@ function viewHistory(){
   S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
   const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
-  const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><clipPath id="cc${k}"><path d="${CROWN_D}"/></clipPath><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g clip-path="url(#cc${k})"><rect class="crsh" x="0" y="100" width="130" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
+  const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><mask id="cc${k}" maskUnits="userSpaceOnUse" x="0" y="0" width="520" height="520"><path d="${CROWN_D}" fill="#fff" stroke="#fff" stroke-width="22" stroke-linejoin="round"/></mask><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity=".95"/><stop offset=".7" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g mask="url(#cc${k})"><rect class="crsh" x="0" y="100" width="220" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
     const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
@@ -3208,7 +3232,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881193';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792881363';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3456,7 +3480,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792881193';let shown=false,last=0;
+  const B='1792881363';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
