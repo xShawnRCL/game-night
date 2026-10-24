@@ -211,7 +211,7 @@ details.add summary{cursor:pointer;font-weight:700}
 .champ .lbl{font:700 .8rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase}
 .champ .name{font:800 clamp(2.2rem,11vw,3.6rem)/0.95 var(--f-display);letter-spacing:-0.03em;overflow-wrap:anywhere}
 .foot{margin-top:28px;font-size:.8rem;color:var(--muted)}
-@media (prefers-reduced-motion:no-preference){.pl,.btn,.tab{transition:background-color .12s,transform .08s}}
+@media (prefers-reduced-motion:no-preference){.pl,.btn,.tab{transition:background-color .12s,transform .5s cubic-bezier(.3,1.5,.5,1)}.pl:active,.btn:active,.tab:active{transition:background-color .12s,transform .07s ease-out}}
 .sndbtn{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:6;width:36px;height:36px;border:2px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);opacity:.5;display:grid;place-items:center;padding:0;cursor:pointer}.sndbtn:hover,.sndbtn:focus-visible{opacity:1}
 .sndbtn:active{transform:scale(.92)}
 
@@ -322,6 +322,36 @@ details.add summary{cursor:pointer;font-weight:700}
   .champ.celebrate .name{animation:nameIn .8s .25s cubic-bezier(.2,1.2,.3,1) both}
   .champ.celebrate .lbl{animation:vIn .5s .1s both}
 }
+
+/* bigger invisible tap areas on small controls */
+.btn.sm{position:relative}
+.btn.sm::before{content:"";position:absolute;inset:-6px}
+.road .seg2::after{content:"";position:absolute;inset:-10px 0}
+/* Gauntlets menu: grows from the top, leaves the same way, drag the handle up to dismiss */
+.gmgrab{display:block;width:100%;height:22px;margin:-8px 0 0;padding:0;border:0;background:none;cursor:grab;touch-action:none;position:relative}
+.gmgrab::before{content:"";position:absolute;left:50%;top:9px;width:38px;height:5px;margin-left:-19px;border-radius:3px;background:var(--line)}
+.gmenu{transform-origin:50% 0;will-change:transform}
+.gmenu.gmdrag{transition:none}
+@media (prefers-reduced-motion:no-preference){
+  .gmenu.gm-in{animation:gmIn .34s cubic-bezier(.2,.9,.3,1) both}
+  .gmenu.gm-out{animation:gmOut .22s cubic-bezier(.2,.9,.3,1) both;pointer-events:none}
+  @keyframes gmIn{from{opacity:0;transform:translateY(-16px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes gmOut{to{opacity:0;transform:translateY(-16px) scale(.96)}}
+}
+@media (prefers-reduced-motion:reduce){
+  .gmenu.gm-in{animation:gmFadeIn .2s ease both}
+  .gmenu.gm-out{animation:gmFadeOut .2s ease both;pointer-events:none}
+  @keyframes gmFadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes gmFadeOut{to{opacity:0}}
+}
+
+/* small ? explainers */
+.qh{display:flex;align-items:center;gap:8px}
+.qbtn{position:relative;width:24px;height:24px;border-radius:50%;border:2px solid var(--edge);background:var(--surface);color:var(--edge);font:700 .8rem/1 var(--f-display);padding:0;cursor:pointer;display:inline-grid;place-items:center;flex:none}
+.qbtn::before{content:"";position:absolute;inset:-10px}
+.qbtn[aria-expanded="true"]{background:var(--c-yellow)}
+.qnote{margin:6px 0 2px;padding:8px 12px;border-radius:10px;background:var(--bg);border:2px solid var(--line);font-size:.9rem;max-width:62ch;color:var(--ink)}
+.qrow{display:block;margin:2px 0 4px}
 @media (prefers-reduced-motion:reduce){.fxc{display:none}.fxr{display:none}}
 
 @media (max-width:420px){.shead,.srow{grid-template-columns:30px minmax(0,1fr) 3.2rem 2rem 2rem;gap:6px;padding-inline:10px}.meeple{width:46px;height:46px}}
@@ -481,7 +511,7 @@ body.view .rost{display:none}
 .share details.host>summary{cursor:pointer}
 .share .rfoot{margin-top:10px;justify-content:flex-start}
 .share .hint{margin-top:8px}
-</style>
+.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}</style>
 
 <div id="splash" aria-hidden="true"><svg class="sl" id="splogo" viewBox="1 2 62 60"></svg><div class="sn">Game Night Gauntlet</div><div class="sb"><i style="--k:0;--c:var(--c-coral)"></i><i style="--k:1;--c:var(--c-blue)"></i><i style="--k:2;--c:var(--c-yellow)"></i><i style="--k:3;--c:var(--c-green)"></i><i style="--k:4;--c:var(--c-purple)"></i><i style="--k:5;--c:var(--c-orange)"></i></div></div>
 <div class="wrap">
@@ -1533,7 +1563,7 @@ function catSearch(q){
   return out.slice(0,12).map(x=>x[1]);
 }
 
-const VIEW=/[?&]view(&|=|$)/.test(location.search);
+const VIEW=/[?&](view|join)(&|=|$)/.test(location.search);
 const KEY='ubg-v1';
 function load(){if(VIEW)return fresh();try{const s=localStorage.getItem(KEY);if(s){const o=JSON.parse(s);if(o&&o.v===1)return ensureDefaults(o);}}catch(e){}return freshPicked();}
 let S=load();
@@ -1563,7 +1593,7 @@ function touch(){
   if(S.started&&phaseOf(S)==='champion'){if(!S.finishedAt) S.finishedAt=Date.now();} else delete S.finishedAt;
   S.t=Date.now();
   try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
-  ghSchedule();
+  ghSchedule();sbSchedule();
   if(docRef){dirty=true;clearTimeout(timer);timer=setTimeout(flush,500);}
 }
 async function flush(){
@@ -1689,6 +1719,13 @@ function headStartText(m,q,ids,S0){
   return `The final pays ${Array.from({length:m},(_,k)=>fmt(10*FINAL_W*(m-1-k)/(m-1))).join(' / ')} points for 1st to last, and qualifying rank adds a head start (${starts}). Lowest finish that can still win: ${worst}. Ties go to the higher seed.`;
 }
 
+const QTIPS={
+  final:'Final only: everyone starts the final level. Small bonus: players who ranked higher in the rounds start with a few extra points. Keep points: all the round points carry into the final, so the rounds matter a lot.',
+  worth:'Worth multiplies a game\'s points. In a x1 game, 1st place earns about 10 points. In a x3 game it earns about 30. Heavier games move the standings more.',
+  stars:'Stars rate how big the gauntlet was. More rounds, heavier games, more players and a final all add up, to a maximum of 5.'
+};
+const qbtn=k=>`<button type="button" class="qbtn" data-act="qtip" data-a="${k}" aria-expanded="${!!(ui.q&&ui.q[k])}" aria-label="What does this mean?">?</button>`;
+const qnote=k=>ui.q&&ui.q[k]?`<p class="qnote" role="note">${QTIPS[k]}</p>`:'';
 function hsBullets(m,q){
   const pay=Array.from({length:m},(_,k)=>fmt(10*FINAL_W*(m-1-k)/(m-1))).join(' / ');
   if(q===HS_CARRY) return ['Points from the rounds carry into the final.','The final adds '+pay+' points for 1st to last (more if the finalists are far apart).','Highest combined total wins. A tie goes to whoever ranked higher.'];
@@ -1795,10 +1832,10 @@ function viewSetup(){
     <h3>Players in the final</h3>
     <div class="seg" role="group" aria-label="Players in the final">${fopts.join('')}</div>
     ${S.finalists===1?`<ul class="bul"><li>No final game.</li><li>Points leader after the last round wins.</li><li>A tie for first gets a tiebreaker.</li></ul>`:`<ul class="bul"><li>Top ${S.finalists} play one final game.</li><li>A tie at the cut gets a tiebreaker game.</li></ul>
-    <h3>Final scoring</h3><div class="seg" role="group" aria-label="Final scoring">${hsb}</div>
+    <div class="qh"><h3>Final scoring</h3>${qbtn('final')}</div>${qnote('final')}<div class="seg" role="group" aria-label="Final scoring">${hsb}</div>
     <ul class="bul">${hsBullets(S.finalists,S.headStart||0).map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`}
     ${rules}
-    <h3>Games</h3><p class="muted">Worth ×1, ×2 or ×3: bigger games count more. Tap Edit on a game for copies we own and order.</p>
+    <div class="qh"><h3>Games</h3>${qbtn('worth')}</div>${qnote('worth')}<p class="muted">Worth ×1, ×2 or ×3: bigger games count more. Tap Edit on a game for copies we own and order.</p>
     <ul class="glist">${games}</ul>${addForm}</div></details>`;
   return top+more;
 }
@@ -2400,7 +2437,7 @@ document.addEventListener('pointerdown',ev=>{
   s.className='fxr';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(ev.clientX-r.left-d/2)+'px;top:'+(ev.clientY-r.top-d/2)+'px';
   b.appendChild(s);setTimeout(()=>s.remove(),600);
 },{passive:true});
-document.addEventListener('click',ev=>{const c=ev.target.closest&&ev.target.closest('.champ');if(c) fxConfetti();});
+document.addEventListener('click',ev=>{const c=ev.target.closest&&ev.target.closest('.champ');if(c&&!ev.target.closest('.qbtn')) fxConfetti();});
 
 /* ---------- sound: tiny synthesized sounds, no audio files ---------- */
 let FXA=null;
@@ -2434,30 +2471,25 @@ function fxSound(kind){
   if(a.state!=='running'){a.resume().then(()=>{if(a.state==='running') fxPlay(a,kind);}).catch(()=>{});return;}
   fxPlay(a,kind);
 }
-/* Winning fanfare: one planned phrase in C major on a steady grid (s seconds a step).
-   Two key runs (C chord, then D minor), a short breath on a G bass, three rising dings on C chord tones, then bells climbing the C triad as everything fades.
-   Variations are stored below; FX_FANFARE.bright is the one in use. The others are kept on purpose, to swap in by changing the name used in fxPlay. */
-const FX_FANFARE_BASE={s:.1,ring:1,w:1,chord:.05,tg:.13,tv:1,extra:[]};
+/* Winning fanfare: two quick key runs (a C chord, then D minor) on a steady grid, then bells climbing the C major triad and fading.
+   FX_FANFARE.longer is in use. The other two are saved on purpose: swap the name in the 'fanfare' line of fxPlay to use one. */
+const FX_FANFARE_BASE={s:.1,ring:1,w:.45,tg:.13,tv:1,extra:[],endRing:false};
 const FX_FANFARE={
-  original:{...FX_FANFARE_BASE},                                              /* "number 5" */
-  warm:{...FX_FANFARE_BASE,w:.45,chord:.065},                                  /* rounder dings, fuller chord */
-  roomy:{...FX_FANFARE_BASE,s:.108,ring:1.25,tg:.15},                          /* slightly slower, longer rings */
-  bright:{...FX_FANFARE_BASE,w:1.35,tg:.115,tv:1.15,extra:[2637]}              /* shinier, quicker bells, one extra on top (IN USE) */
+  plain:{...FX_FANFARE_BASE},                                                  /* the plain version */
+  longer:{...FX_FANFARE_BASE,extra:[2637,4186,2637],tg:.14,ring:1.2},          /* three more bells, slower fade (IN USE) */
+  softRing:{...FX_FANFARE_BASE,endRing:true,ring:1.1}                          /* one last soft high note after the final bell */
 };
 function fxFanfare(a,t0,o){
   const F={C5:523.25,D5:587.33,E5:659.25,F5:698.46,G5:783.99,A5:880,C6:1046.5,D6:1174.66,E6:1318.5,G6:1568,C7:2093};
   const key=(t,f,v,d)=>{fxTone(a,t,f,d,'triangle',v);fxTone(a,t,f*2,d*.6,'sine',v*.4);fxTone(a,t,f/2,d,'sine',v*.3);};
   const ding=(t,f,v,d,w)=>{fxTone(a,t,f,d,'sine',v);fxTone(a,t,f*2.76,d*.35,'sine',v*.3*w);fxTone(a,t,f*5.4,d*.12,'sine',v*.12*w);fxTone(a,t,f,d*.5,'triangle',v*.35);};
-  const s=o.s,u=t0+.03,T=n=>u+n*s,C3=130.81,D3=146.83,G3=196,C4=261.63,E4=329.63,G4=392,r=o.ring,w=o.w;
+  const s=o.s,u=t0+.03,T=n=>u+n*s,r=o.ring,w=o.w;
   [F.C5,F.E5,F.G5,F.C6,F.E6,F.G6,F.E6,F.C6].forEach((f,i)=>key(T(i),f,i%4===0?.075:.06,.38));
   [F.D5,F.F5,F.A5,F.D6,F.F5*2,F.D6,F.A5,F.F5].forEach((f,i)=>key(T(8+i),f,i%4===0?.08:.065,.38));
-  fxTone(a,T(0),C3,.78*s/.1,'triangle',.09);fxTone(a,T(8),D3,.78*s/.1,'triangle',.09);fxTone(a,T(16),G3,.2,'triangle',.09);
-  const n0=17;
-  fxTone(a,T(n0),C3,1.3*r,'triangle',.1);
-  [[n0,[F.C5,F.C6,F.G6],.08,1],[n0+2,[F.E5,F.E6,F.C7],.08,1],[n0+4,[F.G5,F.G6,F.C7*1.26],.09,1.8]].forEach(([n,fs,v,d],i)=>{
-    fs.forEach(f=>ding(T(n),f,v/1.6,d*.9*r,w));if(i<2) fxTone(a,T(n),i?E4:C3*2,.4,'triangle',.05);});
-  [C4,E4,G4,F.C5].forEach(f=>fxTone(a,T(n0+4),f,1.2*r,'triangle',o.chord));fxNoise(a,T(n0+4),.2,.035,6000);
-  [F.C6,F.E6,F.G6,F.C7,F.E6*2,F.G6*2,F.C7*2].concat(o.extra||[]).forEach((f,i)=>ding(T(n0+4)+.15+i*o.tg,f,.05*o.tv*Math.pow(.88,i),(.9+i*.08)*r,w));
+  fxTone(a,T(0),130.81,.78*s/.1,'triangle',.09);fxTone(a,T(8),146.83,.78*s/.1,'triangle',.09);
+  const trail=[F.C6,F.E6,F.G6,F.C7,F.E6*2,F.G6*2,F.C7*2].concat(o.extra||[]);
+  trail.forEach((f,i)=>ding(T(16)+i*o.tg,f,.05*o.tv*Math.pow(.88,i),(.9+i*.08)*r,w));
+  if(o.endRing){const te=T(16)+trail.length*o.tg;ding(te,F.C7,.03,2.4*r,w);ding(te,F.G6,.02,2.4*r,w);}
 }
 function fxPlay(a,kind){
   const t=a.currentTime+0.02;
@@ -2465,19 +2497,7 @@ function fxPlay(a,kind){
   if(kind==='tap'){fxTone(a,t,520,0.07,'triangle',0.06,780);}
   else if(kind==='pop'){fxNoise(a,t,0.18,0.12,3000);fxTone(a,t,300,0.12,'sine',0.12,90);}
   else if(kind==='chime'){const u=t+0.1;fxTone(a,u,N.G5,0.35,'triangle',0.09);fxTone(a,u+0.09,N.C6,0.5,'triangle',0.09);}
-  else if(kind==='fanfare'){fxFanfare(a,t,FX_FANFARE.bright);}
-  else if(kind==='fanfare_old'){/* earlier bouncy horn fanfare, kept in case it is wanted back; rename to 'fanfare' to use it */
-    /* bouncy 8-bit horn call: quick da-da-da-DAA, a hopping run up, then a short bright held chord and sparkle */
-    const u=t+0.08;
-    const horn=(f,d,dur,v)=>{fxTone(a,u+d,f,dur,'square',v);fxTone(a,u+d,f*1.007,dur,'sawtooth',v*0.5);fxTone(a,u+d,f*2,dur,'triangle',v*0.45);};
-    horn(N.G5,0,0.07,0.065);horn(N.G5,0.09,0.07,0.065);horn(N.G5,0.18,0.07,0.065);horn(N.C6,0.27,0.24,0.08);
-    horn(N.E5,0.54,0.06,0.06);horn(N.G5,0.61,0.06,0.06);horn(N.C6,0.68,0.06,0.065);horn(N.E6,0.75,0.07,0.07);
-    horn(N.D5*2,0.84,0.07,0.065);horn(N.E6,0.92,0.07,0.07);horn(N.G6,1.0,0.6,0.08);
-    [N.C5,N.E5,N.G5,N.C6].forEach(f=>{fxTone(a,u+1.0,f,1.1,'triangle',0.07);});
-    fxTone(a,u+1.0,N.C5/2,1.1,'square',0.05);
-    [N.C6,N.E6,N.G6,N.C6*2,N.G6,N.C6*2].forEach((f,i)=>fxTone(a,u+1.3+i*0.055,f,0.18,'square',0.04));
-    fxNoise(a,u+1.0,0.35,0.05,5000);
-  }
+  else if(kind==='fanfare'){fxFanfare(a,t,FX_FANFARE.longer);}
   else if(kind==='beep'){fxTone(a,t,440,0.22,'triangle',0.12);fxTone(a,t,220,0.22,'sine',0.08);}
   else if(kind==='go'){fxTone(a,t,N.G5,0.35,'triangle',0.1);fxTone(a,t+0.13,N.C6,0.55,'triangle',0.1);}
 }
@@ -2707,11 +2727,55 @@ function gauntletsCard(){
     ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
     ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
 }
+
+/* ---------- Gauntlets menu motion: animated close, drag-up dismiss with flick ---------- */
+function gmClose(){
+  const el=document.querySelector('.gmenu');
+  if(!el){ui.gmenu=false;render();return;}
+  el.style.transform='';el.classList.remove('gmdrag');el.classList.add('gm-out');
+  setTimeout(()=>{ui.gmenu=false;render();},230);
+}
+(function(){
+  let el=null,y0=0,hist=[],on=false;
+  document.addEventListener('pointerdown',ev=>{
+    const g=ev.target.closest&&ev.target.closest('#gmgrab');if(!g) return;
+    el=g.closest('.gmenu');if(!el) return;
+    on=true;y0=ev.clientY;hist=[{t:ev.timeStamp,y:ev.clientY}];
+    el.classList.add('gmdrag');el.classList.remove('gm-in');
+    try{g.setPointerCapture(ev.pointerId);}catch(e){}
+  });
+  document.addEventListener('pointermove',ev=>{
+    if(!on||!el) return;
+    let d=ev.clientY-y0;
+    if(d>0) d=(d*60*.55)/(60+.55*d);           /* rubber band when pulled down */
+    el.style.transform='translateY('+d+'px)';
+    hist.push({t:ev.timeStamp,y:ev.clientY});if(hist.length>6) hist.shift();
+  });
+  function end(){
+    if(!on||!el) return;on=false;
+    const a=hist[0],b=hist[hist.length-1],v=b.t>a.t?(b.y-a.y)/(b.t-a.t):0;   /* px per ms */
+    const d=b.y-y0,proj=d+v*0.998/(1-0.998);
+    el.classList.remove('gmdrag');
+    if(proj<-70||v<-.6){
+      const node=el;
+      node.style.transition='transform .26s cubic-bezier(.2,.9,.3,1),opacity .22s ease-in';
+      node.style.transform='translateY(-120%)';node.style.opacity='0';
+      setTimeout(()=>{ui.gmenu=false;render();},260);
+    }else{
+      el.style.transition='transform .45s cubic-bezier(.3,1.35,.5,1)';
+      el.style.transform='translateY(0)';
+      const node=el;setTimeout(()=>{node.style.transition='';node.style.transform='';},470);
+    }
+    el=null;
+  }
+  document.addEventListener('pointerup',end);document.addEventListener('pointercancel',end);
+})();
 function gmenuPanel(){
   if(!ui.gmenu||(typeof VIEW!=='undefined'&&VIEW)) return '';
   const sl=(S.slots||[]).map(x=>`<div class="dmr"><div><b>${esc(x.name||gLabel(x.snap))}</b><span class="muted">${esc(gStatus(x.snap))}</span></div><span class="dmb"><button type="button" class="btn sm primary" data-act="gopen" data-a="${x.id}">Open</button>${dmBtn('delslot:'+x.id,'delslot',x.id,'Delete','Sure? Tap again')}</span></div>`).join('');
   const fin=S.started&&phaseOf(S)==='champion';
-  return `<section class="card gmenu" role="dialog" aria-label="Gauntlets"><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2><button type="button" class="btn sm ghost" data-act="gmenu">Close</button></div>
+  const gin=ui.gmAnim?' gm-in':'';ui.gmAnim=false;
+  return `<section class="card gmenu${gin}" role="dialog" aria-label="Gauntlets"><button type="button" class="gmgrab" id="gmgrab" aria-label="Drag up to close"></button><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2><button type="button" class="btn sm ghost" data-act="gmenu">Close</button></div>
     <label class="fld wide"><span>Name of this gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
     <p class="muted">${esc(gStatus(S))}</p>
     ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
@@ -2813,7 +2877,10 @@ function act(name,a,el){
       syncCount();touch();break;}
     case 'howlong':{if(S.started) break;S.howLong=+a[0];S.howManual=false;pickGames(S);touch();break;}
     case 'gedit':ui.gedit=ui.gedit===a[0]?null:a[0];break;
-    case 'gmenu':ui.gmenu=!ui.gmenu;if(ui.gmenu) ui.top=true;break;
+    case 'qtip':ui.q=ui.q||{};ui.q[a[0]]=!ui.q[a[0]];break;
+    case 'gmenu':{
+      if(ui.gmenu){gmClose();return false;}
+      ui.gmenu=true;ui.top=true;ui.gmAnim=true;break;}
     case 'ws':S.winnerStays=a[0]==='1';touch();break;
     case 'ord':S.order=a[0];touch();break;
     case 'bklater':ui.bkLater=nightMarks();break;
@@ -3010,6 +3077,7 @@ function shareCard(){
   let bk=0;try{bk=+localStorage.getItem(BKK)||0;}catch(e){}
   const bkt=bk?'Last backup file saved '+new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+'.':'No backup file saved yet.';
   return `<div class="share">
+    ${sbCard()}
     <p class="hint">Publishing puts a copy of the gauntlet on GitHub so family can follow along with the viewer link. Only this device, with your token, can change anything.</p>
     <details class="host" data-ui="hostOpen"${ui.hostOpen?' open':''}><summary><b>Host setup (advanced)</b></summary>
     <label class="fld">GitHub repo<input class="inp" data-gh="repo" value="${esc(GH.repo||'')}" placeholder="yourname/game-night" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
@@ -3073,7 +3141,98 @@ document.addEventListener('click',async e=>{
     ghMsg(k==='restore'?'No published copy found yet.':'That did not work on this device.');
   }
 });
+
+/* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
+const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792871619';
+let SBS={};try{SBS=JSON.parse(localStorage.getItem(SBK))||{};}catch(e){}
+const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
+let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
+const sbSave=()=>{try{localStorage.setItem(SBK,JSON.stringify(SBS));}catch(e){}};
+const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
+async function sbRpc(name,body){
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let j=null;try{j=await r.json();}catch(e){}
+  if(!r.ok){const e=new Error((j&&j.message)||('http '+r.status));e.code=j&&j.code;e.status=r.status;throw e;}
+  return j;
+}
+const sbRand=(n,al)=>{const a=new Uint32Array(n);crypto.getRandomValues(a);return Array.from(a,x=>al[x%al.length]).join('');};
+const sbMeta=()=>({players:S.players.length,rounds:S.rounds.length,started:!!S.started,phase:S.started?phaseOf(S):'setup',name:S.gname||''});
+function joinLink(code){return location.origin+location.pathname.replace(/index\.html$/,'')+'?join='+(code||SBS.code);}
+function sbSchedule(){
+  if(VIEW||!SBS.code||!(S.t>0)) return;
+  clearTimeout(sbTimer);sbTimer=setTimeout(sbPush,3000);
+}
+async function sbPush(){
+  sbTimer=null;
+  if(VIEW||!SBS.code) return;
+  if(sbBusy){sbPending=true;return;}
+  sbBusy=true;sbMsg('Updating the live copy…');
+  try{
+    const ok=await sbRpc('update_gauntlet',{p_code:SBS.code,p_secret:SBS.secret,p_data:S,p_fmt:SB_FMT,p_meta:sbMeta(),p_app:SB_APP});
+    if(ok===false) sbMsg('The live copy was not found. Tap Stop sharing, then start again.');
+    else{SBS.pushed=S.t;sbSave();sbMsg('Live copy updated at '+clock()+'.');}
+  }catch(e){sbMsg('Could not update the live copy, probably offline. It tries again on the next change.');}
+  sbBusy=false;
+  if(sbPending){sbPending=false;sbSchedule();}
+}
+async function sbStart(){
+  const AL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  sbMsg('Starting…');
+  for(let i=0;i<6;i++){
+    const code=sbRand(6,AL),secret=sbRand(28,AL+'abcdefghijkmnpqrstuvwxyz');
+    try{
+      await sbRpc('create_gauntlet',{p_code:code,p_secret:secret,p_data:S,p_fmt:SB_FMT,p_meta:sbMeta(),p_app:SB_APP});
+      SBS={code,secret,pushed:S.t};sbSave();sbMsg('Live sharing is on.');render();return;
+    }catch(e){if(e.code!=='23505'){sbMsg('Could not start live sharing. Check the connection and try again.');return;}}
+  }
+  sbMsg('Could not find a free code. Try again.');
+}
+async function sbStop(){
+  try{await sbRpc('delete_gauntlet',{p_code:SBS.code,p_secret:SBS.secret});}catch(e){}
+  SBS={};sbSave();sbMsg('');render();
+}
+function sbCard(){
+  const on=!!SBS.code;
+  return `<h3>Live sharing</h3>
+    ${on?`<p class="hint">Family opens this link and sees every change within a few seconds. They can only watch.</p>
+    <div class="linkbox mono">${esc(joinLink())}</div>
+    <p class="hint">Join code <b class="mono">${esc(SBS.code)}</b></p>
+    <div class="rfoot"><button type="button" class="btn sm" data-sbb="copy">Copy link</button><button type="button" class="btn sm" data-sbb="share">Share…</button><button type="button" class="btn sm ghost" data-sbb="stop">Stop sharing</button></div>`
+    :`<p class="hint">Get a link for family to follow along live, with no setup on their side.</p>
+    <div class="rfoot"><button type="button" class="btn sm primary" data-sbb="start">Start live sharing</button></div>`}
+    <p class="hint" id="sb-msg" role="status" aria-live="polite">${esc(sbNote)}</p>`;
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-sbb]');if(!b||VIEW) return;
+  const k=b.dataset.sbb;
+  try{
+    if(k==='start') await sbStart();
+    else if(k==='stop'){if(confirm('Stop live sharing? The link will stop working.')) await sbStop();}
+    else if(k==='copy'){await navigator.clipboard.writeText(joinLink());sbMsg('Link copied.');}
+    else if(k==='share'){
+      if(navigator.share) await navigator.share({title:'Game Night Gauntlet',url:joinLink()});
+      else{await navigator.clipboard.writeText(joinLink());sbMsg('Link copied.');}
+    }
+  }catch(err){if(!(err&&err.name==='AbortError')) sbMsg('That did not work on this device.');}
+});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&sbTimer){clearTimeout(sbTimer);sbPush();}});
+
 async function viewPoll(){
+  if(JOIN){
+    try{
+      const rows=await sbRpc('get_gauntlet',{p_code:JOIN});
+      if(!rows||!rows.length) viewMsg='No gauntlet found for code '+JOIN+'. Check the link.';
+      else{
+        const o=rows[0].data;
+        if(o&&o.v===1){
+          viewMsg='Updated '+new Date(rows[0].updated_at).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})+'. This page refreshes by itself.';
+          if(o.t!==S.t){S=ensureDefaults(o);renderSafe();}
+        }
+      }
+    }catch(e){viewMsg='Could not reach the live copy right now. Trying again.';}
+    setStatus();return;
+  }
   try{
     const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
     if(r.status===404) viewMsg='The host has not published a gauntlet yet.';
@@ -3091,7 +3250,7 @@ function startGh(){
   document.body.classList.toggle('view',VIEW);
   if(VIEW){
     document.title='Game Night Gauntlet · live';
-    viewPoll();setInterval(viewPoll,45000);
+    viewPoll();setInterval(viewPoll,JOIN?10000:45000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden) viewPoll();});
   }else{
     try{if(navigator.storage&&navigator.storage.persist) navigator.storage.persist();}catch(e){}
@@ -3112,6 +3271,15 @@ function startGh(){
 render();
 initDb();
 startGh();
+
+/* update notice: when a newer build is published, offer a refresh */
+(function(){
+  const B='1792871619';let shown=false,last=0;
+  const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
+  const chk=async()=>{if(shown||Date.now()-last<60000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B)show();}catch(e){}};
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk();});
+  setTimeout(chk,4000);
+})();
 
 </script>
 
