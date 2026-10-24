@@ -62,7 +62,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visi
 .road .seg2::before{content:"";position:absolute;inset:-10px -2px}
 .road .seg2:focus-visible{outline:3px solid var(--c-blue);outline-offset:2px}
 .road .seg2:active{transform:translateY(1px)}
-@keyframes flash{0%{box-shadow:0 0 0 6px var(--c-yellow)}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes flash{0%{box-shadow:0 4px 0 var(--shadow),0 0 0 6px var(--c-yellow)}100%{box-shadow:0 4px 0 var(--shadow),0 0 0 0 transparent}}
 .flash{animation:flash 1.6s ease-out}
 [id^="hr-"],[id^="rd-"],[id^="ht-"]{scroll-margin-top:104px}
 .road .seg2.done{background:var(--sc);border-color:var(--edge)}
@@ -312,7 +312,8 @@ details.add summary{cursor:pointer;font-weight:700}
   .road .seg2.pop{animation:popIn .5s cubic-bezier(.3,1.6,.5,1)}
   .btn.primary:not([disabled]){animation:glowPulse 2.8s ease-in-out infinite}
   .btn:not([disabled]):not(.ghost)::after{content:"";position:absolute;top:-20%;bottom:-20%;left:0;width:70%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.28) 30%,rgba(255,255,255,.95) 44%,rgba(255,255,255,.95) 56%,rgba(255,255,255,.28) 70%,transparent 100%);transform:translateX(-150%) skewX(-20deg);pointer-events:none}
-  .btn.primary:not([disabled])::after{animation:glint var(--gd,3.8s) ease-in-out var(--gl,0s) infinite}
+  .btn.primary:not([disabled])::after,.btn.shine:not([disabled])::after{animation:glint var(--gd,3.8s) ease-in-out var(--gl,0s) infinite}
+  .btn.shine:not(.primary)::after{background:linear-gradient(105deg,transparent 0%,rgba(70,60,50,.05) 30%,rgba(70,60,50,.16) 44%,rgba(70,60,50,.16) 56%,rgba(70,60,50,.05) 70%,transparent 100%)}
   @keyframes glint{0%,55%{transform:translateX(-150%) skewX(-20deg)}100%{transform:translateX(260%) skewX(-20deg)}}
   @media (hover:hover){.btn:not([disabled]):hover{transform:translateY(-2px)}.btn:not([disabled]):not(.primary):hover::after{transform:translateX(260%) skewX(-20deg);transition:transform .7s ease}.pcard .pbtn:hover svg{animation:wob .5s ease}}
   .btn:not([disabled]):active{transform:translateY(2px) scale(.97)}
@@ -544,6 +545,7 @@ body.homeon{overflow:hidden;background:var(--bg)}
 #home .hcode{display:flex;gap:8px}
 #home .hcode .inp{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.18em;font-family:var(--f-mono);font-weight:700;text-align:center}
 #home .hmsg{color:var(--warn-ink);font-weight:700;font-size:.9rem;margin:0}
+#home .homeopen,#home .dmb .btn.homeopen{width:7.6rem;min-width:0;min-height:46px;padding:9px 16px;font-size:1rem;line-height:1.15}
 .vhome{display:inline-flex;align-items:center;gap:6px}
 </style>
 
@@ -1712,7 +1714,7 @@ function backupBanner(){
   const m=nightMarks();
   if(m<=(S.bkNights||0)||ui.bkLater===m) return '';
   const title=phaseOf(S)==='champion'?'The gauntlet is finished.':'Night '+m+' is done.';
-  return `<div class="card bk" role="status"><div><strong>${title} Save a backup before you close up.</strong><p class="muted">One tap saves your progress to a file, so nothing is lost if this phone clears the page.</p></div><div class="rfoot"><button type="button" class="btn primary" data-act="bkup">Save backup</button><button type="button" class="btn sm ghost" data-act="bklater">Later</button></div></div>`;
+  return `<div class="card bk" role="status"><div><strong>${title} Save a backup before you close up.</strong><p class="muted">One tap saves your progress to a file, so nothing is lost if this phone clears the page.</p></div><div class="rfoot"><button type="button" class="btn primary shine" data-act="bkup">Save backup</button><button type="button" class="btn sm ghost" data-act="bklater">Later</button></div></div>`;
 }
 
 /* ---------- shared view pieces ---------- */
@@ -1839,7 +1841,7 @@ function viewSetup(){
       <label class="fld"><span>Minutes</span><input class="inp" id="ng-mins" type="number" min="5" max="240" value="30"></label>
       <label class="fld"><span>Copies we own</span><input class="inp" id="ng-copies" type="number" min="1" max="6" value="1"></label>
       <label class="fld"><span>Worth</span><select class="sel" id="ng-w"><option value="1">×1 light</option><option value="2">×2 medium</option><option value="3">×3 heavy</option></select></label>
-    </div><p style="margin-top:12px"><button type="button" class="btn" data-act="addgame">Add to list</button></p></details>`;
+    </div><p style="margin-top:12px"><button type="button" class="btn shine" data-act="addgame">Add to list</button></p></details>`;
   const rules=locked?'':`<h3>Table rules</h3>
     <div class="cardhead"><span>Odd one out in a 2-player game</span><div class="seg" role="group" aria-label="Odd one out in a 2-player game"><button type="button" aria-pressed="${ws}" data-act="ws" data-a="1">Winner stays on</button><button type="button" aria-pressed="${!ws}" data-act="ws" data-a="0">Sits out</button></div></div>
     <p class="muted">${ws?'With an odd number of players, three of them share one table in a 2-player game. Two play, the winner stays on against whoever sat out, and the first to 2 wins takes 1st. Everyone plays and nobody gets free points. It takes about three games of time.':'The odd player sits out and gets half marks, the same as an average result. The draw rotates who sits out.'}</p>
@@ -1863,7 +1865,7 @@ function viewSetup(){
       ${rosterChips()}</details>
     <details class="card sbox wsum" data-ui="roundsOpen"${ui.roundsOpen?' open':''}><summary><h2 class="chip c-green">Rounds</h2><span class="muted mono" style="margin-left:auto">${valid} round${valid===1?'':'s'}</span><div class="pk">${picked.length?picked.map(x=>`<span>${esc(x)}</span>`).join(''):'<span>No games chosen</span>'}</div></summary>
       <div class="qf" style="margin-bottom:0"><span class="qs">Fill about</span><div class="step2" role="group" aria-label="Game nights"><button type="button" class="btn" data-act="nights" data-a="-1" aria-label="Fewer nights"${(S.howLong||2)<=1?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${S.howLong||2}</b><button type="button" class="btn" data-act="nights" data-a="1" aria-label="More nights"${(S.howLong||2)>=10?' disabled':''}>+</button></div><span class="qs">night${(S.howLong||2)===1?'':'s'}</span></div><div class="qf"><span class="qs">of</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div><span class="qs">hours a night</span></div>
-      <p style="margin:8px 0 4px"><button type="button" class="btn sm" data-act="howauto">Auto-pick games</button></p>
+      <p style="margin:8px 0 4px"><button type="button" class="btn shine" data-act="howauto">Auto-pick games</button></p>
       <p class="muted">${S.howManual?'You chose the lineup yourself. Auto-pick replaces it with games that fit.':'The app picked games to fill about '+((S.howLong||2)*(S.nightHours||3))+' hours. Change any game below to make it your own.'}</p>
       <div class="qh"><h3>Your lineup</h3>${qbtn('worth')}</div>${qnote('worth')}
       <p class="muted">Use − and + to set how many rounds of each game. 0 leaves it out. Worth applies to every round of a game.</p>
@@ -1916,7 +1918,7 @@ function viewSetupV1(){
       <label class="fld"><span>Minutes</span><input class="inp" id="ng-mins" type="number" min="5" max="240" value="30"></label>
       <label class="fld"><span>Copies</span><input class="inp" id="ng-copies" type="number" min="1" max="6" value="1"></label>
       <label class="fld"><span>Weight</span><select class="sel" id="ng-w"><option value="1">×1 light</option><option value="2">×2 medium</option><option value="3">×3 heavy</option></select></label>
-    </div><p style="margin-top:12px"><button type="button" class="btn" data-act="addgame">Add to list</button></p></details>`;
+    </div><p style="margin-top:12px"><button type="button" class="btn shine" data-act="addgame">Add to list</button></p></details>`;
   const rules=locked?'':`<section class="card"><div class="cardhead"><h2 class="chip c-coral">Round rules</h2></div>
     <div class="cardhead"><h3>Odd player in a 2-player game</h3><div class="seg" role="group" aria-label="Odd player in a 2-player game"><button type="button" aria-pressed="${ws}" data-act="ws" data-a="1">Winner stays</button><button type="button" aria-pressed="${!ws}" data-act="ws" data-a="0">Sit out</button></div></div>
     <p class="muted">${ws?'With an odd number of players, three of them share one table in a 2-player game. Two play, the winner stays on against whoever sat out, and the first to 2 wins takes 1st. Everyone plays and nobody gets free points. It takes about three games of time.':'The odd player sits out and gets half marks, the same as an average result. The draw rotates who sits out.'}</p>
@@ -1976,7 +1978,7 @@ function viewRounds(){
   }).join('');
   const choices=S.games.filter(g=>layout(S.players.length,g.min,g.max)).map(g=>`<option value="${g.id}">${esc(g.name)} (×${g.weight})</option>`).join('');
   const add=S.finale.length?'':`<details class="card add"><summary>Add a round</summary><div class="addgrid"><label class="fld wide"><span>Game</span><select class="sel" id="ar-game">${choices}</select></label></div>
-    <p style="margin-top:12px"><button type="button" class="btn" data-act="addround">Add to the end</button></p></details>`;
+    <p style="margin-top:12px"><button type="button" class="btn shine" data-act="addround">Add to the end</button></p></details>`;
   const redrawable=S.finale.length?0:S.rounds.filter(r=>roundUnscored(r)&&(r.tables.length>1||r.byes.length)).length;
   const totalMin=mins.reduce((a,b)=>a+b,0);
   const n=S.players.length, sumTxt=S.finalists===1?`${n} players · ${S.rounds.length} rounds · points leader wins`:`${n} players · ${S.rounds.length} rounds · top ${S.finalists} play the final`;
@@ -2212,7 +2214,7 @@ function viewHistory(){
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
     const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
-      ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished gauntlets are saved here with their trophies.</p>`;
+      ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary shine" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished gauntlets are saved here with their trophies.</p>`;
   ui.statList=statsList();if((ui.statIdx||0)>=ui.statList.length) ui.statIdx=0;if(!ui.statT) ui.statT=Date.now();
   return `<section class="card statcard swap" id="statcard" role="button" tabindex="0" aria-label="Hall of fame. Tap or swipe for another stat.">${statInner()}</section><section class="stack"><h2 class="chip c-purple">This gauntlet</h2>${cur}</section><section class="stack"><h2 class="chip c-yellow">Past gauntlets</h2><p class="muted" id="dl-msg2"></p>${past}</section>`;
 }
@@ -2650,7 +2652,7 @@ function trophyGlint(im,T){
 }
 /* every shine gets its own pace and phase so they never sweep together */
 function fxJitter(){
-  document.querySelectorAll('.btn.primary,.crsh,.tglint').forEach(el=>{
+  document.querySelectorAll('.btn.primary,.btn.shine,.crsh,.tglint').forEach(el=>{
     const d=3.4+Math.random()*4.6;el.style.setProperty('--gd',d.toFixed(2)+'s');el.style.setProperty('--gl',(-Math.random()*d).toFixed(2)+'s');
   });
 }
@@ -2714,7 +2716,7 @@ function sharePanel(){
   if(gh) inner=shareCard();
   else{
     let bk=0;try{bk=+localStorage.getItem('ubg-bk')||0;}catch(e){}
-    inner=`<h3>Backup file</h3><p class="hint">${bk?'Last backup file saved '+esc(new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+'.':'No backup file saved yet.'} Save one after each game night.</p><div class="rfoot"><button type="button" class="btn sm primary" data-act="bkup">Save backup</button></div>`;
+    inner=`<h3>Backup file</h3><p class="hint">${bk?'Last backup file saved '+esc(new Date(bk).toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}))+'.':'No backup file saved yet.'} Save one after each game night.</p><div class="rfoot"><button type="button" class="btn sm primary shine" data-act="bkup">Save backup</button></div>`;
   }
   return `<details class="card sbox" data-ui="sbOpen"${ui.sbOpen?' open':''}><summary><h2 class="chip c-blue">${gh?'Share &amp; backup':'Backup &amp; data'}</h2></summary><div class="sbody">${inner}${dataMgmtHTML()}</div></details>`;
 }
@@ -2771,7 +2773,7 @@ function gauntletsCard(){
   return `<section class="card"><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2></div>
     <label class="fld wide"><span>This gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
     <p class="muted">${esc(gStatus(S))}</p>
-    ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
+    ${S.started?`<p><button type="button" class="btn shine" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
     ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
 }
 
@@ -2825,7 +2827,7 @@ function gmenuPanel(){
   return `<section class="card gmenu${gin}" role="dialog" aria-label="Gauntlets"><button type="button" class="gmgrab" id="gmgrab" aria-label="Drag up to close"></button><div class="cardhead"><h2 class="chip c-coral">Gauntlets</h2><button type="button" class="btn sm ghost" data-act="gmenu">Close</button></div>
     <p class="hint"><button type="button" class="btn sm ghost" data-homeb="open">Start screen</button></p><label class="fld wide"><span>Name of this gauntlet</span><input class="inp" id="gname" data-act="gname" value="${esc(S.gname||'')}" placeholder="${esc(gLabel({born:S.born,t:S.t}))}" maxlength="30" autocomplete="off"></label>
     <p class="muted">${esc(gStatus(S))}</p>
-    ${S.started?`<p><button type="button" class="btn" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
+    ${S.started?`<p><button type="button" class="btn shine" data-act="gnew">New gauntlet</button></p><p class="hint">${fin?'This one is finished, so it goes to History.':'This one is saved here, ready to open again any day.'} Players and settings carry over.</p>`:''}
     ${sl?`<h3>Saved gauntlets</h3><div class="dm">${sl}</div>`:'<p class="hint">Start a second gauntlet any time. The first waits here until you open it again.</p>'}</section>`;
 }
 /* ---------- render ---------- */
@@ -2866,7 +2868,7 @@ function render(){
   const gb=document.getElementById('gmbtn');if(gb){gb.hidden=!!(typeof VIEW!=='undefined'&&VIEW);gb.setAttribute('aria-expanded',String(!!ui.gmenu));}
   app.innerHTML=gmenuPanel()+backupBanner()+(ui.view==='setup'?viewSetup()+((typeof VIEW!=='undefined'&&VIEW)?'':sharePanel()):ui.view==='rounds'?viewRounds():ui.view==='standings'?viewStandings():ui.view==='finale'?viewFinale():viewHistory());
   if(ui.top){window.scrollTo(0,0);ui.top=false;}
-  else if(ui.scrollTo||ui.scrollEl){const el=document.getElementById(ui.scrollEl||('rd-'+ui.scrollTo));ui.scrollTo=null;ui.scrollEl=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1700);}}
+  else if(ui.scrollTo||ui.scrollEl){const el=document.getElementById(ui.scrollEl||('rd-'+ui.scrollTo));ui.scrollTo=null;ui.scrollEl=null;if(el){const rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;el.scrollIntoView({block:'start',behavior:rm?'auto':'smooth'});setTimeout(()=>{el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1700);},rm?0:380);}}
   else{window.scrollTo(0,y);if(anTop!==null){const n2=document.querySelector(anSel);if(n2){const d=n2.getBoundingClientRect().top-anTop;if(Math.abs(d)>0.5) window.scrollTo(0,y+d);}}}
   stickCheck();
   afterRender();
@@ -3183,7 +3185,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792877663';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792877867';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3309,11 +3311,11 @@ function homeHtml(){
   const logo=document.querySelector('.brand .logo');
   const has=homeHas();
   const row=(o,btn)=>`<div class="dmr"><div><b>${esc(o.gname||gLabel({born:o.born,t:o.t}))}</b><span class="muted">${esc(homeSub(o))}</span></div><span class="dmb">${btn}</span></div>`;
-  const cur=has?row(S,`<button type="button" class="btn sm primary" data-homeb="cont">Open</button>`):'';
-  const slots=(S.slots||[]).map(x=>row(x.snap,`<button type="button" class="btn sm" data-homeb="slot" data-a="${x.id}">Open</button>`)).join('');
+  const cur=has?row(S,`<button type="button" class="btn primary homeopen" data-homeb="cont">Open</button>`):'';
+  const slots=(S.slots||[]).map(x=>row(x.snap,`<button type="button" class="btn shine homeopen" data-homeb="slot" data-a="${x.id}">Open</button>`)).join('');
   const mine=(cur||slots)?`<section class="card"><div class="cardhead"><h2 class="chip c-green">Your gauntlets</h2></div><div class="dm">${cur}${slots}</div></section>`:'';
   const join=`<section class="card"><div class="cardhead"><h2 class="chip c-blue">Have a code?</h2></div>
-      <div class="hcode"><input class="inp" id="home-code" maxlength="80" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Enter a code"><button type="button" class="btn" data-homeb="join">Open</button></div>
+      <div class="hcode"><input class="inp" id="home-code" maxlength="80" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Enter a code"><button type="button" class="btn shine homeopen" data-homeb="join">Open</button></div>
       <p class="hmsg" id="home-msg" role="status">${esc(homeErr)}</p></section>`;
   return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="132" height="132" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<h1>Game Night <span class="hl">Gauntlet</span></h1><p class="hsub">Family board game championship</p></div>
     <button type="button" class="btn big primary hnew" data-homeb="new">Start a new gauntlet</button>${mine}${join}<p class="hby">Created by Shawn RCL</p></div>`;
@@ -3430,7 +3432,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792877663';let shown=false,last=0;
+  const B='1792877867';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
