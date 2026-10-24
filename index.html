@@ -471,6 +471,17 @@ body.slim .brand{gap:10px}
 .cg .gmore .gplan{padding-left:12px;margin:0}
 .cg .gmore .gmeta{padding-left:0}
 .pk{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rrep{font-size:.78rem;font-weight:700;color:var(--muted);margin-left:4px}
+.sbox.wsum>summary{flex-wrap:wrap}
+.sbox.wsum>summary .pk{order:9;flex-basis:100%;margin-top:2px}
+.sbox.wsum[open]>summary .pk{display:none}
+.repc{display:flex;align-items:center;gap:6px;flex:none}
+.repc b{min-width:22px;text-align:center;font:800 1.05rem var(--f-display)}
+.cg .repc{grid-column:2;grid-row:1}
+.cg.cr>.btn{grid-row:2;grid-column:2}
+.cg.cr .gsum,.cg.cr .gmore{padding-left:0}
+.cg.cr .gname{font-weight:700}
+.qf{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between;margin-bottom:6px}
 .pk span{padding:2px 10px;border:2px solid var(--line);border-radius:999px;font-size:.8rem;font-weight:700;background:var(--raise)}
 .btn.big{padding:12px 20px;font-size:1.05rem}
 .mbody{display:flex;flex-direction:column;gap:10px}
@@ -647,7 +658,7 @@ function pickGames(T){
   const n=T.players.length, ws=T.winnerStays!==false, N=T.howLong||2, cap=(T.nightHours||3)*60;
   let nights=1, cur=0, firstOk=null;
   T.games.forEach(g=>{
-    delete g.auto;
+    delete g.auto;delete g.reps;
     const d=describeLayout(n,g,ws);
     if(!d.ok){g.on=false;return;}
     const rm=roundMinutes(g,d.k,d.ladder);
@@ -733,11 +744,16 @@ function orderGames(list,mode){
   }
   return list;
 }
+const REP_MAX=20, ROUNDS_MAX=60;
+const repsOf=g=>g.on?Math.max(1,Math.min(REP_MAX,g.reps||1)):0;
+/* Name of a round, with its place among repeats of the same game ("Uno, round 3 of 8"). */
+function repInfo(S,r){const same=S.rounds.filter(x=>x.gameId===r.gameId);return {n:same.indexOf(r)+1,m:same.length};}
+function roundTitle(S,r){const g=gameOf(S,r.gameId),q=repInfo(S,r);return (g?g.name:'?')+(q.m>1?', round '+q.n+' of '+q.m:'');}
 function buildRounds(S){
   S.rounds=[];S.tiebreaks=[];S.finale=[];delete S.finishedAt;
   let list=S.games.filter(g=>g.on);
   list=orderGames(list,S.order);
-  for(const g of list) addRound(S,g.id);
+  for(const g of list) for(let k=0;k<repsOf(g)&&S.rounds.length<ROUNDS_MAX;k++) addRound(S,g.id);
   S.started=S.rounds.length>0;
   if(S.started) S.tid='t'+Date.now();
   return S.rounds.length;
@@ -855,7 +871,7 @@ function headStartReach(m,q,bOver,pool){
 }
 /* Gauntlet rank: 0 to 5 stars from how much was played (round weights, scaled by table size, plus the final). */
 function gauntletStars(S,hasFinal){
-  let w=0;for(const rd of S.rounds){const g=gameOf(S,rd.gameId);w+=g?g.weight:1;}
+  let w=0;const seenG={};for(const rd of S.rounds){const g=gameOf(S,rd.gameId),x=g?g.weight:1;w+=seenG[rd.gameId]?x*0.4:x;seenG[rd.gameId]=1;}
   /* Gauntlet Rank: weighted rounds, scaled gently by table size (6 players = 1.0, never below 0.6 or above 1.3), plus 3 for a final, 3.8 points per star, 5 stars at most. */
   const f=Math.min(1.3,Math.max(0.6,Math.sqrt(S.players.length/6)));
   return Math.min(5,Math.floor((w*f+(hasFinal?3:0))/3.8));
@@ -1794,9 +1810,10 @@ function viewSetup(){
   const fopts=[];for(let k=1;k<=maxF;k++)fopts.push(`<button type="button" aria-pressed="${S.finalists===k}" data-act="fin" data-a="${k}"${S.finale.length?' disabled':''}>${k}</button>`);
   const hsb=HS_OPTS.map(([q,l])=>`<button type="button" aria-pressed="${q===0.5?((S.headStart||0)===0.5||S.headStart===1):(S.headStart||0)===q}" data-act="hs" data-a="${q}"${S.finale.length?' disabled':''}>${l}</button>`).join('');
   let total=0,valid=0,skipped=[],sit=[],picked=[]; const minsList=[];
+  const totalR=S.games.reduce((a,g)=>a+repsOf(g),0);
   const games=S.games.map((g,i)=>{
     const d=describeLayout(n,g,ws);
-    if(g.on&&d.ok){const rm=roundMinutes(g,d.k,d.ladder);total+=rm;minsList.push(rm);valid++;picked.push(g.name);const LL=layout(n,g.min,g.max,ws);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
+    if(g.on&&d.ok){const rm=roundMinutes(g,d.k,d.ladder),rp=repsOf(g);for(let q=0;q<rp;q++){total+=rm;minsList.push(rm);valid++;}picked.push(g.name+(rp>1?' ×'+rp:''));const LL=layout(n,g.min,g.max,ws);if(LL&&LL.byes)sit.push(g.name);} else if(g.on) skipped.push(g.name);
     const open=ui.gedit===g.id;
     const wts=[1,2,3].map(w=>`<button type="button" aria-pressed="${g.weight===w}" data-act="gweight" data-a="${g.id}|${w}" aria-label="${esc(g.name)} worth ${w}">×${w}</button>`).join('');
     const rm=d.ok?roundMinutes(g,d.k,d.ladder):0;
@@ -1806,7 +1823,9 @@ function viewSetup(){
       <div class="gctl"><div class="seg" role="group" aria-label="Worth">${wts}</div>
       <div class="cp" role="group" aria-label="Copies we own of ${esc(g.name)}"><span class="mono">copies we own</span><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|-1" aria-label="Fewer copies"${copiesOf(g)<=1?' disabled':''}>−</button><b class="mono">${copiesOf(g)}</b><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|1" aria-label="More copies"${copiesOf(g)>=6?' disabled':''}>+</button></div>
       <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button><button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}" aria-label="Delete ${esc(g.name)}">Delete</button>`}</div></div></div>`:'';
-    return `<li class="game cg${g.on?'':' off'}"><label class="gname"><input type="checkbox" data-act="gtoggle" data-a="${g.id}"${g.on?' checked':''}${locked?' disabled':''}><span>${esc(g.name)}</span></label>
+    const rp=repsOf(g), canUp=!d.ok?false:(rp<REP_MAX&&totalR<ROUNDS_MAX);
+    const ctl=locked?'':`<div class="repc" role="group" aria-label="Rounds of ${esc(g.name)}"><button type="button" class="btn sm" data-act="greps" data-a="${g.id}|-1" aria-label="Fewer rounds of ${esc(g.name)}"${rp<1?' disabled':''}>−</button><b class="mono" aria-live="polite">${rp}</b><button type="button" class="btn sm" data-act="greps" data-a="${g.id}|1" aria-label="More rounds of ${esc(g.name)}"${canUp?'':' disabled'}>+</button></div>`;
+    return `<li class="game cg${locked?'':' cr'}${g.on?'':' off'}">${locked?`<label class="gname"><input type="checkbox" data-act="gtoggle" data-a="${g.id}"${g.on?' checked':''} disabled><span>${esc(g.name)}</span></label>`:`<span class="gname"><span>${esc(g.name)}</span></span>`}${ctl}
       <span class="gsum mono">${sum}${d.ok?'':' · needs more players'}</span><button type="button" class="btn sm ghost" data-act="gedit" data-a="${g.id}" aria-expanded="${open}">${open?'Close':'Edit'}</button>${more}</li>`;
   }).join('');
   const addForm=locked?'':`<details class="add"><summary>Add a game</summary>
@@ -1830,37 +1849,40 @@ function viewSetup(){
   const nights=planNights(minsList,S.nightHours||3);
   const stepper=`<div class="step2" role="group" aria-label="How many players"><button type="button" class="btn" data-act="pcount" data-a="-1" aria-label="One fewer player"${n<=MINP?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${n}</b><button type="button" class="btn" data-act="pcount" data-a="1" aria-label="One more player"${n>=MAXP?' disabled':''}>+</button></div>`;
   const hl=[1,2,3].map(k=>`<button type="button" aria-pressed="${!S.howManual&&S.howLong===k}" data-act="howlong" data-a="${k}">${k} night${k>1?'s':''}</button>`).join('');
-  let top;
+  let top, startCard='';
   if(locked){
     top=`<section class="card"><h2>Gauntlet in progress</h2><p class="muted">${esc(gStatus(S))}. Players and the game list are locked. Worth, copies we own and game night length can still change. Add a round from the Rounds tab.</p>
       <div class="cardhead"><span class="muted">Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div></section>
       <details class="card sbox" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Players</h2><span class="muted mono" style="margin-left:auto">${n}</span></summary><ul class="plist">${players}</ul><p class="muted">Players are locked during a gauntlet.</p></details>`;
   }else{
-    top=`<details class="card sbox" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Who's playing?</h2><span class="muted mono" style="margin-left:auto">${n} players</span></summary>
+    const roundsSum=valid+' round'+(valid===1?'':'s')+' · about '+hm(total)+' · '+nights.length+' night'+(nights.length===1?'':'s');
+    top=`<details class="card sbox wsum" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Who's playing?</h2><span class="muted mono" style="margin-left:auto">${n} players</span><div class="pk">${S.players.map(p=>`<span>${esc(p.name)}</span>`).join('')}</div></summary>
       <div class="cardhead"><span class="qs">How many players?</span>${stepper}</div>
       <ul class="plist" style="margin-top:12px">${players}</ul>
       <p class="hint" style="margin-top:8px">Names are optional. Tap a meeple to pick a colour and a hat.</p>
       ${rosterChips()}</details>
-    <section class="card"><div class="cardhead"><h2 class="chip c-green">How long?</h2><div class="seg" role="group" aria-label="How long">${hl}</div></div>
-      <p class="muted" style="margin-top:8px">${S.howManual?'You chose the games yourself. Tap a length to let the app choose again.':'The app picks games to fill about '+(S.howLong*(S.nightHours||3))+' hours.'}</p>
-      <div class="plan" style="margin-top:12px"><div><strong class="mono">${valid} round${valid===1?'':'s'}</strong><p class="muted">About ${hm(total)} of play over ${nights.length} night${nights.length===1?'':'s'}.</p></div>
-      <button type="button" class="btn primary big" data-act="build"${valid?'':' disabled'}>Start gauntlet</button></div>
-      <div class="pk">${picked.map(x=>`<span>${esc(x)}</span>`).join('')}</div>
+    <details class="card sbox wsum" data-ui="roundsOpen"${ui.roundsOpen?' open':''}><summary><h2 class="chip c-green">Rounds</h2><span class="muted mono" style="margin-left:auto">${valid} round${valid===1?'':'s'}</span><div class="pk">${picked.length?picked.map(x=>`<span>${esc(x)}</span>`).join(''):'<span>No games chosen</span>'}</div></summary>
+      <div class="qf" style="margin-bottom:0"><span class="qs">Fill about</span><div class="step2" role="group" aria-label="Game nights"><button type="button" class="btn" data-act="nights" data-a="-1" aria-label="Fewer nights"${(S.howLong||2)<=1?' disabled':''}>−</button><b class="mono pn2" aria-live="polite">${S.howLong||2}</b><button type="button" class="btn" data-act="nights" data-a="1" aria-label="More nights"${(S.howLong||2)>=10?' disabled':''}>+</button></div><span class="qs">night${(S.howLong||2)===1?'':'s'}</span></div><div class="qf"><span class="qs">of</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div><span class="qs">hours a night</span></div>
+      <p style="margin:8px 0 4px"><button type="button" class="btn sm" data-act="howauto">Auto-pick games</button></p>
+      <p class="muted">${S.howManual?'You chose the lineup yourself. Auto-pick replaces it with games that fit.':'The app picked games to fill about '+((S.howLong||2)*(S.nightHours||3))+' hours. Change any game below to make it your own.'}</p>
+      <div class="qh"><h3>Your lineup</h3>${qbtn('worth')}</div>${qnote('worth')}
+      <p class="muted">Use − and + to set how many rounds of each game. 0 leaves it out. Worth applies to every round of a game.</p>
+      <ul class="glist">${games}</ul>${addForm}
       ${skipped.length?`<p class="muted" style="margin-top:8px">Skipped for ${n} players: ${esc(skipped.join(', '))}.</p>`:''}
       ${sit.length?`<p class="muted" style="margin-top:8px">With ${n} players, ${esc(sit.join(', '))} can't seat everyone, so someone sits out each time. A sit-out earns half marks, the same as an average result.</p>`:''}
-      <p class="hint" style="margin-top:8px">Want different games? Open More settings below.</p></section>`;
+      ${totalR>=ROUNDS_MAX?`<p class="muted" style="margin-top:8px">That is the most rounds a gauntlet can have (${ROUNDS_MAX}).</p>`:''}</details>`;
+    startCard=`<section class="card"><div class="plan"><div><strong class="mono">${valid} round${valid===1?'':'s'}</strong><p class="muted">About ${hm(total)} of play over ${nights.length} night${nights.length===1?'':'s'}.</p></div><button type="button" class="btn primary big" data-act="build"${valid?'':' disabled'}>Start gauntlet</button></div></section>`;
   }
-  const more=`<details class="card sbox" data-ui="moreOpen"${ui.moreOpen?' open':''}><summary><h2 class="chip c-coral">More settings</h2></summary><div class="mbody">
-    ${locked?'':`<div class="cardhead"><span>Hours per game night</span><div class="seg" role="group" aria-label="Hours per game night">${nh}</div></div>`}
+  const more=`<details class="card sbox wsum" data-ui="moreOpen"${ui.moreOpen?' open':''}><summary><h2 class="chip c-coral">${locked?'More settings':'Final and rules'}</h2><span class="muted mono" style="margin-left:auto">${S.finalists===1?'No final':'Top '+S.finalists}</span>${locked?'':`<div class="pk"><span>${S.finalists===1?'No final game':'Final: top '+S.finalists}</span><span>${(HS_OPTS.find(o=>o[0]===(S.headStart===1?0.5:(S.headStart||0)))||[0,'Final only'])[1]}</span><span>${ord==='smart'?'Mixed order':ord==='weight'?'Big games last':'List order'}</span></div>`}</summary><div class="mbody">
     <h3>Players in the final</h3>
     <div class="seg" role="group" aria-label="Players in the final">${fopts.join('')}</div>
     ${S.finalists===1?`<ul class="bul"><li>No final game.</li><li>Points leader after the last round wins.</li><li>A tie for first gets a tiebreaker.</li></ul>`:`<ul class="bul"><li>Top ${S.finalists} play one final game.</li><li>A tie at the cut gets a tiebreaker game.</li></ul>
     <div class="qh"><h3>Final scoring</h3>${qbtn('final')}</div>${qnote('final')}<div class="seg" role="group" aria-label="Final scoring">${hsb}</div>
     <ul class="bul">${hsBullets(S.finalists,S.headStart||0).map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`}
     ${rules}
-    <div class="qh"><h3>Games</h3>${qbtn('worth')}</div>${qnote('worth')}<p class="muted">Worth ×1, ×2 or ×3: bigger games count more. Tap Edit on a game for copies we own and order.</p>
-    <ul class="glist">${games}</ul>${addForm}</div></details>`;
-  return top+more;
+    ${locked?`<div class="qh"><h3>Games</h3>${qbtn('worth')}</div>${qnote('worth')}<p class="muted">Worth ×1, ×2 or ×3: bigger games count more. Tap Edit on a game for copies we own and order.</p>
+    <ul class="glist">${games}</ul>`:''}</div></details>`;
+  return top+startCard+more;
 }
 /* The original Setup screen, kept so it can be put back: change viewSetup to viewSetupV1 in render() (and gauntletsCard/Start over come back with it). */
 function viewSetupV1(){
@@ -1950,7 +1972,7 @@ function viewRounds(){
     }
     const nh=nightAt[i]?`<div class="night"><h3 class="chip c-purple">Night ${nightAt[i].k+1}</h3><span class="muted">${nightAt[i].nt.count} round${nightAt[i].nt.count>1?'s':''}, about ${hm(nightAt[i].nt.mins)}</span></div>`:'';
     return `${nh}<article class="round${open?' open':''}${i===cur?' cur':''}" id="rd-${r.id}"><button type="button" class="rh" data-act="open" data-a="${r.id}" aria-expanded="${open}">
-      <span class="rn s${i%6}">${i+1}</span><span class="rt"><b>${esc(g.name)}</b>${sub}</span><span class="wt w${g.weight}">×${g.weight}</span><span class="chev"></span></button>${body}</article>`;
+      <span class="rn s${i%6}">${i+1}</span><span class="rt"><b>${esc(g.name)}</b>${(()=>{const q=repInfo(S,r);return q.m>1?` <span class="rrep">round ${q.n} of ${q.m}</span>`:'';})()}${sub}</span><span class="wt w${g.weight}">×${g.weight}</span><span class="chev"></span></button>${body}</article>`;
   }).join('');
   const choices=S.games.filter(g=>layout(S.players.length,g.min,g.max)).map(g=>`<option value="${g.id}">${esc(g.name)} (×${g.weight})</option>`).join('');
   const add=S.finale.length?'':`<details class="card add"><summary>Add a round</summary><div class="addgrid"><label class="fld wide"><span>Game</span><select class="sel" id="ar-game">${choices}</select></label></div>
@@ -1984,7 +2006,7 @@ function viewStandings(){
       <span class="pts mono">${fmt(r.pts)}</span><span class="mini mono">${r.wins}</span><span class="mini mono">${r.played}</span></li>`;
     if(!none&&i===S.finalists-1&&rows.length>S.finalists) list+=`<li class="cutline" role="presentation"><span>Top ${S.finalists} reach the final</span></li>`;
   });
-  const hdr=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return `<th title="${esc(g.name)}">${esc(g.short||g.name.slice(0,5))}<small>×${g.weight}</small></th>`;}).join('');
+  const hdr=S.rounds.map(r=>{const g=gameOf(S,r.gameId);return `<th title="${esc(roundTitle(S,r))}">${esc(g.short||g.name.slice(0,5))}${(()=>{const q=repInfo(S,r);return q.m>1?' '+q.n:'';})()}<small>×${g.weight}</small></th>`;}).join('');
   const body=rows.map(r=>`<tr><td>${esc(r.name)}</td>${S.rounds.map(rd=>r.per[rd.id]!==undefined?`<td class="mono">${fmt(r.per[rd.id])}</td>`:`<td class="mono none">–</td>`).join('')}<td class="mono"><b>${fmt(r.pts)}</b></td></tr>`).join('');
   const note=ph==='tie'?`<div class="card warn"><h3>Tie at the cut line</h3><p>${esc(cut.group.map(pname).join(', '))} finished level on points. A tiebreaker game decides who gets the last ${cut.pending.spots===1?'spot':cut.pending.spots+' spots'} in the final.</p><p><button type="button" class="btn" data-act="tab" data-a="finale">Go to the tiebreaker</button></p></div>`:'';
   const wait=none&&ph==='qual'?`<div class="card tip"><b>No points yet</b><p class="muted">The standings fill in as soon as round 1 is scored.</p></div>`:'';
@@ -2181,7 +2203,7 @@ setInterval(()=>{if(document.hidden) return;if(!document.getElementById('statcar
 
 function viewHistory(){
   const items=[];
-  S.rounds.forEach((r,i)=>{if(roundDone(r))items.push({o:i,ts:r.doneAt||0,html:histCard('R'+(i+1),gameOf(S,r.gameId),r.doneAt,r.tables.map((t,ti)=>({label:r.tables.length>1?(gameOf(S,r.gameId).max===2?'Match ':'Table ')+(ti+1):'',t})),gameOf(S,r.gameId).weight,r.byes,'hr-'+r.id)});});
+  S.rounds.forEach((r,i)=>{if(roundDone(r))items.push({o:i,ts:r.doneAt||0,html:histCard('R'+(i+1),(()=>{const g0=gameOf(S,r.gameId),q=repInfo(S,r);return q.m>1?Object.assign({},g0,{name:g0.name+', round '+q.n+' of '+q.m}):g0;})(),r.doneAt,r.tables.map((t,ti)=>({label:r.tables.length>1?(gameOf(S,r.gameId).max===2?'Match ':'Table ')+(ti+1):'',t})),gameOf(S,r.gameId).weight,r.byes,'hr-'+r.id)});});
   S.tiebreaks.forEach((t,i)=>{if(tableDone(t))items.push({o:1000+i,ts:t.doneAt||0,html:histCard('Tiebreaker',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   S.finale.forEach((t,i)=>{if(tableDone(t))items.push({o:2000+i,ts:t.doneAt||0,html:histCard(i===0?'Final':'Rematch',gameOf(S,t.gameId),t.doneAt,[{label:'',t}],0,[])});});
   items.sort((a,b)=>(b.ts-a.ts)||(b.o-a.o));
@@ -2900,6 +2922,9 @@ function act(name,a,el){
       else if(d<0&&S.players.length>MINP){S.players.pop();S.finalists=Math.max(1,Math.min(S.finalists,Math.min(4,S.players.length-1)));ui.lookFor=null;}
       else break;
       syncCount();touch();break;}
+    case 'greps':{if(S.started) break;const g=gameOf(S,a[0]);if(!g) break;const cur=repsOf(g),tot=S.games.reduce((x,y)=>x+repsOf(y),0);let nx=cur+ +a[1];nx=Math.max(0,Math.min(REP_MAX,nx));if(nx>cur&&tot>=ROUNDS_MAX) break;if(nx<1){g.on=false;delete g.reps;}else{g.on=true;g.reps=nx;}delete g.auto;S.howManual=true;touch();break;}
+    case 'nights':{if(S.started) break;S.howLong=Math.max(1,Math.min(10,(S.howLong||2)+ +a[0]));if(!S.howManual) pickGames(S);touch();break;}
+    case 'howauto':{if(S.started) break;S.howManual=false;pickGames(S);touch();break;}
     case 'howlong':{if(S.started) break;S.howLong=+a[0];S.howManual=false;pickGames(S);touch();break;}
     case 'gedit':ui.gedit=ui.gedit===a[0]?null:a[0];break;
     case 'qtip':ui.q=ui.q||{};ui.q[a[0]]=!ui.q[a[0]];break;
@@ -3158,7 +3183,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792877275';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792877663';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3405,7 +3430,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792877275';let shown=false,last=0;
+  const B='1792877663';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
