@@ -3152,7 +3152,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792873613';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792874383';
 let SBS={};try{SBS=JSON.parse(localStorage.getItem(SBK))||{};}catch(e){}
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
@@ -3251,7 +3251,13 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&sbTimer){c
 
 /* ---------- Start screen: new gauntlet, join with a code, or continue the one on this phone ---------- */
 const homeHas=()=>S.t>0||S.started||(S.slots&&S.slots.length>0);
-let homeOpen=!VIEW&&!homeHas(),homeErr='';
+const homeSeen=()=>{try{return sessionStorage.getItem('ubg-in')==='1';}catch(e){return false;}};
+const homeMark=()=>{try{sessionStorage.setItem('ubg-in','1');}catch(e){}};
+let rlAt=0;try{rlAt=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}
+const homeForce=/[?&]start(&|=|$)/.test(location.search);
+let homeOpen=!VIEW&&(!homeHas()||homeForce||(!homeSeen()&&Date.now()-rlAt>15000)),homeErr='';
+if(!homeOpen) homeMark();
+if(homeForce){try{history.replaceState(null,'',location.pathname);}catch(e){}}
 function homeHtml(){
   const logo=document.querySelector('.brand .logo');
   const has=homeHas();
@@ -3277,10 +3283,10 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('[data-homeb]');if(!b) return;
   const k=b.dataset.homeb;
   if(k==='open'){ui.gmenu=false;homeOpen=true;homeErr='';render();homeSync();}
-  else if(k==='cont'){homeOpen=false;homeSync();}
+  else if(k==='cont'){homeOpen=false;homeMark();homeSync();}
   else if(k==='new'){
     if(S.started){try{act('gnew',[],null);}catch(err){}}
-    homeOpen=false;ui.view='setup';ui.top=true;ui.gmenu=false;render();homeSync();
+    homeOpen=false;homeMark();ui.view='setup';ui.top=true;ui.gmenu=false;render();homeSync();
   }else if(k==='join'){
     const raw=(document.getElementById('home-code').value||'').trim();
     const m=raw.match(/join=([A-Za-z0-9]{6})/)||raw.match(/^([A-Za-z0-9]{6})$/);
@@ -3292,7 +3298,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target&&e.target.id==='home-code'){const j=document.querySelector('[data-homeb=join]');if(j) j.click();}
 });
 document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-vhome]');if(b) location.href=location.pathname;
+  const b=e.target.closest('[data-vhome]');if(b) location.href=location.pathname+'?start';
 });
 let viewBusy=false;
 async function viewPoll(){
@@ -3356,11 +3362,13 @@ if(!VIEW&&SBS.code) sbChan(SBS.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792873613';let shown=false,last=0;
+  const B='1792874383';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
-  const chk=async()=>{if(shown||Date.now()-last<60000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B)show();}catch(e){}};
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk();});
-  setTimeout(chk,4000);
+  const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
+  const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk(true);});
+  setTimeout(()=>chk(true),4000);
+  setInterval(()=>chk(VIEW),300000);
 })();
 
 </script>
