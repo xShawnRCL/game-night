@@ -551,6 +551,10 @@ body.homeon{overflow:hidden;background:var(--bg)}
 #home .hcode{display:flex;gap:8px}
 #home .hcode .inp{flex:1;min-width:0;text-transform:uppercase;letter-spacing:.18em;font-family:var(--f-mono);font-weight:700;text-align:center}
 #home .hmsg{color:var(--warn-ink);font-weight:700;font-size:.9rem;margin:0}
+.auform{display:flex;flex-direction:column;gap:8px}
+.hmsg.au-msg:empty{display:none}
+.hmsg.au-msg{color:var(--muted);font-weight:600;font-size:.85rem;margin:0}
+.linkb{background:none;border:0;padding:4px 2px;font:inherit;color:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 #home .homeopen,#home .dmb .btn.homeopen{width:7.6rem;min-width:0;min-height:46px;padding:9px 16px;font-size:1rem;line-height:1.15}
 .vhome{display:inline-flex;align-items:center;gap:6px}
 </style>
@@ -3232,12 +3236,12 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882679';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792884590';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
-async function sbRpc(name,body){
-  const r=await fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+async function sbRpc(name,body,tok){
+  const r=await fetch(SB_URL+'/rest/v1/rpc/'+name,{method:'POST',headers:Object.assign({apikey:SB_KEY,'Content-Type':'application/json'},tok?{Authorization:'Bearer '+tok}:{}),body:JSON.stringify(body)});
   let j=null;try{j=await r.json();}catch(e){}
   if(!r.ok){const e=new Error((j&&j.message)||('http '+r.status));e.code=j&&j.code;e.status=r.status;throw e;}
   return j;
@@ -3270,8 +3274,8 @@ async function sbPush(){
     const r=await sbRpc('save_gauntlet',{p_code:sh.code,p_secret:sh.secret,p_data:cleanData(S),p_fmt:SB_FMT,p_meta:sbMeta(),p_app:SB_APP});
     if(r==='taken'){
       if(!sh.ok){S.share=null;ensureShare();sbPending=true;sbMsg('');}
-      else sbMsg('That code belongs to another gauntlet. Please tell the app owner.');
-    }else{sh.ok=true;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}sbMsg('Live copy updated at '+clock()+'.');sbPing();}
+      else sbMsg('This gauntlet is now run from another device. Sign in to take it back.');
+    }else{sh.ok=true;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}sbMsg('Live copy updated at '+clock()+'.');sbPing();if(AU&&!sh.owned&&!sh.denied) claimAll();}
   }catch(e){sbMsg('Could not update the live copy, probably offline. It tries again on the next change.');}
   sbBusy=false;
   if(sbPending){sbPending=false;sbSchedule();}
@@ -3298,7 +3302,93 @@ async function sbChan(code,onPing){
   sbCh=ch;return ch;
 }
 function sbPing(){if(!S.share) return;sbChan(S.share.code).then(ch=>ch.send({type:'broadcast',event:'ping',payload:{t:S.t}})).catch(()=>{});}
-function sbCard(){
+/* ---------- Optional account: sign in with an email code so your gauntlets can be found again on any phone ---------- */
+const AUK='ubg-au';let AU=null;try{AU=JSON.parse(localStorage.getItem(AUK));}catch(e){}
+if(!(AU&&AU.rt)) AU=null;
+const auUi={step:'email',email:'',code:'',msg:''};
+let homeAuOpen=false,homeRemote=null,homeFetching=false;
+const auSave=()=>{try{if(AU) localStorage.setItem(AUK,JSON.stringify(AU)); else localStorage.removeItem(AUK);}catch(e){}};
+async function auReq(path,body){
+  const r=await fetch(SB_URL+'/auth/v1/'+path,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  let j=null;try{j=await r.json();}catch(e){}
+  if(!r.ok){const e=new Error((j&&(j.msg||j.error_description||j.message))||('http '+r.status));e.status=r.status;e.code=j&&(j.error_code||j.code);throw e;}
+  return j;
+}
+const auSet=j=>{AU={at:j.access_token,rt:j.refresh_token,exp:Date.now()+((j.expires_in||3600)*1000)-60000,email:(j.user&&j.user.email)||(AU&&AU.email)||auUi.email};auSave();};
+async function auToken(){
+  if(!AU) return null;
+  if(Date.now()>AU.exp){
+    try{auSet(await auReq('token?grant_type=refresh_token',{refresh_token:AU.rt}));}
+    catch(e){if(e.status===400||e.status===401||e.status===403){AU=null;auSave();}return null;}
+  }
+  return AU.at;
+}
+const isLocalCode=c=>(S.share&&S.share.code===c)||(S.slots||[]).some(x=>x.snap&&x.snap.share&&x.snap.share.code===c);
+/* link every gauntlet on this phone to the signed-in account (needs each one's admin code, which only this phone holds) */
+async function claimAll(){
+  if(!AU||VIEW) return;
+  const tok=await auToken();if(!tok) return;
+  for(const o of [S].concat((S.slots||[]).map(x=>x.snap))){
+    const sh=o&&o.share;if(!sh||!sh.ok||sh.owned||sh.denied) continue;
+    try{const r=await sbRpc('claim_gauntlet',{p_code:sh.code,p_secret:sh.secret},tok);if(r==='ok') sh.owned=true;else if(r==='denied') sh.denied=true;}catch(e){}
+  }
+  try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
+}
+async function recoverOpen(code){
+  const tok=await auToken();if(!tok) return false;
+  const secret=sbRand(16,SB_AL);
+  const rows=await sbRpc('recover_gauntlet',{p_code:code,p_new_secret:secret},tok);
+  if(!rows||!rows.length) return false;
+  const o=rows[0].data;if(!(o&&o.v===1)) return false;
+  if(gHasWork()) gPark();
+  const keep={archive:S.archive,roster:S.roster,rseq:S.rseq,rv:S.rv,trash:S.trash,slots:S.slots};
+  S=ensureDefaults({...o,...keep,share:{code:code,secret:secret,ok:true,owned:true}});
+  ui.open={};ui.tkey=null;ui.turl=null;ui.pimg={};ui.confirm=null;ui.lookFor=null;ui.view=S.started?'rounds':'setup';ui.touched=true;ui.top=true;ui.gmenu=false;
+  touch();
+  return true;
+}
+const auRefresh=()=>{if(homeOpen) homeSync(); else render();};
+function acctForm(){
+  const m=`<p class="hmsg au-msg" role="status">${esc(auUi.msg)}</p>`;
+  if(auUi.step==='code') return `<div class="auform"><input class="inp" data-auin="code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="Code from the email" aria-label="Code from the email" value="${esc(auUi.code)}"><div class="rfoot"><button type="button" class="btn sm" data-auact="confirm">Confirm</button><button type="button" class="btn sm ghost" data-auact="back">Use a different email</button></div>${m}</div>`;
+  return `<div class="auform"><input class="inp" data-auin="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="you@example.com" aria-label="Email" value="${esc(auUi.email)}"><div class="rfoot"><button type="button" class="btn sm" data-auact="send">Email me a code</button></div>${m}</div>`;
+}
+function acctCard(){
+  if(VIEW) return '';
+  if(AU) return `<h3>Account</h3><p class="hint">Signed in as <b>${esc(AU.email)}</b>. Your gauntlets are saved to this account, so you can open them again on any phone.</p><div class="rfoot"><button type="button" class="btn sm ghost" data-auact="out">Sign out</button></div>`;
+  return `<h3>Keep my gauntlets safe</h3><p class="hint">Optional. Add your email to find your gauntlets again if you lose this phone or clear your browser.</p>${acctForm()}`;
+}
+document.addEventListener('input',e=>{const t=e.target&&e.target.dataset&&e.target.dataset.auin;if(t) auUi[t]=e.target.value;});
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-auact]');if(!b||VIEW) return;
+  const k=b.dataset.auact,form=b.closest('.auform');
+  const say=t=>{auUi.msg=t;document.querySelectorAll('.au-msg').forEach(x=>x.textContent=t);};
+  const val=n=>{const el=form&&form.querySelector('[data-auin='+n+']');return ((el?el.value:auUi[n])||'').trim();};
+  try{
+    if(k==='send'){
+      const em=val('email').toLowerCase();auUi.email=em;
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){say('That email does not look right.');return;}
+      say('Sending…');
+      await auReq('otp',{email:em,create_user:true});
+      auUi.step='code';auUi.code='';auUi.msg='We emailed a code to '+em+'. It can take a minute and may land in spam.';auRefresh();
+    }else if(k==='confirm'){
+      const c=val('code').replace(/\s/g,'');auUi.code=c;
+      if(c.length<6){say('Enter the code from the email.');return;}
+      say('Checking…');
+      auSet(await auReq('verify',{type:'email',email:auUi.email,token:c}));
+      auUi.step='email';auUi.code='';auUi.msg='';homeRemote=null;homeAuOpen=false;
+      await claimAll();auRefresh();
+    }else if(k==='back'){auUi.step='email';auUi.msg='';auRefresh();}
+    else if(k==='out'){AU=null;auSave();homeRemote=null;auUi.step='email';auUi.msg='';auRefresh();}
+    else if(k==='hopen'){homeAuOpen=!homeAuOpen;auUi.msg='';homeSync();}
+  }catch(err){
+    if(err&&(err.status===429||/rate|seconds/i.test(err.message||''))) say('Too many emails right now. Wait a minute and try again.');
+    else if(k==='confirm') say('That code did not work. Check it, or ask for a new one.');
+    else say('Could not send the email. Check the address and your connection.');
+  }
+});
+function sbCard(){return acctCard()+sbCardBase();}
+function sbCardBase(){
   if(!S.share&&S.t>0) ensureShare();
   const sh=S.share;
   if(!sh) return `<h3>Sharing</h3><p class="hint">This gauntlet gets its own viewer link and admin code as soon as you make your first change.</p>`;
@@ -3354,6 +3444,14 @@ let homeOpen=!VIEW&&(!homeHas()||homeForce||(!homeSeen()&&Date.now()-rlAt>15000)
 if(!homeOpen) homeMark();
 if(homeForce){try{history.replaceState(null,'',location.pathname);}catch(e){}}
 const homeSub=o=>{const n=o.players.length;return o.started?gStatus(o)+(o.gname?' · '+dstr(o.born||o.t||Date.now()):''):n+' players · still being set up';};
+function acctHome(){
+  if(AU){
+    const rows=(homeRemote||[]).map(r=>{const m=r.meta||{};return `<div class="dmr"><div><b>${esc(m.name||('Gauntlet · '+dstr(new Date(r.updated_at).getTime())))}</b><span class="muted">${esc((m.players||'?')+' players · '+(m.started?(m.rounds||0)+' rounds':'still being set up'))}</span></div><span class="dmb"><button type="button" class="btn shine homeopen" data-homeb="recover" data-a="${esc(r.code)}">Open</button></span></div>`;}).join('');
+    return (rows?`<section class="card"><div class="cardhead"><h2 class="chip c-purple">From your account</h2></div><div class="dm">${rows}</div></section>`:'')+`<p class="hby" style="margin:0">Signed in as ${esc(AU.email)} · <button type="button" class="linkb" data-auact="out">Sign out</button></p>`;
+  }
+  if(homeAuOpen) return `<section class="card"><div class="cardhead"><h2 class="chip c-purple">Sign in</h2></div>${acctForm()}</section>`;
+  return `<p class="hby" style="margin:0"><button type="button" class="linkb" data-auact="hopen">Sign in with email to find your gauntlets</button></p>`;
+}
 function homeHtml(){
   const logo=document.querySelector('.brand .logo');
   const has=homeHas();
@@ -3365,7 +3463,7 @@ function homeHtml(){
       <div class="hcode"><input class="inp" id="home-code" maxlength="80" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Enter a code"><button type="button" class="btn shine homeopen" data-homeb="join">Open</button></div>
       <p class="hmsg" id="home-msg" role="status">${esc(homeErr)}</p></section>`;
   return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="132" height="132" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<h1>Game Night <span class="hl">Gauntlet</span></h1><p class="hsub">Family board game championship</p></div>
-    <button type="button" class="btn big primary hnew" data-homeb="new">Start a new gauntlet</button>${mine}${join}<p class="hby">Created by Shawn RCL</p></div>`;
+    <button type="button" class="btn big primary hnew" data-homeb="new">Start a new gauntlet</button>${mine}${acctHome()}${join}<p class="hby">Created by Shawn RCL</p></div>`;
 }
 function homeSync(){
   let el=document.getElementById('home');
@@ -3375,6 +3473,10 @@ function homeSync(){
   if(!el){el=document.createElement('div');el.id='home';el.setAttribute('role','dialog');el.setAttribute('aria-label','Start');document.body.appendChild(el);}
   el.innerHTML=homeHtml();
   try{fxJitter();}catch(e){}
+  if(AU&&homeRemote===null&&!homeFetching){
+    homeFetching=true;
+    auToken().then(tok=>tok?sbRpc('my_gauntlets',{},tok):[]).then(rows=>{homeRemote=(rows||[]).filter(r=>!isLocalCode(r.code));}).catch(()=>{homeRemote=[];}).then(()=>{homeFetching=false;if(homeOpen) homeSync();});
+  }
 }
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-homeb]');if(!b) return;
@@ -3383,6 +3485,13 @@ document.addEventListener('click',async e=>{
   if(k==='open'){ui.gmenu=false;homeOpen=true;homeErr='';render();homeSync();}
   else if(k==='cont'){homeOpen=false;homeMark();homeSync();}
   else if(k==='slot'){act('gopen',[b.dataset.a],null);homeOpen=false;homeMark();render();homeSync();}
+  else if(k==='recover'){
+    fail('Opening…');
+    try{
+      if(await recoverOpen(b.dataset.a)){homeOpen=false;homeMark();render();homeSync();}
+      else fail('Could not open that gauntlet. Try signing in again.');
+    }catch(err){fail('Could not reach the server. Check the connection and try again.');}
+  }
   else if(k==='new'){
     if(S.started){try{act('gnew',[],null);}catch(err){}}
     homeOpen=false;homeMark();ui.view='setup';ui.top=true;ui.gmenu=false;render();homeSync();
@@ -3467,6 +3576,7 @@ render();
 initDb();
 startGh();
 homeSync();
+if(!VIEW&&AU) claimAll();
 if(!VIEW&&S.t>0) sbSchedule();   /* an existing gauntlet gets its codes and live copy as soon as the app opens */
 if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 (function(){
@@ -3481,7 +3591,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792882679';let shown=false,last=0;
+  const B='1792884590';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};

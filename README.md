@@ -279,3 +279,8 @@ flowchart LR
   <b>Created by Shawn RCL</b><br>
   Built with Claude.
 </p>
+
+
+## Optional email sign-in
+
+On the start screen or in Share & backup, you can sign in with your email. We email a one-time code (no password). Your gauntlets are then linked to the account, so after losing a phone or clearing the browser you can sign in and open them again; opening one on a new phone replaces the old phone's admin code. Signing in is optional and games work without it. Only the email address is stored. Database setup lives in `supabase/supabase-update-3.sql`.
