@@ -1,6 +1,6 @@
 {
   "v": 1,
-  "t": 1792878152293,
+  "t": 1792878194030,
   "seq": 118,
   "pseq": 22,
   "tid": null,
@@ -120,7 +120,7 @@
       "weight": 2,
       "mins": 50,
       "luck": 3,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -168,7 +168,7 @@
       "weight": 1,
       "mins": 25,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -180,7 +180,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -192,7 +192,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -204,7 +204,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -216,7 +216,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -228,7 +228,7 @@
       "weight": 1,
       "mins": 15,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -240,7 +240,7 @@
       "weight": 1,
       "mins": 20,
       "luck": 5,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -252,7 +252,7 @@
       "weight": 3,
       "mins": 90,
       "luck": 3,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -264,7 +264,7 @@
       "weight": 2,
       "mins": 25,
       "luck": 1,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -276,7 +276,7 @@
       "weight": 2,
       "mins": 30,
       "luck": 0,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -288,7 +288,7 @@
       "weight": 1,
       "mins": 15,
       "luck": 0,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -300,7 +300,7 @@
       "weight": 3,
       "mins": 90,
       "luck": 4,
-      "on": false
+      "on": true
     },
     {
       "copies": 1,
@@ -312,7 +312,7 @@
       "weight": 2,
       "mins": 45,
       "luck": 3,
-      "on": false
+      "on": true
     },
     {
       "id": "g49",
@@ -324,13 +324,13 @@
       "mins": 45,
       "luck": 4,
       "copies": 1,
-      "on": false,
+      "on": true,
       "custom": true
     }
   ],
   "finalists": 2,
   "headStart": 2,
-  "nightHours": 2,
+  "nightHours": 6,
   "howLong": 3,
   "howManual": false,
   "winnerStays": true,
