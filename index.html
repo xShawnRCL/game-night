@@ -310,7 +310,6 @@ details.add summary{cursor:pointer;font-weight:700}
   #app.enter>*:nth-child(2){animation-delay:.04s}#app.enter>*:nth-child(3){animation-delay:.08s}#app.enter>*:nth-child(4){animation-delay:.12s}#app.enter>*:nth-child(n+5){animation-delay:.16s}
   .pop{animation:popIn .38s cubic-bezier(.3,1.6,.5,1)}
   .road .seg2.pop{animation:popIn .5s cubic-bezier(.3,1.6,.5,1)}
-  .btn.primary:not([disabled]){animation:glowPulse 2.8s ease-in-out infinite}
   .btn:not([disabled]):not(.ghost)::after{content:"";position:absolute;top:-20%;bottom:-20%;left:0;width:70%;background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.28) 30%,rgba(255,255,255,.95) 44%,rgba(255,255,255,.95) 56%,rgba(255,255,255,.28) 70%,transparent 100%);transform:translateX(-150%) skewX(-20deg);pointer-events:none}
   .btn.primary:not([disabled])::after,.btn.shine:not([disabled])::after{animation:glint var(--gd,3.8s) ease-in-out var(--gl,0s) infinite}
   .btn.shine:not(.primary)::after{background:linear-gradient(105deg,transparent 0%,rgba(70,60,50,.05) 30%,rgba(70,60,50,.16) 44%,rgba(70,60,50,.16) 56%,rgba(70,60,50,.05) 70%,transparent 100%)}
@@ -508,7 +507,7 @@ body.slim .gmb{padding:0 12px;width:auto}
 .dmr .dmb{flex:none;align-items:center}
 .dmb .btn:not(.ghost){width:7.6rem;min-height:46px;line-height:1.15;white-space:normal}
 .mbody .seg{display:flex;width:100%}
-.mbody .seg button{flex:1 1 0;min-width:0;padding:8px 4px;font-size:.85rem;white-space:normal;line-height:1.15}
+.mbody .seg button{flex:1 1 0;min-width:0;padding:7px 4px;font-size:.95rem;white-space:normal;line-height:1.15}
 .tip{border-left-width:2px;position:relative;overflow:hidden}
 .tip::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c-yellow)}
 @media (prefers-reduced-motion:no-preference){
@@ -3185,7 +3184,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792877867';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792878060';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3432,7 +3431,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792877867';let shown=false,last=0;
+  const B='1792878060';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
