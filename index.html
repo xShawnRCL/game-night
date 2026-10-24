@@ -222,9 +222,9 @@ details.add summary{cursor:pointer;font-weight:700}
 .sndbtn{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));z-index:6;width:36px;height:36px;border:2px solid var(--line);border-radius:50%;background:var(--surface);color:var(--muted);opacity:.5;display:grid;place-items:center;padding:0;cursor:pointer}.sndbtn:hover,.sndbtn:focus-visible{opacity:1}
 .sndbtn:active{transform:scale(.92)}
 
-.statcard{isolation:isolate;transform:translateZ(0);-webkit-tap-highlight-color:transparent;outline:none;cursor:pointer;touch-action:pan-y;gap:10px;background:var(--surface);position:relative;overflow:hidden;margin-bottom:6px}
+.statcard{isolation:isolate;-webkit-tap-highlight-color:transparent;outline:none;cursor:pointer;touch-action:pan-y;gap:10px;background:var(--surface);position:relative;overflow:hidden;margin-bottom:6px}
 .statcard .shead2{display:flex;align-items:center;justify-content:space-between}
-.statcard .sdots{display:flex;gap:5px}.statcard .sdots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.statcard .sdots i.on{background:var(--edge);transform:scale(1.25)}
+.statcard .sdots{display:flex;gap:4px;align-items:center}.statcard .sdots i{position:relative;width:9px;height:9px;flex:none}.statcard .sdots i::after{content:"";position:absolute;inset:1px;border-radius:50%;background:var(--line)}.statcard .sdots i.on::after{inset:0;background:var(--edge)}
 .statcard .sbody{display:flex;align-items:center;gap:14px}
 .statcard .sico{flex:0 0 auto}.statcard .stxt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.statcard .hofl{font:700 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .statcard .slbl{font:700 .78rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -3234,7 +3234,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882088';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792882270';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3482,7 +3482,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792882088';let shown=false,last=0;
+  const B='1792882270';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
