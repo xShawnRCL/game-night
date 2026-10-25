@@ -1,0 +1,19 @@
+# Keeps the free Supabase project awake. Supabase pauses free projects after about a week with no activity.
+# This sends one harmless read request every three days (it asks for a gauntlet code that does not exist).
+name: Keep Supabase awake
+on:
+  schedule:
+    - cron: "17 9 */3 * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the database
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://pplbuawbbyvibmorcipi.supabase.co/rest/v1/rpc/get_gauntlet" \
+            -H "apikey: sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf" \
+            -H "Content-Type: application/json" \
+            -d '{"p_code":"KEEPAL"}')
+          echo "Supabase answered $code"
+          test "$code" = "200"

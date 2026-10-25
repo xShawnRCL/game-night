@@ -284,3 +284,14 @@ flowchart LR
 ## Optional email sign-in
 
 On the start screen or in Share & backup, you can sign in with your email. We email a one-time code (no password). Your gauntlets are then linked to the account, so after losing a phone or clearing the browser you can sign in and open them again; opening one on a new phone replaces the old phone's admin code. Signing in is optional and games work without it. Only the email address is stored. Database setup lives in `supabase/supabase-update-3.sql`.
+
+
+## Running costs and limits
+
+The app runs on free tiers (GitHub Pages and Supabase). The things that matter:
+
+- **Stays awake:** Supabase pauses free projects after about a week of no activity. `.github/workflows/keepalive.yml` pings the database every three days to prevent that.
+- **Storage:** the free database holds 500 MB. A typical gauntlet is only a few kilobytes, so that is many thousands of gauntlets. New gauntlets stop being accepted at 350 MB so the database never fills.
+- **Spam guard:** one connection can create at most 30 new live gauntlets per hour (`supabase/supabase-update-4.sql`). Editing an existing gauntlet is never limited.
+- **Live viewers:** about 200 phones can be connected at the same moment on the free plan.
+- **Privacy:** see [privacy.html](privacy.html). Signed-in users can delete their account and all linked gauntlets from Share & backup.
