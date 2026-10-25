@@ -521,6 +521,8 @@ body.slim .gmb{padding:0 12px;width:auto}
   @keyframes segFade{0%{opacity:1}15%{opacity:.3}65%{opacity:.3}100%{opacity:1}}
   .road .seg2.pop{animation:popIn .5s cubic-bezier(.3,1.6,.5,1),segFade 1s ease-in-out}
 }
+.tipl{text-align:center;margin:14px 0 2px;font-size:.88rem;color:var(--muted)}
+.tipl a{color:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px}
 
 /* GitHub Pages build */
 body.view [data-act]{pointer-events:none}
@@ -2098,7 +2100,7 @@ function viewFinale(){
       <div class="card" id="trophy-card"><div class="cardhead"><h2 class="chip c-yellow">Keepsake trophy</h2><span class="muted">Tap the picture or Share</span></div>
         <div class="twrap"><img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}. Tap to save to Photos." data-act="photo" role="button" tabindex="0" style="cursor:pointer" hidden><div class="tglint" hidden></div></div>
         <div class="rfoot"><button type="button" class="btn primary" data-act="share">Share trophy</button></div><p class="hint">Sends the trophy as a picture sized for a phone. Choose a chat or app, or Save Image to keep it in Photos.</p>
-        <p class="muted" id="dl-msg">Tap the picture to save it to Photos. If that is not offered here, press and hold it instead.</p></div>
+        <p class="muted" id="dl-msg">Tap the picture to save it to Photos. If that is not offered here, press and hold it instead.</p><p class="tipl">Enjoyed the night? <a href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Tip the maker</a></p></div>
       <div class="card"${VIEW?' hidden':''}><h3>Done with this gauntlet?</h3><p class="muted">Saves it to History with its trophy and clears the rounds. Players stay, and the game list goes back to the original staples.</p><p><button type="button" class="btn" data-act="newt">Start a new gauntlet</button></p></div>`+out;
   }
   if(S.finale.length){
@@ -3236,7 +3238,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792884590';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792888995';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3387,7 +3389,7 @@ document.addEventListener('click',async e=>{
     else say('Could not send the email. Check the address and your connection.');
   }
 });
-function sbCard(){return acctCard()+sbCardBase();}
+function sbCard(){return acctCard()+sbCardBase()+`<p class="tipl">Like the app? <a href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Tip the maker</a></p>`;}
 function sbCardBase(){
   if(!S.share&&S.t>0) ensureShare();
   const sh=S.share;
@@ -3463,7 +3465,7 @@ function homeHtml(){
       <div class="hcode"><input class="inp" id="home-code" maxlength="80" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="CODE" aria-label="Enter a code"><button type="button" class="btn shine homeopen" data-homeb="join">Open</button></div>
       <p class="hmsg" id="home-msg" role="status">${esc(homeErr)}</p></section>`;
   return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="132" height="132" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<h1>Game Night <span class="hl">Gauntlet</span></h1><p class="hsub">Family board game championship</p></div>
-    <button type="button" class="btn big primary hnew" data-homeb="new">Start a new gauntlet</button>${mine}${acctHome()}${join}<p class="hby">Created by Shawn RCL</p></div>`;
+    <button type="button" class="btn big primary hnew" data-homeb="new">Start a new gauntlet</button>${mine}${acctHome()}${join}<p class="hby">Created by Shawn RCL · <a class="linkb" href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Tip the maker</a></p></div>`;
 }
 function homeSync(){
   let el=document.getElementById('home');
@@ -3591,7 +3593,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792884590';let shown=false,last=0;
+  const B='1792888995';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
