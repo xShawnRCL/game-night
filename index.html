@@ -2596,6 +2596,7 @@ document.addEventListener('pointerdown',ev=>{
   const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,s=document.createElement('span');
   s.className='fxr';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(ev.clientX-r.left-d/2)+'px;top:'+(ev.clientY-r.top-d/2)+'px';
   b.appendChild(s);setTimeout(()=>s.remove(),600);
+  if(b.classList.contains('pl')&&b.dataset.a) ui.rip={a:b.dataset.a,l:ev.clientX-r.left-d/2,t:ev.clientY-r.top-d/2,d:d,at:performance.now()};
 },{passive:true});
 document.addEventListener('click',ev=>{const c=ev.target.closest&&ev.target.closest('.champ');if(c&&!ev.target.closest('.qbtn')) fxConfetti();});
 
@@ -2767,6 +2768,8 @@ function fxAfterRender(){
   const viewChanged=ui.fxView!==undefined&&ui.fxView!==ui.view;
   if(viewChanged&&!fxReduced()){app.classList.remove('enter');void app.offsetWidth;app.classList.add('enter');setTimeout(()=>app.classList.remove('enter'),700);}
   ui.fxView=ui.view;
+  if(ui.rip){const q=ui.rip;ui.rip=null;const el=Date.now&&performance.now()-q.at<500?[...document.querySelectorAll('button.pl')].find(x=>x.dataset.a===q.a):null;
+    if(el&&!fxReduced()){const sp=document.createElement('span'),el0=Math.round(performance.now()-q.at);sp.className='fxr';sp.style.cssText='width:'+q.d+'px;height:'+q.d+'px;left:'+q.l+'px;top:'+q.t+'px;animation-delay:-'+el0+'ms';el.appendChild(sp);setTimeout(()=>sp.remove(),Math.max(60,600-el0));}}
   if(ui.pop){const el=document.querySelector(ui.pop);ui.pop=null;if(el){el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}}
   const ph=S.started?phaseOf(S):'setup';
   const winning=ui.fxPhase!==undefined&&ui.fxPhase!=='champion'&&ph==='champion';
@@ -3365,7 +3368,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954901';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954998';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3743,7 +3746,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792954901';let shown=false,last=0;
+  const B='1792954998';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
