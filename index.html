@@ -326,7 +326,7 @@ details.add summary{cursor:pointer;font-weight:700}
 @keyframes wob{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
 @keyframes glowPulse{0%,100%{box-shadow:0 3px 0 var(--shadow),0 0 0 0 rgba(255,216,77,.0)}50%{box-shadow:0 3px 0 var(--shadow),0 0 0 6px rgba(255,216,77,.35)}}
 .fxc{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:999}
-.btn,.tab,.pl{position:relative;overflow:hidden}
+.btn,.tab,.pl,.seg button,.rh,.opt,.swc,.rchip,.sugit,.catit,.pbtn,.sndbtn,.qbtn{position:relative;overflow:hidden}
 .fxr{position:absolute;border-radius:50%;background:currentColor;pointer-events:none;animation:rip .55s ease-out forwards}
 @media (prefers-reduced-motion:no-preference){
   #app.enter>*{animation:vIn .28s ease-out both}
@@ -2590,13 +2590,14 @@ function fxSparkle(el){
   if(!el||fxReduced()) return;const r=el.getBoundingClientRect();
   fxBurst(fxMake(r.left+r.width/2,r.top+r.height/2,28,{angle:-Math.PI/2,spread:6.28,speed:6,size:10,shapes:['star','star','dot'],g:.16,life:70}),1800);
 }
+const RIPSEL='.btn:not([disabled]),.tab,.pl,.seg button:not([disabled]),.rh,.opt,.swc,.rchip,.sugit,.catit,.pbtn,.sndbtn,.qbtn';
 document.addEventListener('pointerdown',ev=>{
   if(fxReduced()) return;
-  const b=ev.target.closest&&ev.target.closest('.btn:not([disabled]),.tab,.pl');if(!b) return;
+  const b=ev.target.closest&&ev.target.closest(RIPSEL);if(!b) return;
   const r=b.getBoundingClientRect(),d=Math.max(r.width,r.height)*2.2,s=document.createElement('span');
   s.className='fxr';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(ev.clientX-r.left-d/2)+'px;top:'+(ev.clientY-r.top-d/2)+'px';
   b.appendChild(s);setTimeout(()=>s.remove(),600);
-  if(b.classList.contains('pl')&&b.dataset.a) ui.rip={a:b.dataset.a,l:ev.clientX-r.left-d/2,t:ev.clientY-r.top-d/2,d:d,at:performance.now()};
+  if(b.dataset.act) ui.rip={k:b.dataset.act+'\u0001'+(b.dataset.a||''),l:ev.clientX-r.left-d/2,t:ev.clientY-r.top-d/2,d:d,at:performance.now()};
 },{passive:true});
 document.addEventListener('click',ev=>{const c=ev.target.closest&&ev.target.closest('.champ');if(c&&!ev.target.closest('.qbtn')) fxConfetti();});
 
@@ -2768,7 +2769,7 @@ function fxAfterRender(){
   const viewChanged=ui.fxView!==undefined&&ui.fxView!==ui.view;
   if(viewChanged&&!fxReduced()){app.classList.remove('enter');void app.offsetWidth;app.classList.add('enter');setTimeout(()=>app.classList.remove('enter'),700);}
   ui.fxView=ui.view;
-  if(ui.rip){const q=ui.rip;ui.rip=null;const el=Date.now&&performance.now()-q.at<500?[...document.querySelectorAll('button.pl')].find(x=>x.dataset.a===q.a):null;
+  if(ui.rip){const q=ui.rip;ui.rip=null;const el=Date.now&&performance.now()-q.at<500?[...document.querySelectorAll('[data-act]')].find(x=>x.matches(RIPSEL)&&(x.dataset.act+'\u0001'+(x.dataset.a||''))===q.k):null;
     if(el&&!fxReduced()){const sp=document.createElement('span'),el0=Math.round(performance.now()-q.at);sp.className='fxr';sp.style.cssText='width:'+q.d+'px;height:'+q.d+'px;left:'+q.l+'px;top:'+q.t+'px;animation-delay:-'+el0+'ms';el.appendChild(sp);setTimeout(()=>sp.remove(),Math.max(60,600-el0));}}
   if(ui.pop){const el=document.querySelector(ui.pop);ui.pop=null;if(el){el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}}
   const ph=S.started?phaseOf(S):'setup';
@@ -3368,7 +3369,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954998';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792955225';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3746,7 +3747,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792954998';let shown=false,last=0;
+  const B='1792955225';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
