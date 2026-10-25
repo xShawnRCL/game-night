@@ -2561,8 +2561,50 @@ function fxNoise(a,t,dur,vol,hp){
   const s=a.createBufferSource();s.buffer=b;const f=a.createBiquadFilter();f.type='highpass';f.frequency.value=hp||2000;const g=a.createGain();g.gain.value=vol;
   s.connect(f).connect(g).connect(a.destination);s.start(t);
 }
+/* Sounds as real audio clips: each synthesized sound is rendered once to a small WAV and played through ordinary audio elements.
+   Browsers treat that as media playback (it ignores the iPhone silent switch and survives Home Screen mode). If anything fails, the live synth below still plays. */
+const SND_LEN={tap:.3,pop:.4,chime:1.1,beep:.4,go:1.2,fanfare:5.2};
+const SND={urls:{},els:[],ok:false,n:0,started:false};
+function sndWav(buf){
+  const d=buf.getChannelData(0),n=d.length,sr=buf.sampleRate,u=new DataView(new ArrayBuffer(44+n*2));
+  const w=(o,t)=>{for(let i=0;i<t.length;i++)u.setUint8(o+i,t.charCodeAt(i));};
+  w(0,'RIFF');u.setUint32(4,36+n*2,true);w(8,'WAVEfmt ');u.setUint32(16,16,true);u.setUint16(20,1,true);u.setUint16(22,1,true);u.setUint32(24,sr,true);u.setUint32(28,sr*2,true);u.setUint16(32,2,true);u.setUint16(34,16,true);w(36,'data');u.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const v=Math.max(-1,Math.min(1,d[i]));u.setInt16(44+i*2,v<0?v*0x8000:v*0x7fff,true);}
+  return URL.createObjectURL(new Blob([u.buffer],{type:'audio/wav'}));
+}
+async function sndRender(kind){
+  const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OAC) return null;
+  const sr=44100,len=Math.ceil(sr*SND_LEN[kind]),o=new OAC(1,len,sr);
+  fxPlay(o,kind);
+  const buf=await new Promise((res,rej)=>{try{o.oncomplete=e=>res(e.renderedBuffer);const p=o.startRendering();if(p&&p.then)p.then(res,rej);}catch(e){rej(e);}});
+  return sndWav(buf);
+}
+/* Called from a real tap or click: unlock a few audio players, then render the clips in the background. */
+function sndPrepare(){
+  if(SND.started) return;SND.started=true;
+  try{
+    const quiet=new Audio();quiet.src=sndWav({getChannelData:()=>new Float32Array(2205),sampleRate:44100});
+    for(let i=0;i<3;i++){const el=new Audio();el.preload='auto';el.src=quiet.src;el.muted=true;const p=el.play();if(p&&p.then)p.then(()=>{el.pause();el.muted=false;}).catch(()=>{el.muted=false;});SND.els.push(el);}
+  }catch(e){SND.started=false;return;}
+  (async()=>{try{for(const k of Object.keys(SND_LEN)) SND.urls[k]=await sndRender(k);SND.ok=Object.values(SND.urls).every(Boolean);}catch(e){SND.ok=false;}})();
+}
+['touchend','pointerup','click','keydown'].forEach(ev=>document.addEventListener(ev,sndPrepare,{passive:true,capture:true}));
+function sndClip(kind){
+  if(!SND.ok||!SND.urls[kind]) return false;
+  try{
+    const el=SND.els[SND.n++%SND.els.length];el.muted=false;el.pause();el.src=SND.urls[kind];el.currentTime=0;
+    const p=el.play();if(p&&p.catch)p.catch(()=>{SND.ok=false;fxPlayLive(kind);});
+    return true;
+  }catch(e){return false;}
+}
+function fxPlayLive(kind){
+  const a=fxCtx();if(!a) return;
+  if(a.state!=='running'){a.resume().then(()=>{if(a.state==='running') fxPlay(a,kind);}).catch(()=>{});return;}
+  fxPlay(a,kind);
+}
 function fxSound(kind){
   if(!sndOn()) return;
+  if(sndClip(kind)) return;
   const a=fxCtx();if(!a) return;
   if(a.state!=='running'){a.resume().then(()=>{if(a.state==='running') fxPlay(a,kind);}).catch(()=>{});return;}
   fxPlay(a,kind);
@@ -3243,7 +3285,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792890948';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792891180';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3598,7 +3640,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792890948';let shown=false,last=0;
+  const B='1792891180';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
