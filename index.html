@@ -167,6 +167,11 @@ details.add summary{cursor:pointer;font-weight:700}
 .rt small.done{color:var(--good);font-weight:700;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chev{flex:none;width:9px;height:9px;border-right:3px solid var(--edge);border-bottom:3px solid var(--edge);transform:rotate(45deg);margin:0 4px 3px 2px}
 .round.open .chev{transform:rotate(-135deg);margin-bottom:-3px}
+.rbw{display:grid;grid-template-rows:0fr;visibility:hidden;transition:grid-template-rows .3s ease,visibility 0s .3s}
+.round.open .rbw{grid-template-rows:1fr;visibility:visible;transition:grid-template-rows .3s ease,visibility 0s}
+.rbi{overflow:hidden;min-height:0}
+.chev{transition:transform .3s ease,margin .3s ease}
+@media (prefers-reduced-motion:reduce){.rbw,.round.open .rbw,.chev{transition:none}}
 .rb{padding:0 14px 16px;display:flex;flex-direction:column;gap:14px}
 .tb{display:flex;flex-direction:column;border:2px solid var(--edge);border-radius:12px;background:var(--raise);overflow:hidden}
 .tbh{padding:6px 12px;background:var(--c-blue);color:var(--on-bright);font-size:.78rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-bottom:2px solid var(--edge)}
@@ -2028,12 +2033,13 @@ function viewRounds(){
     if(done){const w=[];r.tables.forEach(t=>t.ids.forEach(id=>{if(t.places[id]===1)w.push(pname(id));}));sub=`<small class="done">Won by ${esc(w.join(' · '))}</small>`;}
     else sub=`<small>${tdone?tdone+' of '+r.tables.length+' scored':(i===cur?'In play':'Up next')} · about ${hm(mins[i])}</small>`;
     let body='';
-    if(open){
+    {
       const k=r.tables.length, copies=copiesOf(g);
       body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,t.ids.length>g.max?'Winner stays':(g.min===2&&g.max===2?'Match '+(ti+1):(k>1?'Table '+(ti+1):'')))).join('')}
         ${r.tables.some(t=>t.ids.length>g.max)?`<p class="bye">Winner stays: two players start. The winner stays on and plays whoever sat out, and so on. First to 2 wins is 1st. The other two rank by wins, and level wins share the place.</p>`:''}
         ${r.byes.length?`<p class="bye">Sitting out: ${esc(r.byes.map(pname).join(', '))}. ${done?'Each gets +'+fmt(5*g.weight)+', half marks, the same as an average result.':'They get half marks when the round finishes, the same as an average result.'}</p>`:''}
         </div>`;
+      body=`<div class="rbw"><div class="rbi">${body}</div></div>`;
     }
     const nh=nightAt[i]?`<div class="night"><h3 class="chip c-purple">Night ${nightAt[i].k+1}</h3><span class="muted">${nightAt[i].nt.count} round${nightAt[i].nt.count>1?'s':''}, about ${hm(nightAt[i].nt.mins)}</span></div>`:'';
     return `${nh}<article class="round${open?' open':''}${i===cur?' cur':''}" id="rd-${r.id}"><button type="button" class="rh" data-act="open" data-a="${r.id}" aria-expanded="${open}">
@@ -3054,7 +3060,7 @@ function act(name,a,el){
       ui.view='rounds';ui.scrollEl='rd-'+rd.id;ui.open[rd.id]=true;
       break;}
     case 'tab':ui.view=a[0];ui.gmenu=false;ui.touched=true;ui.top=true;break;
-    case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;break;}
+    case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;const art=el&&el.closest&&el.closest('.round');if(art){art.classList.toggle('open',!now);el.setAttribute('aria-expanded',String(!now));return false;}break;}
     case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});syncCount();touch();}break;
     case 'look':ui.lookFor=ui.lookFor===a[0]?null:a[0];break;
     case 'lookc':case 'lookh':case 'looki':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
@@ -3342,7 +3348,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954176';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954244';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3720,7 +3726,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792954176';let shown=false,last=0;
+  const B='1792954244';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
