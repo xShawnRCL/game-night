@@ -1840,8 +1840,9 @@ function viewSetup(){
       <div class="cp" role="group" aria-label="Copies we own of ${esc(g.name)}"><span class="mono">copies we own</span><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|-1" aria-label="Fewer copies"${copiesOf(g)<=1?' disabled':''}>−</button><b class="mono">${copiesOf(g)}</b><button type="button" class="btn sm" data-act="gcopy" data-a="${g.id}|1" aria-label="More copies"${copiesOf(g)>=6?' disabled':''}>+</button></div>
       <div class="mv">${locked?'':`<button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|-1" aria-label="Move ${esc(g.name)} up"${i===0?' disabled':''}>↑</button><button type="button" class="btn sm ghost" data-act="gmove" data-a="${g.id}|1" aria-label="Move ${esc(g.name)} down"${i===S.games.length-1?' disabled':''}>↓</button><button type="button" class="btn sm ghost" data-act="gdel" data-a="${g.id}" aria-label="Delete ${esc(g.name)}">Delete</button>`}</div></div></div>`:'';
     const rp=repsOf(g), canUp=!d.ok?false:(rp<REP_MAX&&totalR<ROUNDS_MAX);
-    const ctl=locked?'':`<div class="repc" role="group" aria-label="Rounds of ${esc(g.name)}"><button type="button" class="btn sm" data-act="greps" data-a="${g.id}|-1" aria-label="Fewer rounds of ${esc(g.name)}"${rp<1?' disabled':''}>−</button><b class="mono" aria-live="polite">${rp}</b><button type="button" class="btn sm" data-act="greps" data-a="${g.id}|1" aria-label="More rounds of ${esc(g.name)}"${canUp?'':' disabled'}>+</button></div>`;
-    return `<li class="game cg${locked?'':' cr'}${g.on?'':' off'}">${locked?`<label class="gname"><input type="checkbox" data-act="gtoggle" data-a="${g.id}"${g.on?' checked':''} disabled><span>${esc(g.name)}</span></label>`:`<span class="gname"><span>${esc(g.name)}</span></span>`}${ctl}
+    const played=S.rounds.filter(r=>r.gameId===g.id).length;
+    const ctl=locked?`<div class="repc"><b class="mono" aria-label="${played} played">${played}</b><span class="mono muted" style="font-size:.78rem">played</span></div>`:`<div class="repc" role="group" aria-label="Rounds of ${esc(g.name)}"><button type="button" class="btn sm" data-act="greps" data-a="${g.id}|-1" aria-label="Fewer rounds of ${esc(g.name)}"${rp<1?' disabled':''}>−</button><b class="mono" aria-live="polite">${rp}</b><button type="button" class="btn sm" data-act="greps" data-a="${g.id}|1" aria-label="More rounds of ${esc(g.name)}"${canUp?'':' disabled'}>+</button></div>`;
+    return `<li class="game cg cr${(g.on||(locked&&played))?'':' off'}"><span class="gname"><span>${esc(g.name)}</span></span>${ctl}
       <span class="gsum mono">${sum}${d.ok?'':' · needs more players'}</span><button type="button" class="btn sm ghost" data-act="gedit" data-a="${g.id}" aria-expanded="${open}">${open?'Close':'Edit'}</button>${more}</li>`;
   }).join('');
   const addForm=locked?'':`<details class="add"><summary>Add a game</summary>
@@ -1873,9 +1874,14 @@ function viewSetup(){
   const longNight=nights.some(x=>x.mins>300), ph=S.pickHours!=null?S.pickHours:(S.howLong||2)*(S.nightHours||3);
   let top, startCard='';
   if(locked){
-    top=`<section class="card"><h2>Gauntlet in progress</h2><p class="muted">${esc(gStatus(S))}. Players and the game list are locked. Worth, copies we own and game night length can still change. Add a round from the Rounds tab.</p>
-      ${nh}</section>
-      <details class="card sbox" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Players</h2><span class="muted mono" style="margin-left:auto">${n}</span></summary><ul class="plist">${players}</ul><p class="muted">Players are locked during a gauntlet.</p></details>`;
+    const pl=S.games.filter(g=>S.rounds.some(r=>r.gameId===g.id)).map(g=>{const c=S.rounds.filter(r=>r.gameId===g.id).length;return g.name+(c>1?' ×'+c:'');});
+    top=`<details class="card sbox wsum" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Who's playing?</h2><span class="muted mono" style="margin-left:auto">${n} players</span><div class="pk">${S.players.map(p=>`<span>${esc(p.name)}</span>`).join('')}</div></summary>
+      <ul class="plist" style="margin-top:12px">${players}</ul>
+      <p class="hint" style="margin-top:8px">Tap a meeple to pick a colour and a hat. Names are locked once the gauntlet starts.</p></details>
+    <details class="card sbox wsum" data-ui="roundsOpen"${ui.roundsOpen?' open':''}><summary><h2 class="chip c-green">Rounds</h2><span class="muted mono" style="margin-left:auto">${S.rounds.length} played</span><div class="pk">${pl.length?pl.map(x=>`<span>${esc(x)}</span>`).join(''):'<span>No rounds yet</span>'}</div></summary>
+      <p class="muted">The lineup is locked. These are the rounds played so far. Add more rounds from the Rounds tab. Tap Edit on a game to change its worth or copies we own.</p>
+      <ul class="glist">${games}</ul></details>`;
+    startCard=`<section class="card"><h2>Gauntlet in progress</h2><p class="muted">${esc(gStatus(S))}. Worth, copies we own and game night length can still change.</p>${nh}</section>`;
   }else{
     const roundsSum=valid+' round'+(valid===1?'':'s')+' · about '+hm(total)+' · '+nights.length+' night'+(nights.length===1?'':'s');
     top=`<details class="card sbox wsum" data-ui="playersOpen"${ui.playersOpen===false?'':' open'}><summary><h2 class="chip c-blue">Who's playing?</h2><span class="muted mono" style="margin-left:auto">${n} players</span><div class="pk">${S.players.map(p=>`<span>${esc(p.name)}</span>`).join('')}</div></summary>
@@ -1896,15 +1902,14 @@ function viewSetup(){
       ${totalR>=ROUNDS_MAX?`<p class="muted" style="margin-top:8px">That is the most rounds a gauntlet can have (${ROUNDS_MAX}).</p>`:''}</details>`;
     startCard=`<section class="card"><div class="plan"><div><strong class="mono">${valid} round${valid===1?'':'s'}</strong><p class="muted">About ${hm(total)} of play, ${nights.length} night${nights.length===1?'':'s'} of ${hrs} hour${hrs===1?'':'s'}.${starsE?' Rating: <span class="stars" aria-label="'+starsE+'-star gauntlet">'+'★'.repeat(starsE)+'</span>':''}</p></div><button type="button" class="btn primary big" data-act="build"${valid&&!issue?'':' disabled'}>Start gauntlet</button></div>${issue?`<p class="muted" role="status">${esc(issue)}</p>`:''}${longNight?`<p class="muted">A night over 5 hours is a long one. Lower the hours per game night to spread it out.</p>`:''}</section>`;
   }
-  const more=`<details class="card sbox wsum" data-ui="moreOpen"${ui.moreOpen?' open':''}><summary><h2 class="chip c-coral">${locked?'More settings':'Final and rules'}</h2><span class="muted mono" style="margin-left:auto">${S.finalists===1?'No final':'Top '+S.finalists}</span>${locked?'':`<div class="pk"><span>${S.finalists===1?'No final game':'Final: top '+S.finalists}</span><span>${(HS_OPTS.find(o=>o[0]===(S.headStart===1?0.5:(S.headStart||0)))||[0,'Final only'])[1]}</span><span>${ord==='smart'?'Mixed order':ord==='weight'?'Big games last':'List order'}</span></div>`}</summary><div class="mbody">
+  const more=`<details class="card sbox wsum" data-ui="moreOpen"${ui.moreOpen?' open':''}><summary><h2 class="chip c-coral">Final and rules</h2><span class="muted mono" style="margin-left:auto">${S.finalists===1?'No final':'Top '+S.finalists}</span>${`<div class="pk"><span>${S.finalists===1?'No final game':'Final: top '+S.finalists}</span><span>${(HS_OPTS.find(o=>o[0]===(S.headStart===1?0.5:(S.headStart||0)))||[0,'Final only'])[1]}</span><span>${ord==='smart'?'Mixed order':ord==='weight'?'Big games last':'List order'}</span></div>`}</summary><div class="mbody">
     <h3>Players in the final</h3>
     <div class="seg" role="group" aria-label="Players in the final">${fopts.join('')}</div>
     ${S.finalists===1?`<ul class="bul"><li>No final game.</li><li>Points leader after the last round wins.</li><li>A tie for first gets a tiebreaker.</li></ul>`:`<ul class="bul"><li>Top ${S.finalists} play one final game.</li><li>A tie at the cut gets a tiebreaker game.</li></ul>
     <div class="qh"><h3>Final scoring</h3>${qbtn('final')}</div>${qnote('final')}<div class="seg" role="group" aria-label="Final scoring">${hsb}</div>
     <ul class="bul">${hsBullets(S.finalists,S.headStart||0).map(t=>`<li>${esc(t)}</li>`).join('')}</ul>`}
     ${rules}
-    ${locked?`<div class="qh"><h3>Games</h3>${qbtn('worth')}</div>${qnote('worth')}<p class="muted">Worth ×1, ×2 or ×3: bigger games count more. Tap Edit on a game for copies we own and order.</p>
-    <ul class="glist">${games}</ul>`:''}</div></details>`;
+</div></details>`;
   return top+startCard+more;
 }
 /* The original Setup screen, kept so it can be put back: change viewSetup to viewSetupV1 in render() (and gauntletsCard/Start over come back with it). */
@@ -3238,7 +3243,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792888995';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792889879';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3593,7 +3598,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792888995';let shown=false,last=0;
+  const B='1792889879';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
