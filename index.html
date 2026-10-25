@@ -165,7 +165,9 @@ details.add summary{cursor:pointer;font-weight:700}
 .pn{min-width:0;display:flex;flex-direction:column}
 .nm{font-weight:700;overflow-wrap:anywhere;line-height:1.25}
 .pp{font-size:.8rem;color:var(--good);font-weight:700;padding-left:22px}
-.chips{display:flex;gap:3px;flex:none}
+.chips{display:flex;gap:2px;flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;min-width:0}
+.chips .pl{width:24px;height:24px;border-width:1.5px;border-radius:7px;font-size:.72rem}
+.pr{padding-block:7px}
 .pr.stk{flex-direction:column;align-items:stretch;gap:6px}
 .pr.stk .chips{display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:4px;width:100%}
 .pr.stk .chips .pl{width:auto;height:38px}
@@ -1748,8 +1750,8 @@ function chips(kind,eid,ti,t,pid){
 }
 function tableBlock(kind,eid,ti,t,w,label,subs){
   const pts=(w&&kind!=='r')?tablePoints(t.ids,t.places):null;   /* the Rounds tab shows placings only; points live in Standings */
-  const nn=t.ids.length, stack=nn>=6, cols=nn<=8?nn:Math.ceil(nn/2);
-  const rows=t.ids.map(pid=>`<div class="pr${stack?' stk':''}"><div class="pn"><span class="nm">${pdot(pid)}${esc(pname(pid))}</span>${pts?`<span class="pp mono">+${fmt(pts[pid]*w)}</span>`:(subs&&subs[pid]?`<span class="pp mono">${esc(subs[pid])}</span>`:'')}</div><div class="chips"${stack?` style="--cols:${cols}"`:''}>${chips(kind,eid,ti,t,pid)}</div></div>`).join('');
+  const nn=t.ids.length, stack=false, cols=nn<=8?nn:Math.ceil(nn/2);
+  const rows=t.ids.map(pid=>`<div class="pr${stack?' stk':''}"><div class="pn"><span class="nm">${pdot(pid)}${esc(pname(pid))}</span>${pts?`<span class="pp mono">+${fmt(pts[pid]*w)}</span>`:(subs&&subs[pid]?`<span class="pp mono">${esc(subs[pid])}</span>`:'')}</div><div class="chips"${nn>7?` style="max-width:${Math.ceil(nn/2)*26-2}px"`:''}>${chips(kind,eid,ti,t,pid)}</div></div>`).join('');
   return `<div class="tb">${label?`<div class="tbh">${label}</div>`:''}${rows}</div>`;
 }
 function hasPlaces(e){return Object.keys(e.places).length>0;}
@@ -3290,7 +3292,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792891795';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792951537';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3653,7 +3655,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792891795';let shown=false,last=0;
+  const B='1792951537';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
