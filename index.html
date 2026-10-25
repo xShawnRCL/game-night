@@ -2033,7 +2033,7 @@ function viewRounds(){
       body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,t.ids.length>g.max?'Winner stays':(g.min===2&&g.max===2?'Match '+(ti+1):(k>1?'Table '+(ti+1):'')))).join('')}
         ${r.tables.some(t=>t.ids.length>g.max)?`<p class="bye">Winner stays: two players start. The winner stays on and plays whoever sat out, and so on. First to 2 wins is 1st. The other two rank by wins, and level wins share the place.</p>`:''}
         ${r.byes.length?`<p class="bye">Sitting out: ${esc(r.byes.map(pname).join(', '))}. ${done?'Each gets +'+fmt(5*g.weight)+', half marks, the same as an average result.':'They get half marks when the round finishes, the same as an average result.'}</p>`:''}
-        ${!S.finale.length&&!r.tables.some(hasPlaces)?`<div class="rfoot">${(r.tables.length>1||r.byes.length)?`<button type="button" class="btn sm" data-act="redraw" data-a="${r.id}">Reshuffle seats</button>`:''}</div>`:''}</div>`;
+        ${(r.tables.length>1||r.byes.length)?`<div class="rfoot"><button type="button" class="btn sm" data-act="redraw" data-a="${r.id}"${(S.finale.length||r.tables.some(hasPlaces))?' disabled':''}>Reshuffle seats</button></div>`:''}</div>`;
     }
     const nh=nightAt[i]?`<div class="night"><h3 class="chip c-purple">Night ${nightAt[i].k+1}</h3><span class="muted">${nightAt[i].nt.count} round${nightAt[i].nt.count>1?'s':''}, about ${hm(nightAt[i].nt.mins)}</span></div>`:'';
     return `${nh}<article class="round${open?' open':''}${i===cur?' cur':''}" id="rd-${r.id}"><button type="button" class="rh" data-act="open" data-a="${r.id}" aria-expanded="${open}">
@@ -3342,7 +3342,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792953525';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792953807';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3720,7 +3720,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792953525';let shown=false,last=0;
+  const B='1792953807';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
