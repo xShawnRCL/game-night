@@ -43,7 +43,7 @@
   --f-body:'DM Sans','Segoe UI',system-ui,sans-serif;
   --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--ink);font:400 15px/1.5 var(--f-body);padding-inline:16px;padding-block:20px 64px;-webkit-text-size-adjust:100%}
 html,body{touch-action:pan-x pan-y;overscroll-behavior-x:none}
 input,select,textarea{font-size:16px!important}
@@ -2999,6 +2999,20 @@ function stickCheck(){
   st.classList.toggle('stuck',on);
 }
 (function(){let q=0;addEventListener('scroll',()=>{if(!q)q=requestAnimationFrame(()=>{q=0;stickCheck();});},{passive:true});let lw=innerWidth;addEventListener('resize',()=>{if(innerWidth!==lw){lw=innerWidth;stickMeasure();}stickCheck();});})();
+document.addEventListener('click',e=>{
+  const sm=e.target.closest&&e.target.closest('details>summary');if(!sm||e.target.closest('button,a,input,select,label')) return;
+  const d=sm.parentElement;if(!d.animate||(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+  e.preventDefault();
+  if(d._an){d._an.cancel();d._an=null;}
+  const h0=d.getBoundingClientRect().height;
+  const opening=!d.open;
+  if(opening) d.open=true;
+  let h1;if(opening) h1=d.getBoundingClientRect().height;else{d.open=false;h1=d.getBoundingClientRect().height;d.open=true;}
+  d.style.overflow='hidden';
+  const an=d._an=d.animate([{height:h0+'px'},{height:h1+'px'}],{duration:280,easing:'ease'});
+  const done=()=>{if(d._an!==an) return;d._an=null;if(!opening) d.open=false;d.style.overflow='';};
+  an.onfinish=done;an.oncancel=()=>{if(d._an===an){d._an=null;d.style.overflow='';}};
+});
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.ui) ui[d.dataset.ui]=d.open;if(d&&d.dataset&&d.dataset.hk){ui.hopen=ui.hopen||{};ui.hopen[d.dataset.hk]=d.open;}},true);
 const TABS=(VIEW?[]:[['setup','Setup']]).concat([['rounds','Rounds'],['standings','Standings'],['finale','Finale'],['history','History']]);
 function render(){
@@ -3348,7 +3362,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954309';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792954496';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3726,7 +3740,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792954309';let shown=false,last=0;
+  const B='1792954496';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
