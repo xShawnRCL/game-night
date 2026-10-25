@@ -271,11 +271,7 @@ details.add summary{cursor:pointer;font-weight:700}
 @keyframes spkf{0%{transform:translate(0,0) scale(.4);opacity:0}12%{opacity:1}68%{opacity:1}100%{transform:translate(var(--dx),-52px) scale(1.1) rotate(60deg);opacity:0}}
 @keyframes trIn{0%{opacity:0;transform:translateY(26px) scale(.92);filter:brightness(2) saturate(.5)}60%{opacity:1;filter:brightness(1.35)}100%{opacity:1;transform:none;filter:none}}
 @keyframes cdIn{0%{transform:scale(2.2);opacity:0}30%{transform:scale(.92);opacity:1}100%{transform:scale(1);opacity:1}}
-.crwn{display:inline-flex;align-items:center;gap:3px;margin-left:6px;font:700 .8rem var(--f-mono);vertical-align:middle}
-.crowns{display:flex;flex-direction:column;gap:8px}
-.crownrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border:2px solid var(--edge);border-radius:12px;background:var(--raise)}
-.crownrow .cn{display:flex;align-items:center;gap:6px;min-width:0}
-.crownrow .cn .cv{flex:none}
+.crowncard .cv{vertical-align:-2px}
 .flame{display:inline-block;margin-left:6px;font:700 .8rem var(--f-mono);color:var(--warn-ink);transform-origin:50% 90%;vertical-align:middle}
 .mv{display:inline-block;margin-left:6px;padding:0 6px;border-radius:6px;font:700 .7rem var(--f-mono);vertical-align:middle;color:var(--on-bright)}
 .mv.up{background:var(--c-green)}.mv.dn{background:var(--c-coral)}
@@ -960,12 +956,6 @@ function winStreaks(S){
     const top=Math.min(...ids.map(id=>t.places[id]));ids.forEach(id=>{run[id]=t.places[id]===top?(run[id]||0)+1:0;});});});
   return run;
 }
-/* Crown victory: winning a round straight after winning the one before. The app suggests it; the admin can tick or untick it on the round. */
-const CROWNSVG='<svg class="cv" width="15" height="14" viewBox="0 0 64 64" aria-hidden="true"><path d="M9 50L13 18L26 32L32 11L38 32L51 18L55 50Z" fill="#FFD84D" stroke="#3B3540" stroke-width="5" stroke-linejoin="round"/></svg>';
-function roundWinSet(rd){const w=new Set();if(!rd||!roundDone(rd)) return w;rd.tables.forEach(t=>{const ids=t.ids.filter(id=>t.places[id]!==undefined);if(!ids.length) return;const top=Math.min(...ids.map(id=>t.places[id]));ids.forEach(id=>{if(t.places[id]===top) w.add(id);});});return w;}
-function crownAuto(S,i,id){return i>0&&roundWinSet(S.rounds[i-1]).has(id)&&roundWinSet(S.rounds[i]).has(id);}
-function crownOn(S,i,id){const rd=S.rounds[i];if(!roundWinSet(rd).has(id)) return false;return rd.crown&&rd.crown[id]!==undefined?!!rd.crown[id]:crownAuto(S,i,id);}
-function crownCounts(S){const c={};S.rounds.forEach((rd,i)=>{roundWinSet(rd).forEach(id=>{if(crownOn(S,i,id)) c[id]=(c[id]||0)+1;});});return c;}
 /* Who placed where in every finished round, kept with each saved tournament so the Hall of Fame can look back. */
 function roundLog(S){
   const rows=computeStandings(S),out=[];
@@ -976,6 +966,11 @@ function roundLog(S){
   });
   return out;
 }
+/* Crown victory: the champion of the previous gauntlet wins this one too. Worked out for you; the host can tick or untick it on the champion screen. */
+const CROWNSVG='<svg class="cv" width="15" height="14" viewBox="0 0 64 64" aria-hidden="true"><path d="M9 50L13 18L26 32L32 11L38 32L51 18L55 50Z" fill="#FFD84D" stroke="#3B3540" stroke-width="5" stroke-linejoin="round"/></svg>';
+function prevChamp(S){const a=S.archive&&S.archive[0]&&S.archive[0].data;return a&&a.champ?a.champ.name:'';}
+function crownAuto(S){const w=finalWinner(S),pc=prevChamp(S);if(!w||!pc) return false;const p=S.players.find(x=>x.id===w);return !!p&&String(p.name).trim().toLowerCase()===String(pc).trim().toLowerCase();}
+function crownNow(S){return S.crownOv!==undefined?!!S.crownOv:crownAuto(S);}
 function trophyData(S){
   const champ=finalWinner(S); if(!champ) return null;
   const rows=computeStandings(S), me=rows.find(r=>r.id===champ);
@@ -994,7 +989,7 @@ function trophyData(S){
   else fin=last.ids.slice().sort((a,b)=>last.places[a]-last.places[b]).map(id=>({name:nm(id),place:last.places[id],seed:first.ids.indexOf(id)+1}));
   const names=[...new Set(S.rounds.map(r=>{const g=gameOf(S,r.gameId);return g?g.name:'';}))];
   return {title:'Game Night Gauntlet',date:S.finishedAt||Date.now(),
-    champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
+    crown:crownNow(S),champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
     played,rlist,cw:cw%6,best,finalGame:fg?fg.name:'',solo,stars:gauntletStars(S,!solo),runner:rows[1]?rows[1].name:'',margin:rows[1]?r1(me.pts-rows[1].pts):0,scored:!solo&&S.headStart>0,carry:hsCarry(S),final:fin,
     standings:rows.map(r=>({name:r.name,pts:r.pts,rank:r.rank,color:pcol(r.id),look:lookOf(r.id,S),champ:r.id===champ})),log:roundLog(S),
     rounds:S.rounds.length,players:S.players.length,games:names.length,
@@ -2051,7 +2046,6 @@ function viewRounds(){
       const k=r.tables.length, copies=copiesOf(g);
       body=`<div class="rb">${k>copies?`<p class="bye">${k} tables but ${copies} ${copies===1?'copy':'copies'} of ${esc(g.name)}, so they take turns.</p>`:''}${r.tables.map((t,ti)=>tableBlock('r',r.id,ti,t,g.weight,t.ids.length>g.max?'Winner stays':(k>1?(g.min===2&&g.max===2?'Match ':'Table ')+(ti+1):''))).join('')}
         ${r.tables.some(t=>t.ids.length>g.max)?`<p class="bye">Winner stays: two players start. The winner stays on and plays whoever sat out, and so on. First to 2 wins is 1st. The other two rank by wins, and level wins share the place.</p>`:''}
-        ${done?(()=>{const ws=[...roundWinSet(r)];if(!ws.length) return '';const ro=typeof VIEW!=='undefined'&&VIEW;const rowsH=ws.map(id=>{const on=crownOn(S,i,id);if(ro&&!on) return '';return `<div class="crownrow"><span class="cn">${CROWNSVG}<b>${esc(pname(id))}</b><span class="muted"> crown victory</span></span>${ro?'':`<button type="button" class="btn sm${on?' primary':''}" data-act="crown" data-a="${r.id}|${id}" aria-pressed="${on}">${on?'Ticked':'Tick off'}</button>`}</div>`;}).join('');return rowsH?`<div class="crowns">${rowsH}<p class="hint">Winning a round right after winning the one before earns a crown victory. It is ticked for you, and the host can change it.</p></div>`:'';})():''}
         ${r.byes.length?`<p class="bye">Sitting out: ${esc(r.byes.map(pname).join(', '))}. ${done?'Each gets +'+fmt(5*g.weight)+', half marks, the same as an average result.':'They get half marks when the round finishes, the same as an average result.'}</p>`:''}
         </div>`;
       body=`<div class="rbw"><div class="rbi">${body}</div></div>`;
@@ -2090,11 +2084,11 @@ function viewStandings(){
   if(!S.started) return empty('Standings begin with round one','Build the rounds in Setup first.',`<p><button type="button" class="btn primary" data-act="tab" data-a="setup">Go to setup</button></p>`);
   const rows=computeStandings(S), ph=phaseOf(S), cut=resolveCut(rows,S.finalists,S.tiebreaks);
   const fin=new Set(cut.finalists||[]), tied=new Set(ph==='tie'&&cut.group?cut.group:[]);
-  const max=Math.max(1,...rows.map(r=>r.pts)),streaks=winStreaks(S),crowns=crownCounts(S),none=!rows.some(r=>r.pts>0);
+  const max=Math.max(1,...rows.map(r=>r.pts)),streaks=winStreaks(S),none=!rows.some(r=>r.pts>0);
   let list='';
   rows.forEach((r,i)=>{
     list+=`<li class="srow${r.rank===1&&r.pts>0?' lead':''}${fin.has(r.id)&&ph!=='qual'?' fin':''}${tied.has(r.id)?' tied':''}" data-id="${r.id}"><span class="rk r${Math.min(r.rank,4)} mono">${none?'–':r.rank}</span>
-      <span class="who"><span class="nm">${pdot(r.id)}${esc(r.name)}${tied.has(r.id)?'<span class="tag">TIED</span>':''}${streaks[r.id]>=2?`<span class="flame" title="${streaks[r.id]} round wins in a row" aria-label="${streaks[r.id]} round wins in a row">${FLAMESVG}${streaks[r.id]}</span>`:''}${crowns[r.id]?`<span class="crwn mono" title="${crowns[r.id]} crown victor${crowns[r.id]===1?'y':'ies'}" aria-label="${crowns[r.id]} crown victor${crowns[r.id]===1?'y':'ies'}">${CROWNSVG}${crowns[r.id]}</span>`:''}</span><span class="bar"><i style="width:${(r.pts/max*100).toFixed(1)}%;background:${pcol(r.id)}"></i></span></span>
+      <span class="who"><span class="nm">${pdot(r.id)}${esc(r.name)}${tied.has(r.id)?'<span class="tag">TIED</span>':''}${streaks[r.id]>=2?`<span class="flame" title="${streaks[r.id]} round wins in a row" aria-label="${streaks[r.id]} round wins in a row">${FLAMESVG}${streaks[r.id]}</span>`:''}</span><span class="bar"><i style="width:${(r.pts/max*100).toFixed(1)}%;background:${pcol(r.id)}"></i></span></span>
       <span class="pts mono">${fmt(r.pts)}</span><span class="mini mono">${r.wins}</span><span class="mini mono">${r.played}</span></li>`;
     if(!none&&i===S.finalists-1&&rows.length>S.finalists) list+=`<li class="cutline" role="presentation"><span>Top ${S.finalists} reach the final</span></li>`;
   });
@@ -2113,8 +2107,9 @@ function viewStandings(){
   const mtot=`<tr class="mxt"><th scope="row">Total</th>${rows.map(r=>`<td class="mono">${rows.length>=7?Math.round(r.pts):fmt(r.pts)}</td>`).join('')}</tr>`;
   const matrix=`<table class="mx2" style="--n:${rows.length}"><thead><tr><th></th>${mth}</tr></thead><tbody>${mbody}${mtot}</tbody></table>`;
   const note=ph==='tie'?`<div class="card warn"><h3>Tie at the cut line</h3><p>${esc(cut.group.map(pname).join(', '))} finished level on points. A tiebreaker game decides who gets the last ${cut.pending.spots===1?'spot':cut.pending.spots+' spots'} in the final.</p><p><button type="button" class="btn" data-act="tab" data-a="finale">Go to the tiebreaker</button></p></div>`:'';
+  const dc=prevChamp(S),defend=dc&&ph!=='champion'?`<div class="card tip"><b>${CROWNSVG} Defending champion: ${esc(dc)}</b><p class="muted">Winning again earns a crown victory.</p></div>`:'';
   const wait=none&&ph==='qual'?`<div class="card tip"><b>No points yet</b><p class="muted">The standings fill in as soon as round 1 is scored.</p></div>`:'';
-  return `${note}${wait}${podiumHTML(rows)}<section class="card flat"><ul class="slist"><li class="shead" role="presentation"><span>#</span><span>Player</span><span>Pts</span><span>Wins</span><span>Played</span></li>${list}</ul></section>
+  return `${note}${wait}${defend}${podiumHTML(rows)}<section class="card flat"><ul class="slist"><li class="shead" role="presentation"><span>#</span><span>Player</span><span>Pts</span><span>Wins</span><span>Played</span></li>${list}</ul></section>
     <section class="card"><h3>Round by round</h3><div class="scroll">${matrix}</div></section>`;
 }
 
@@ -2177,7 +2172,9 @@ function viewFinale(){
   if(ph==='champion'){
     const w=finalWinner(S), solo=S.finalists===1, g=solo?null:gameOf(S,S.finale[0].gameId), stars=gauntletStars(S,!solo);
     const line=solo&&S.players.length===2?`Won the duel after ${S.rounds.length} round${S.rounds.length===1?'':'s'}.`:solo?`Led the standings after ${S.rounds.length} round${S.rounds.length===1?'':'s'}.`:scored?`Won the final at ${g?g.name:'the final game'} with ${fmt(scored[0].total)} points.`:`Won the final at ${g?g.name:'the final game'}.`;
-    out=`<div class="card gold champ">${meeple(pcol(w),72,lookOf(w))}<div class="txt"><span class="lbl">${S.players.length===2?'Duel Champion':'Ultimate Board Gamer'}</span><span class="name">${esc(pname(w))}</span>${stars?`<span class="stars" aria-label="${stars}-star gauntlet">${'★'.repeat(stars)}</span>`:''}<p>${esc(line)}</p></div></div>
+    const ro=typeof VIEW!=='undefined'&&VIEW,cr=crownNow(S),pc=prevChamp(S);
+    const crownCard=(ro&&!cr)?'':`<div class="card crowncard"><div class="cardhead"><h2 class="chip c-yellow">Crown victory</h2>${ro?'':`<button type="button" class="btn sm${cr?' primary':''}" data-act="crownv" aria-pressed="${cr}">${cr?'Ticked':'Tick off'}</button>`}</div><p class="muted">${cr?`${CROWNSVG} ${esc(pname(w))} wins the title again as defending champion.`:pc?`${esc(pc)} won the last gauntlet. A crown victory goes to a defending champion who wins again.`:'A crown victory goes to a defending champion who wins again. The host can tick it if it applies.'}</p></div>`;
+    out=`<div class="card gold champ">${meeple(pcol(w),72,lookOf(w))}<div class="txt"><span class="lbl">${S.players.length===2?'Duel Champion':'Ultimate Board Gamer'}</span><span class="name">${esc(pname(w))}</span>${stars?`<span class="stars" aria-label="${stars}-star gauntlet">${'★'.repeat(stars)}</span>`:''}<p>${esc(line)}</p></div></div>${crownCard}
       <div class="card" id="trophy-card"><div class="cardhead"><h2 class="chip c-yellow">Keepsake trophy</h2><span class="muted">Tap the picture or Share</span></div>
         <div class="twrap"><img id="trophy-img" class="trophy" alt="Trophy preview for ${esc(pname(w))}. Tap to save to Photos." data-act="photo" role="button" tabindex="0" style="cursor:pointer" hidden><div class="tglint" hidden></div></div>
         <div class="rfoot"><button type="button" class="btn primary" data-act="share">Share trophy</button></div>
@@ -2220,6 +2217,9 @@ function statsList(){
     const cnt={},disp={};T.forEach(t=>{const k=key(t.champ.name);cnt[k]=(cnt[k]||0)+1;disp[k]=t.champ.name;});
     const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
     if(cnt[top]>=2) add(90+cnt[top],'trophy','Most gauntlet titles',`${disp[top]} has won ${cnt[top]} Game Night Gauntlets`);
+    const cc={},cd={};T.forEach(t=>{if(t.crown){const k=key(t.champ.name);cc[k]=(cc[k]||0)+1;cd[k]=t.champ.name;}});
+    const ck=Object.keys(cc).sort((a,b)=>cc[b]-cc[a])[0];
+    if(ck) add(97+cc[ck],'crown','Crown victories',`${cd[ck]} has ${cc[ck]} crown victor${cc[ck]===1?'y':'ies'}, winning the title again as defending champion`);
     const last=T[T.length-1];
     add(cnt[key(last.champ.name)]>=2?47:52,'crown','Reigning champion',`${last.champ.name} took the latest gauntlet on ${dstr2(last.date)}`);
     let best=0,bestEnd=0,run=0;T.forEach((t,i)=>{run=i>0&&key(T[i-1].champ.name)===key(t.champ.name)?run+1:1;if(run>best){best=run;bestEnd=i;}});
@@ -3148,7 +3148,7 @@ function act(name,a,el){
       break;
     case 'newt':startOver();touch();break;
     case 'dmcancel':ui.confirm=null;break;
-    case 'crown':{const rd=S.rounds.find(x=>x.id===a[0]);if(!rd||(typeof VIEW!=='undefined'&&VIEW)) return false;const i=S.rounds.indexOf(rd);const cur=crownOn(S,i,a[1]);rd.crown=rd.crown||{};rd.crown[a[1]]=!cur;touch();break;}
+    case 'crownv':{if(typeof VIEW!=='undefined'&&VIEW) return false;S.crownOv=!crownNow(S);touch();break;}
     case 'gnew':gNew();touch();break;
     case 'gopen':gOpen(a[0]);touch();break;
     case 'delslot':{if(!arm('delslot:'+a[0])) break;ui.confirm=null;const i=(S.slots||[]).findIndex(x=>x.id===a[0]);if(i>=0){const e=S.slots.splice(i,1)[0];trashPush('slot',e.name||gLabel(e.snap),{slot:e});touch();toast('Deleted. Restore it from Recently deleted for 7 days.');}break;}
@@ -3382,7 +3382,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792961467';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792961635';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3760,7 +3760,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792961467';let shown=false,last=0;
+  const B='1792961635';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
