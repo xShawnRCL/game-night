@@ -2037,9 +2037,9 @@ function viewRounds(){
     }
     const nh=nightAt[i]?`<div class="night"><h3 class="chip c-purple">Night ${nightAt[i].k+1}</h3><span class="muted">${nightAt[i].nt.count} round${nightAt[i].nt.count>1?'s':''}, about ${hm(nightAt[i].nt.mins)}</span></div>`:'';
     return `${nh}<article class="round${open?' open':''}${i===cur?' cur':''}" id="rd-${r.id}"><button type="button" class="rh" data-act="open" data-a="${r.id}" aria-expanded="${open}">
-      <span class="rn s${i%6}">${i+1}</span><span class="rt"><b>${esc(g.name)}</b>${(()=>{const q=repInfo(S,r);return q.m>1?` <span class="rrep">round ${q.n} of ${q.m}</span>`:'';})()}${sub}</span><span class="wt w${g.weight}">×${g.weight}</span><span class="chev"></span></button>${body}</article>`;
+      <span class="rn s${i%6}">${i+1}</span><span class="rt"><b>${esc(g.name)}</b>${(()=>{const q=repInfo(S,r);return q.m>1?` <span class="rrep">round ${q.n} of ${q.m}</span>`:'';})()}${sub}</span><span class="chev"></span></button>${body}</article>`;
   }).join('');
-  const choices=S.games.filter(g=>layout(S.players.length,g.min,g.max)).map(g=>`<option value="${g.id}">${esc(g.name)} (×${g.weight})</option>`).join('');
+  const choices=S.games.filter(g=>layout(S.players.length,g.min,g.max)).map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
   const add=S.finale.length?'':`<details class="card add"><summary>Add a round</summary><div class="addgrid"><label class="fld wide"><span>Game</span><select class="sel" id="ar-game">${choices}</select></label></div>
     <p style="margin-top:12px"><button type="button" class="btn shine" data-act="addround">Add to the end</button></p></details>`;
   const redrawable=S.finale.length?0:S.rounds.filter(r=>roundUnscored(r)&&(r.tables.length>1||r.byes.length)).length;
@@ -2086,7 +2086,7 @@ function viewStandings(){
   const plc=(rd,id)=>{for(const t of rd.tables){if(t.places[id]!==undefined) return t.places[id];}return null;};
   const mth=rows.map(r=>`<th scope="col" title="${esc(r.name)}"><span class="mxh">${pdot(r.id)}<span>${esc(shorts[r.id])}</span></span></th>`).join('');
   const mbody=S.rounds.map((rd,i)=>{
-    const g=gameOf(S,rd.gameId),q=repInfo(S,rd),label=(g?g.name:'?')+(q.m>1?' '+q.n:'')+(g&&g.weight>1?' \u00d7'+g.weight:'');
+    const g=gameOf(S,rd.gameId),q=repInfo(S,rd),label=(g?g.name:'?')+(q.m>1?' '+q.n:'');
     return `<tr><th scope="row" class="gn" title="${esc(roundTitle(S,rd))}"><span class="mq"><b class="mono">${i+1}</b> ${esc(label)}</span></th>${rows.map(r=>{const v=r.per[rd.id],k=plc(rd,r.id);return v===undefined?`<td class="mono none">\u2013</td>`:`<td class="mono"><span class="mxc${k&&k<=3?' m'+k:''}">${fmt(v)}</span></td>`;}).join('')}</tr>`;
   }).join('');
   const mtot=`<tr class="mxt"><th scope="row">Total</th>${rows.map(r=>`<td class="mono">${rows.length>=7?Math.round(r.pts):fmt(r.pts)}</td>`).join('')}</tr>`;
@@ -2323,7 +2323,7 @@ function viewHistory(){
 function histCard(tag,g,ts,tables,w,byes,eid){
   const hk=eid||('x'+tag+(g?g.id:'')),op=!!(ui.hopen&&ui.hopen[hk]);
   const wins=[].concat(...tables.map(x=>x.t.ids.filter(id=>x.t.places[id]===1))).map(pname);
-  return `<details class="card hist sbox" data-hk="${esc(hk)}"${eid?` id="${eid}"`:''}${op?' open':''}><summary><span class="hsum"><b>${esc(tag)} · ${esc(g?g.name:'')}${w?` <span class="wt w${w}">×${w}</span>`:''}</b><span class="muted">${wins.length?'Won by '+esc(wins.join(', ')):''}${ts?(wins.length?' · ':'')+esc(dstr(ts,true)):''}</span></span></summary>
+  return `<details class="card hist sbox" data-hk="${esc(hk)}"${eid?` id="${eid}"`:''}${op?' open':''}><summary><span class="hsum"><b>${esc(tag)} · ${esc(g?g.name:'')}</b><span class="muted">${wins.length?'Won by '+esc(wins.join(', ')):''}${ts?(wins.length?' · ':'')+esc(dstr(ts,true)):''}</span></span></summary>
     ${tables.map(x=>`<div>${x.label?`<div class="tbh2">${x.label}</div>`:''}${resultLines(x.t,w)}</div>`).join('')}
     ${byes&&byes.length?`<p class="bye">Sat out: ${esc(byes.map(pname).join(', '))}</p>`:''}</details>`;
 }
@@ -3342,7 +3342,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792953417';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792953525';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3720,7 +3720,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792953417';let shown=false,last=0;
+  const B='1792953525';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
