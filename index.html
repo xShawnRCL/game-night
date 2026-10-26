@@ -307,11 +307,11 @@ details.add summary{cursor:pointer;font-weight:700}
 .lk-head{display:flex;align-items:center;gap:14px}.lk-head b{font:800 1.1rem var(--f-display)}
 .lk-pre{width:84px;height:84px;display:grid;place-items:center;flex:0 0 auto;border-radius:14px;background:var(--bg);border:2px solid var(--line)}
 .lk-lbl{display:block;font:700 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.swrow{display:flex;flex-wrap:wrap;gap:8px}
-.swc{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer}
+.swrow{display:flex;flex-wrap:wrap;gap:7px}
+.swc{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer}
 .swc.on{border:3px solid var(--edge);box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--edge)}
-.optrow{display:flex;flex-wrap:wrap;gap:8px}
-.opt{display:flex;flex-direction:column;align-items:center;gap:2px;width:64px;padding:8px 4px 6px;border:2px solid var(--line);border-radius:12px;background:var(--surface);font:600 .68rem var(--f-body);color:var(--muted);cursor:pointer}
+.optrow{display:flex;flex-wrap:wrap;gap:6px}
+.opt{display:grid;place-items:center;width:44px;height:44px;padding:0;border:2px solid var(--line);border-radius:12px;background:var(--surface);font:600 .68rem var(--f-body);color:var(--muted);cursor:pointer}
 .opt.on{border-color:var(--edge);background:var(--raise);color:var(--ink);box-shadow:0 2px 0 var(--shadow)}
 .lk-foot{display:flex;gap:10px;align-items:center;justify-content:space-between}
 .rost{margin-top:10px}.rchips{display:flex;flex-wrap:wrap;gap:8px}
@@ -661,33 +661,75 @@ const DEFAULT_GAMES=[
   {id:'risk',name:'Risk',short:'Risk',min:2,max:6,weight:3,mins:90,luck:4,on:false},
   {id:'clue',name:'Clue',short:'Clue',min:3,max:6,weight:2,mins:45,luck:3,on:true}
 ].map(g=>({copies:1,...g}));
-const PAWN=['#FF8A78','#7CC6F5','#FFD84D','#7ED9A6','#C4A8F7','#FFB05C','#F7A8CF','#5FD3C6','#B9DB6A','#9FA9F7','#F5A98B','#86D3EB'];
+const PAWN=['#FF8A78','#7CC6F5','#FFD84D','#7ED9A6','#C4A8F7','#FFB05C','#F7A8CF','#5FD3C6','#B9DB6A','#9FA9F7','#F5A98B','#86D3EB','#E6E1D6','#8791A0','#E86A6A','#4F8FE0','#3FAE7B','#8E5FD6'];
 const pcol=id=>{
   try{const p=typeof S!=='undefined'&&S&&S.players?S.players.find(x=>x.id===id):null;if(p&&p.look&&Number.isInteger(p.look.c)) return PAWN[((p.look.c%PAWN.length)+PAWN.length)%PAWN.length];}catch(e){}
   return PAWN[((parseInt(String(id).slice(1),10)||1)-1)%PAWN.length];
 };
 /* Meeple looks: a colour, a hat and something to hold. Drawn in the same chunky outline as the meeple itself. */
-const HAT_N=['None','Cap','Top hat','Party hat','Wizard hat'],ITEM_N=['Nothing','Flag','Balloon','Wand','Dice'];
+const HAT_N=['None','Cap','Top hat','Party hat','Wizard hat','Crown','Cowboy hat','Chef hat','Beanie','Propeller cap','Viking helmet','Cat ears','Bunny ears'],ITEM_N=['Nothing','Flag','Balloon','Wand','Dice','Sword','Mug','Book','Ice cream','Magnifying glass','Umbrella','Playing card','Pizza slice'];
+const PAT_N=['Plain','Polka dots','Stars','Horizontal lines','Vertical lines','Chevrons','Diagonal stripes','Checks'];
 const HAT_SHAPES=[null,
   [{d:'M22.5 12.8C22.5 3.4 41.5 3.4 41.5 12.8Z',f:'a'},{d:'M38.5 10.6H51Q52.4 13.6 50 14.4H38.5Z',f:'a'}],
   [{d:'M18.5 8.6H45.5V12H18.5Z',f:'e'},{d:'M24 8.6V-5.5H40V8.6Z',f:'e'},{d:'M24 3.6H40V0H24Z',f:'a'}],
   [{d:'M32 -10.5L41 9.4H23Z',f:'a'},{d:'M32 -11.5m-3.2 0a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0',f:'w'}],
-  [{d:'M15.5 11.4Q32 4.6 48.5 11.4Q32 15.4 15.5 11.4Z',f:'a'},{d:'M25 9.6L34.5 -13.5Q38.6 -8.6 39.4 9.6Z',f:'a'}]];
+  [{d:'M15.5 11.4Q32 4.6 48.5 11.4Q32 15.4 15.5 11.4Z',f:'a'},{d:'M25 9.6L34.5 -13.5Q38.6 -8.6 39.4 9.6Z',f:'a'}],
+  [{d:'M22 11V-1L27 4L32 -4L37 4L42 -1V11Z',f:'a'}],
+  [{d:'M12 11Q32 17 52 11Q50 6 44 8Q32 12 20 8Q14 6 12 11Z',f:'a'},{d:'M23 9.5Q22 -1 28 1Q32 3 36 1Q42 -1 41 9.5Z',f:'a'},{d:'M23.2 7H40.8',f:'n',w:3}],
+  [{d:'M23 11V7Q16 6 18 0Q20 -6 26 -4Q29 -9 34 -6Q40 -8 43 -2Q48 1 45 6Q42 7 41 7V11Z',f:'w'}],
+  [{d:'M22 11C21 -1 43 -1 42 11Z',f:'a'},{d:'M32 -1m-3.5 0a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0-7 0',f:'w'},{d:'M21.6 8.4H42.4V12H21.6Z',f:'w'}],
+  [{d:'M23 11C23 3 41 3 41 11Z',f:'a'},{d:'M32 4V-1',f:'n',w:3},{d:'M21 -2Q32 -7 43 -2Q32 1 21 -2Z',f:'w'}],
+  [{d:'M23 8Q14 8 14 -3Q18 2 24 3Z',f:'w'},{d:'M41 8Q50 8 50 -3Q46 2 40 3Z',f:'w'},{d:'M22 11C22 2 42 2 42 11Z',f:'e'}],
+  [{d:'M22.5 10L20.5 -4.5L30.5 3Z',f:'a'},{d:'M41.5 10L43.5 -4.5L33.5 3Z',f:'a'}],
+  [{d:'M24 6Q19 -14 26 -14Q30 -12 30 5Z',f:'w'},{d:'M40 6Q45 -14 38 -14Q34 -12 34 5Z',f:'w'}]];
 const ITEM_SHAPES=[null,
   [{d:'M55 44V8',f:'n',w:3},{d:'M55 8L67.5 13.5L55 19Z',f:'a'}],
   [{d:'M55.5 42Q50 32 56.5 24',f:'n',w:2.4},{d:'M56.5 25C49 21 48 8 56.5 6.5C65 8 64 21 56.5 25Z',f:'a'}],
   [{d:'M52 46L60.5 24',f:'n',w:3.2},{d:'M61 11L63.2 17.2L69.5 17.6L64.5 21.4L66.3 27.5L61 24L55.7 27.5L57.5 21.4L52.5 17.6L58.8 17.2Z',f:'a'}],
-  [{d:'M50 33H62.5Q64.5 33 64.5 35V47.5Q64.5 49.5 62.5 49.5H50Q48 49.5 48 47.5V35Q48 33 50 33Z',f:'w'},{d:'M52.5 37.4h.1M60 37.4h.1M56.2 41.2h.1M52.5 45.2h.1M60 45.2h.1',f:'n',w:2.8}]];
-const lookOf=(id,SS)=>{const p=((SS||S).players||[]).find(x=>x.id===id);const l=(p&&p.look)||{};return {h:Math.max(0,Math.min(HAT_SHAPES.length-1,l.h|0)),i:Math.max(0,Math.min(ITEM_SHAPES.length-1,l.i|0))};};
+  [{d:'M50 33H62.5Q64.5 33 64.5 35V47.5Q64.5 49.5 62.5 49.5H50Q48 49.5 48 47.5V35Q48 33 50 33Z',f:'w'},{d:'M52.5 37.4h.1M60 37.4h.1M56.2 41.2h.1M52.5 45.2h.1M60 45.2h.1',f:'n',w:2.8}],
+  [{d:'M56 6L59 11V34H53V11Z',f:'w'},{d:'M48.5 34H63.5',f:'n',w:3.4},{d:'M56 35V45',f:'n',w:3.4}],
+  [{d:'M49 29H61V46Q61 49.5 57.5 49.5H52.5Q49 49.5 49 46Z',f:'w'},{d:'M61 32H63.5Q67 32 67 37Q67 42 63.5 42H61',f:'n',w:2.6},{d:'M53 24Q51 21 54 18M58 24Q56 21 59 18',f:'n',w:2}],
+  [{d:'M47 26H63V47H47Z',f:'a'},{d:'M50.5 26V47',f:'n',w:2.4},{d:'M54 33H60M54 38H60',f:'n',w:2}],
+  [{d:'M50 31H62L56 50Z',f:'w'},{d:'M49.5 31C47.5 20 64.5 20 62.5 31Z',f:'a'}],
+  [{d:'M61.6 28.5L67.5 35',f:'n',w:4.4},{d:'M56 21m-8.2 0a8.2 8.2 0 1 0 16.4 0a8.2 8.2 0 1 0-16.4 0',f:'w'}],
+  [{d:'M57 24V47Q57 51 53 51',f:'n',w:2.8},{d:'M45 24Q45 10 57 10Q69 10 69 24Q65 21 61 24Q57 21 53 24Q49 21 45 24Z',f:'a'}],
+  [{d:'M48.5 21H63.5V45H48.5Z',f:'w'},{d:'M56 38L51.2 33.2Q50.5 29.8 53.6 29.8Q55.6 29.8 56 31.8Q56.4 29.8 58.4 29.8Q61.5 29.8 60.8 33.2Z',f:'a'}],
+  [{d:'M46 26Q57 19 68 26L57 50Z',f:'a'},{d:'M46 26Q57 19 68 26',f:'n',w:4},{d:'M55 32h.1M61 34h.1M57.5 41h.1',f:'n',w:4}]];
+/* Patterns for inside the body, drawn in the 64x64 meeple box and clipped to it */
+const PATS=(()=>{
+  const circ=(x,y,r)=>`M${x-r} ${y}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 ${-2*r} 0`;
+  const star=(cx,cy,r)=>{let d='';for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*0.45:r;d+=(i?'L':'M')+(cx+Math.cos(a)*q).toFixed(1)+' '+(cy+Math.sin(a)*q).toFixed(1);}return d+'Z';};
+  const grid=(f,ys,x0,x1)=>{let d='';ys.forEach((y,j)=>{for(let x=(j%2?x0+6:x0);x<=x1;x+=12) d+=f(x,y);});return d;};
+  const hl=[],vl=[],ch=[],dg=[];let ck='';
+  for(let y=12;y<=54;y+=8) hl.push('M0 '+y+'H64');
+  for(let x=10;x<=58;x+=8) vl.push('M'+x+' 0V64');
+  for(let y=4;y<=60;y+=11) ch.push('M2 '+y+'L32 '+(y+10)+'L62 '+y);
+  for(let x=-56;x<64;x+=13) dg.push('M'+x+' 64L'+(x+64)+' 0');
+  for(let i=0;i<8;i++)for(let j=0;j<8;j++) if((i+j)%2) ck+='M'+i*8+' '+j*8+'h8v8h-8Z';
+  return [null,
+    [{d:grid((x,y)=>circ(x,y,2.7),[14,25,36,47],14,56),fill:1}],
+    [{d:grid((x,y)=>star(x,y,4.4),[14,26,38,50],14,56),fill:1}],
+    [{d:hl.join(''),w:3.2}],[{d:vl.join(''),w:3.2}],[{d:ch.join(''),w:3.2}],[{d:dg.join(''),w:3.4}],[{d:ck,fill:1}]];
+})();
+const patColor=c=>{const h=String(c).replace('#','');const r=parseInt(h.slice(0,2),16)||0,g=parseInt(h.slice(2,4),16)||0,b=parseInt(h.slice(4,6),16)||0;return (0.299*r+0.587*g+0.114*b)/255>0.78?'rgba(59,53,64,.30)':'rgba(255,255,255,.65)';};
+let MKC=0;
+const lookOf=(id,SS)=>{const p=((SS||S).players||[]).find(x=>x.id===id);const l=(p&&p.look)||{};return {h:Math.max(0,Math.min(HAT_SHAPES.length-1,l.h|0)),i:Math.max(0,Math.min(ITEM_SHAPES.length-1,l.i|0)),p:Math.max(0,Math.min(PATS.length-1,l.p|0))};};
 const lookAccent=c=>String(c).toUpperCase()==='#FFD84D'?'#7CC6F5':'#FFD84D';
-function lookSvg(look,color){
-  if(!look||(!look.h&&!look.i)) return '';
+function patSvg(look,color,sw){
+  if(!look||!look.p||!PATS[look.p]) return '';
+  const id='mk'+(++MKC),pc=patColor(color);
+  const sh=PATS[look.p].map(q=>q.fill?`<path d="${q.d}" fill="${pc}"/>`:`<path d="${q.d}" fill="none" stroke="${pc}" stroke-width="${q.w}"/>`).join('');
+  return `<clipPath id="${id}"><path d="${MEEPLE_D}"/></clipPath><g clip-path="url(#${id})">${sh}</g><path d="${MEEPLE_D}" fill="none" stroke="var(--edge)" stroke-width="${sw||3}" stroke-linejoin="round"/>`;
+}
+function lookSvg(look,color,sw){
+  if(!look||(!look.h&&!look.i&&!look.p)) return '';
   const ac=lookAccent(color),fill={a:ac,e:'#3B3540',w:'#FFFFFF',n:'none'};
   const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${q.w||3.2}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
-  return (look.i&&ITEM_SHAPES[look.i]?one(ITEM_SHAPES[look.i]):'')+(look.h&&HAT_SHAPES[look.h]?one(HAT_SHAPES[look.h]):'');
+  return patSvg(look,color,sw)+(look.i&&ITEM_SHAPES[look.i]?one(ITEM_SHAPES[look.i]):'')+(look.h&&HAT_SHAPES[look.h]?one(HAT_SHAPES[look.h]):'');
 }
-function lookCanvas(x,look,color){
-  if(!look||(!look.h&&!look.i)) return;
+function lookCanvas(x,look,color,lw){
+  if(!look||(!look.h&&!look.i&&!look.p)) return;
+  if(look.p&&PATS[look.p]){const bp=new Path2D(MEEPLE_D),pc=patColor(color);x.save();x.clip(bp);PATS[look.p].forEach(q=>{const p=new Path2D(q.d);if(q.fill){x.fillStyle=pc;x.fill(p);}else{x.lineWidth=q.w;x.strokeStyle=pc;x.stroke(p);}});x.restore();x.lineWidth=lw||3;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(bp);}
   const ac=lookAccent(color),fill={a:ac,e:'#3B3540',w:'#FFFFFF'};
   const one=sh=>sh.forEach(q=>{const p=new Path2D(q.d);if(q.f!=='n'){x.fillStyle=fill[q.f];x.fill(p);}x.lineWidth=q.w||3.2;x.lineJoin='round';x.lineCap='round';x.strokeStyle='#3B3540';x.stroke(p);});
   if(look.i&&ITEM_SHAPES[look.i]) one(ITEM_SHAPES[look.i]);if(look.h&&HAT_SHAPES[look.h]) one(HAT_SHAPES[look.h]);
@@ -1680,10 +1722,10 @@ const app=document.getElementById('app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pname=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
 const dots=l=>'●'.repeat(l)+'○'.repeat(5-l);
-const pdot=id=>`<svg class="pawn" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${pcol(id)}" stroke="var(--edge)" stroke-width="5" stroke-linejoin="round"/>${lookSvg(lookOf(id),pcol(id))}</svg>`;
+const pdot=id=>`<svg class="pawn" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${pcol(id)}" stroke="var(--edge)" stroke-width="5" stroke-linejoin="round"/>${lookSvg(lookOf(id),pcol(id),5)}</svg>`;
 const BR=['var(--c-coral)','var(--c-blue)','var(--c-yellow)','var(--c-green)','var(--c-purple)','var(--c-orange)'];
 const MEEPLE_D='M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.6 39c-3.1-1-4.2-4.1-2.2-7C12 25.6 18.4 21.4 26.1 19.4c-1.7-1.6-2.7-3.6-2.7-6.2C23.4 8.6 26.8 5 32 5z';
-const meeple=(c,s,look)=>`<svg class="meeple" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${c}" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/>${lookSvg(look,c)}</svg>`;
+const meeple=(c,s,look)=>`<svg class="meeple" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${c}" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/>${lookSvg(look,c,3)}</svg>`;
 const hm=m=>m>=60?Math.floor(m/60)+'h'+(m%60?' '+(m%60)+'m':''):m+' min';
 const dstr=(ts,withTime)=>{try{return new Date(ts).toLocaleString('en-US',withTime?{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}:{year:'numeric',month:'long',day:'numeric'});}catch(e){return '';}};
 
@@ -1843,13 +1885,27 @@ function hsBullets(m,q){
   return ['The final pays '+pay+' points for 1st to last.','Small bonus for top ranks: '+b.map((v,i)=>'rank '+(i+1)+' +'+fmt(v)).join(', ')+'.','A tie goes to whoever ranked higher.'];
 }
 /* ---------- setup ---------- */
+function lookIcon(kind,k,col){
+  const ac=lookAccent(col),fill={a:ac,e:'#3B3540',w:'#FFFFFF',n:'none'};
+  const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${q.w||3.2}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
+  if(kind==='p'){
+    const id='mk'+(++MKC),pc=patColor(col);
+    const sh=k&&PATS[k]?PATS[k].map(q=>q.fill?`<path d="${q.d}" fill="${pc}"/>`:`<path d="${q.d}" fill="none" stroke="${pc}" stroke-width="${q.w}"/>`).join(''):'';
+    return `<svg width="32" height="32" viewBox="4 4 56 56" aria-hidden="true"><clipPath id="${id}"><rect x="6" y="6" width="52" height="52" rx="10"/></clipPath><rect x="6" y="6" width="52" height="52" rx="10" fill="${col}"/><g clip-path="url(#${id})">${sh}</g><rect x="6" y="6" width="52" height="52" rx="10" fill="none" stroke="#3B3540" stroke-width="3.4"/></svg>`;
+  }
+  const none=`<svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="16" fill="none" stroke="#3B3540" stroke-width="4"/><path d="M21 43L43 21" stroke="#3B3540" stroke-width="4" stroke-linecap="round"/></svg>`;
+  if(kind==='h'){ if(!k) return none; return `<svg width="38" height="32" viewBox="10 -16 44 32" aria-hidden="true">${one(HAT_SHAPES[k])}</svg>`; }
+  if(!k) return none; return `<svg width="24" height="38" viewBox="42 2 30 52" aria-hidden="true">${one(ITEM_SHAPES[k])}</svg>`;
+}
 function lookEditor(p){
-  const l=p.look||{},cur=Number.isInteger(l.c)?l.c:((parseInt(String(p.id).slice(1),10)||1)-1)%PAWN.length,col=PAWN[cur%PAWN.length],hi=l.h|0,ii=l.i|0;
+  const l=p.look||{},cur=Number.isInteger(l.c)?l.c:((parseInt(String(p.id).slice(1),10)||1)-1)%PAWN.length,col=PAWN[cur%PAWN.length],hi=l.h|0,ii=l.i|0,pi=l.p|0;
   const sw=PAWN.map((c,k)=>`<button type="button" class="swc${k===cur?' on':''}" style="background:${c}" data-act="lookc" data-a="${p.id}|${k}" aria-label="Colour ${k+1}" aria-pressed="${k===cur}"></button>`).join('');
-  const hats=HAT_N.map((nm,k)=>`<button type="button" class="opt${k===hi?' on':''}" data-act="lookh" data-a="${p.id}|${k}" aria-pressed="${k===hi}" aria-label="${nm}">${meeple(col,34,{h:k,i:0})}<span>${nm}</span></button>`).join('');
-  const items=ITEM_N.map((nm,k)=>`<button type="button" class="opt${k===ii?' on':''}" data-act="looki" data-a="${p.id}|${k}" aria-pressed="${k===ii}" aria-label="${nm}">${meeple(col,34,{h:0,i:k})}<span>${nm}</span></button>`).join('');
-  return `<li class="looked"><div class="lk-head"><span class="lk-pre">${meeple(col,64,{h:hi,i:ii})}</span><div><b>${esc(p.name)}</b><div class="muted">Pick a colour, a hat and something to hold.</div></div></div>
+  const pats=PAT_N.map((nm,k)=>`<button type="button" class="opt${k===pi?' on':''}" data-act="lookp" data-a="${p.id}|${k}" aria-pressed="${k===pi}" aria-label="${nm}" title="${nm}">${lookIcon('p',k,col)}</button>`).join('');
+  const hats=HAT_N.map((nm,k)=>`<button type="button" class="opt${k===hi?' on':''}" data-act="lookh" data-a="${p.id}|${k}" aria-pressed="${k===hi}" aria-label="${nm}" title="${nm}">${lookIcon('h',k,col)}</button>`).join('');
+  const items=ITEM_N.map((nm,k)=>`<button type="button" class="opt${k===ii?' on':''}" data-act="looki" data-a="${p.id}|${k}" aria-pressed="${k===ii}" aria-label="${nm}" title="${nm}">${lookIcon('i',k,col)}</button>`).join('');
+  return `<li class="looked"><div class="lk-head"><span class="lk-pre">${meeple(col,64,{h:hi,i:ii,p:pi})}</span><div><b>${esc(p.name)}</b><div class="muted">Tap anything to try it on.</div></div></div>
     <div class="lk-sec"><span class="lk-lbl">Colour</span><div class="swrow">${sw}</div></div>
+    <div class="lk-sec"><span class="lk-lbl">Pattern</span><div class="optrow">${pats}</div></div>
     <div class="lk-sec"><span class="lk-lbl">Hat</span><div class="optrow">${hats}</div></div>
     <div class="lk-sec"><span class="lk-lbl">Holding</span><div class="optrow">${items}</div></div>
     <div class="lk-foot"><button type="button" class="btn sm primary" data-act="look" data-a="${p.id}">Done</button>${p.rid?`<button type="button" class="btn sm ghost" data-act="lookdel" data-a="${p.id}">Forget this player</button>`:''}</div></li>`;
@@ -2341,7 +2397,7 @@ function viewHistory(){
   const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
   const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><mask id="cc${k}" maskUnits="userSpaceOnUse" x="0" y="0" width="520" height="520"><path d="${CROWN_D}" fill="#fff" stroke="#fff" stroke-width="22" stroke-linejoin="round"/></mask><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".25" stop-color="#fff" stop-opacity=".12"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset=".75" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g mask="url(#cc${k})"><rect class="crsh" x="0" y="100" width="330" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
-    const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color)}</svg>`).join('');
+    const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color,4)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}${T.crown?`<span class="pcv mono">${CROWNSVG} Crown victory</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
       ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}. Tap to share or save." data-act="pphoto" data-a="${i}" role="button" tabindex="0" style="cursor:pointer" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary shine" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished gauntlets are saved here with their trophies.</p>`;
   ui.statList=statsList();if((ui.statIdx||0)>=ui.statList.length) ui.statIdx=0;if(!ui.statT) ui.statT=Date.now();
@@ -2359,7 +2415,7 @@ function histCard(tag,g,ts,tables,w,byes,eid){
 const CROWN_D='M104 378 L76 170 L188 262 L256 128 L324 262 L436 170 L408 378 Z';
 const CROWNC=['#FFD84D','#FF8A78','#7CC6F5','#7ED9A6','#C4A8F7','#FFB05C'];
 const crownColor=T=>{let i=(T.cw||0)%CROWNC.length;if(CROWNC[i]===T.champ.color)i=(i+1)%CROWNC.length;return CROWNC[i];};
-function drawMeeple(x,px,py,size,color,lw,look){x.save();x.translate(px,py);x.scale(size/64,size/64);const p=new Path2D(MEEPLE_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);lookCanvas(x,look,color);x.restore();}
+function drawMeeple(x,px,py,size,color,lw,look){x.save();x.translate(px,py);x.scale(size/64,size/64);const p=new Path2D(MEEPLE_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);lookCanvas(x,look,color,lw);x.restore();}
 function drawCrown(x,px,py,size,color,lw){x.save();x.translate(px,py);x.scale(size/512,size/512);const p=new Path2D(CROWN_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);x.restore();}
 function drawChamp(x,px,py,size,T){
   const cs=size*1.3;
@@ -3121,8 +3177,8 @@ function act(name,a,el){
     case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;const art=el&&el.closest&&el.closest('.round');if(art){art.classList.toggle('open',!now);el.setAttribute('aria-expanded',String(!now));return false;}break;}
     case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});syncCount();touch();}break;
     case 'look':ui.lookFor=ui.lookFor===a[0]?null:a[0];break;
-    case 'lookc':case 'lookh':case 'looki':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
-      p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else p.look.i=k;
+    case 'lookc':case 'lookh':case 'looki':case 'lookp':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
+      p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else if(name==='lookp')p.look.p=k;else p.look.i=k;
       const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e) e.look={...p.look};touch();break;}
     case 'lookdel':{const p=S.players.find(q=>q.id===a[0]);if(p&&p.rid){S.roster=(S.roster||[]).filter(r=>r.rid!==p.rid);delete p.rid;ui.lookFor=null;touch();}break;}
     case 'pickr':{const p=S.players.find(q=>q.id===a[0]),r=(S.roster||[]).find(q=>q.rid===a[1]);if(p&&r&&!S.players.some(q=>q!==p&&q.rid===r.rid)){p.name=r.name;p.rid=r.rid;if(r.look) p.look={...r.look};else delete p.look;touch();}break;}
@@ -3413,7 +3469,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792982492';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792983622';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3791,7 +3847,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792982492';let shown=false,last=0;
+  const B='1792983622';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
