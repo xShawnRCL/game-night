@@ -242,7 +242,8 @@ details.add summary{cursor:pointer;font-weight:700}
 
 .statcard{isolation:isolate;-webkit-tap-highlight-color:transparent;outline:none;cursor:pointer;touch-action:pan-y;gap:10px;background:var(--surface);position:relative;overflow:hidden;margin-bottom:6px}
 .statcard .shead2{display:flex;align-items:center;justify-content:space-between}
-.statcard .sdots{display:flex;gap:4px;align-items:center}.statcard .sdots i{position:relative;width:9px;height:9px;flex:none}.statcard .sdots i::after{content:"";position:absolute;inset:1px;border-radius:50%;background:var(--line)}.statcard .sdots i.on::after{inset:0;background:var(--edge)}
+.statcard .scount{font:700 .8rem var(--f-mono);color:var(--muted);letter-spacing:.06em}
+.sdots{display:flex;gap:4px;align-items:center}.statcard .sdots i{position:relative;width:9px;height:9px;flex:none}.statcard .sdots i::after{content:"";position:absolute;inset:1px;border-radius:50%;background:var(--line)}.statcard .sdots i.on::after{inset:0;background:var(--edge)}
 .statcard .sbody{display:flex;align-items:center;gap:14px}
 .statcard .sico{flex:0 0 auto}.statcard .stxt{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0}.statcard .hofl{font:700 .72rem var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .statcard .slbl{font:700 .78rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -2404,6 +2405,20 @@ function statsList(){
       const sd={};Object.keys(pls).forEach(k=>{const a=pls[k];if(a.length<4) return;const m=a.reduce((x,y)=>x+y,0)/a.length;sd[k]={s:Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length),m:m};});
       const ks=Object.keys(sd);if(ks.length){const mn=Math.min(...ks.map(k=>sd[k].s)),tp=ks.filter(k=>Math.abs(sd[k].s-mn)<1e-9);
         if(mn<1.2) add(46,'steady','Mr. Consistent',tp.length===1?`${nmOf[tp[0]]} lands in almost the same spot every time (average finish ${sd[tp[0]].m.toFixed(1)})`:`${nl(tp.map(k=>nmOf[k]))} each land in almost the same spot every time`);}}
+    {const pls={};R.forEach(t=>{const st=t.standings||[];if(st.length<4) return;st.forEach(q=>{const k=key(q.name);(pls[k]=pls[k]||[]).push(placeOf(q,t));});});
+      const im={};Object.keys(pls).forEach(k=>{const a=pls[k];if(a.length<4) return;const h=Math.floor(a.length/2),av=x=>x.reduce((p,c)=>p+c,0)/x.length;im[k]=av(a.slice(0,h))-av(a.slice(h));});
+      const ik=Object.keys(im),tp=tops(ik,k=>im[k]);if(tp.length&&im[tp[0]]>=0.75) add(49,'improve','Most improved',`${nl(tp.map(k=>nmOf[k]))} ${verbH(tp,'has','have each')} climbed ${im[tp[0]].toFixed(1)} places on average from their early gauntlets to their recent ones`);
+      const av2={};Object.keys(pls).forEach(k=>{const a=pls[k];if(a.length>=3) av2[k]=a.reduce((p,c)=>p+c,0)/a.length;});
+      const ak=Object.keys(av2),ta=tops(ak,k=>-av2[k]);if(ta.length) add(57,'avgf','Best average finish',`${nl(ta.map(k=>nmOf[k]))} ${verbH(ta,'averages','each average')} a #${av2[ta[0]].toFixed(1)} finish across ${pls[ta[0]].length} gauntlets`);}
+    {const sd={},hb={};R.forEach(t=>{const st=t.standings||[];if(st.length<4) return;st.forEach(q=>{const k=key(q.name);if(q.rank===1){sd[k]=(sd[k]||0)+1;if(!q.champ) hb[k]=(hb[k]||0)+1;}});});
+      const t1=tops(Object.keys(sd),k=>sd[k]);if(t1.length&&sd[t1[0]]>=2) add(51,'seed','Qualifying king',`${nl(t1.map(k=>nmOf[k]))} ${verbH(t1,'has','have each')} topped the qualifying rounds ${sd[t1[0]]} times`);
+      const t2=tops(Object.keys(hb),k=>hb[k]);if(t2.length&&hb[t2[0]]>=2) add(50,'heart','So close',`${nl(t2.map(k=>nmOf[k]))} ${verbH(t2,'has','have each')} led the rounds ${hb[t2[0]]} times but missed out on the title`);}
+    {const yc={},ypl={};T.forEach(t=>{if(!t.date) return;const y=new Date(t.date).getFullYear();yc[y]=(yc[y]||0)+1;const k=y+'|'+key(t.champ.name);ypl[k]=(ypl[k]||0)+1;});
+      const ys=Object.keys(yc);if(ys.length>=2){const mx=Math.max(...ys.map(y=>yc[y])),ty=ys.filter(y=>yc[y]===mx);add(44,'busy','Busiest year',`${ty.join(' and ')} ${ty.length===1?'was':'were each'} the busiest ${ty.length===1?'year':'years'}, with ${mx} gauntlets`);}
+      const yk=Object.keys(ypl);if(yk.length){const mx=Math.max(...yk.map(k=>ypl[k])),ty=yk.filter(k=>ypl[k]===mx);
+        if(mx>=2) add(53,'yking','Most titles in a year',ty.map(k=>{const [y,n]=k.split('|');return `${nmOf[n]||n} won ${mx} gauntlets in ${y}`;}).join('. '));}}
+    {const vt=tops(Object.keys(part),k=>part[k]);if(vt.length&&part[vt[0]]>=3) add(43,'vet','Veteran',`${nl(vt.map(k=>nmOf[k]))} ${verbH(vt,'has','have each')} played ${part[vt[0]]} gauntlets`);
+      const bg=R.length?Math.max(...R.map(t=>(t.standings||[]).length)):0;if(bg>=4&&R.length>=2){const bt=R.filter(t=>(t.standings||[]).length===bg).pop();add(35,'biggest','Biggest night',`${bg} players took part in the biggest gauntlet, on ${dstr2(bt.date)}`);}}
     {const hit=T.filter(t=>{if(!t.date) return false;const d=new Date(t.date),n=new Date();if(d.getFullYear()>=n.getFullYear()) return false;const m=new Date(n.getFullYear(),d.getMonth(),d.getDate());return Math.abs(m-n)<=3*864e5;}).pop();
       if(hit){const yrs=new Date().getFullYear()-new Date(hit.date).getFullYear();add(60,'cal','This week in history',`${yrs} year${yrs===1?'':'s'} ago, ${hit.champ.name} won the gauntlet on ${dstr2(hit.date)}`);}}
     add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${R.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
@@ -2411,7 +2426,7 @@ function statsList(){
   /* round records, from every saved tournament plus the one in progress */
   const seq=[],lab=[];arch.forEach(a=>{if(a.data&&a.data.log){seq.push(a.data.log);lab.push(dstr2(a.data.date)+(/^past-/.test(a.id||'')?' (typed in)':''));}});
   if(S.started){const cur=roundLog(S);if(cur.length){seq.push(cur);lab.push('this gauntlet, in progress');}}
-  const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[],lastLi={},pairs={},lk={};let bestRound=null;
+  const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[],lastLi={},pairs={},lk={},rec={},tsz={};let bestRound=null;
   seq.forEach((tour,ti)=>tour.forEach(rd=>{
     gcount[rd.g]=(gcount[rd.g]||0)+rd.t.length;
     rd.t.forEach(tab=>{if(!tab.length) return;const top=Math.min(...tab.map(x=>x.p));
@@ -2420,6 +2435,7 @@ function statsList(){
       tab.forEach(x=>{const k=key(x.n);display[k]=x.n;
         if(lu!==undefined){const z=lk[k]=lk[k]||{lp:0,lw:0,hp:0,hw:0};if(lu<=1){z.lp++;if(x.p===top) z.lw++;}else if(lu>=4){z.hp++;if(x.p===top) z.hw++;}}
         plays[k]=(plays[k]||0)+1;const w=x.p===top;if(w) wins[k]=(wins[k]||0)+1;
+        (rec[k]=rec[k]||[]).push(w);{const ts=tab.length;if(ts===2||ts>=4){const z=tsz[k]=tsz[k]||{dp:0,dw:0,bp:0,bw:0};if(ts===2){z.dp++;if(w)z.dw++;}else{z.bp++;if(w)z.bw++;}}}
         if(rd.w===3){const h=hv[k]=hv[k]||{p:0,w:0};h.p++;if(w)h.w++;}
         const pk=k+'|'+rd.g;{const o=(pg[pk]=pg[pk]||{k,g:rd.g,seq:[],lb:[]});o.seq.push(w);o.lb.push(lab[ti]);o.li=ti;lastLi[rd.g]=ti;}
         bestRounds.push({n:x.n,v:x.v,g:rd.g});if(!bestRound||x.v>bestRound.v) bestRound={n:x.n,v:x.v,g:rd.g};});});
@@ -2442,6 +2458,20 @@ function statsList(){
   {const ps=Object.values(pairs).filter(e=>e.n>=6);
     if(ps.length){const sc=e=>Math.abs(e.aw-e.bw)/e.n,mn=Math.min(...ps.map(sc)),tp=ps.filter(e=>Math.abs(sc(e)-mn)<1e-9),mxn=Math.max(...tp.map(e=>e.n)),t2=tp.filter(e=>e.n===mxn).slice(0,2);
       add(65,'rivals',mn<=0.2?'Rivalry':'Nemesis',t2.map(e=>mn<=0.2?`${display[e.a]} and ${display[e.b]} are neck and neck in head-to-head games, ${e.aw} to ${e.bw}`:`${display[e.aw>e.bw?e.a:e.b]} has beaten ${display[e.aw>e.bw?e.b:e.a]} ${Math.max(e.aw,e.bw)} times to ${Math.min(e.aw,e.bw)} in head-to-head games`).join('. '));}}
+  {const ss={},brk={},ks={};
+    seq.forEach(tour=>tour.forEach(rd=>rd.t.forEach(tab=>{if(tab.length<2) return;const top=Math.min(...tab.map(x=>x.p)),wn=tab.filter(x=>x.p===top);
+      tab.forEach(x=>{const k=key(x.n)+'|'+rd.g;if(x.p===top) ss[k]=(ss[k]||0)+1;else{if((ss[k]||0)>=2&&wn.length===1){const bk=key(wn[0].n);brk[bk]=(brk[bk]||0)+1;}ss[k]=0;}});})));
+    const bt=tops(Object.keys(brk),k=>brk[k]);if(bt.length&&brk[bt[0]]>=2) add(56,'brk','Streak breaker',`${nl(bt.map(k=>display[k]||k))} ${verbH(bt,'has','have each')} ended ${brk[bt[0]]} win streaks`);
+    T.forEach((t,i)=>{if(i===0||!t.log) return;const pc=key(T[i-1].champ.name);t.log.forEach(rd=>rd.t.forEach(tab=>{const c=tab.find(x=>key(x.n)===pc);if(!c) return;tab.forEach(y=>{if(y.p<c.p){const k=key(y.n);ks[k]=(ks[k]||0)+1;}});}));});
+    const kt=tops(Object.keys(ks),k=>ks[k]);if(kt.length&&ks[kt[0]]>=2) add(54,'slayer','Kingslayer',`${nl(kt.map(k=>display[k]||k))} ${verbH(kt,'has','have each')} beaten the reigning champion at the table ${ks[kt[0]]} times`);}
+  {const dr=k=>tsz[k].dw/tsz[k].dp,dk=Object.keys(tsz).filter(k=>tsz[k].dp>=5&&tsz[k].dw>0),td=tops(dk,dr);
+    if(td.length) add(46,'duel','Duelist',`${nl(td.map(k=>display[k]))} ${verbH(td,'wins','each win')} ${Math.round(dr(td[0])*100)}% of two-player games`);
+    const br=k=>tsz[k].bw/tsz[k].bp,bk2=Object.keys(tsz).filter(k=>tsz[k].bp>=5&&tsz[k].bw>0),tb=tops(bk2,br);
+    if(tb.length) add(45,'tabl','Big table champion',`${nl(tb.map(k=>display[k]))} ${verbH(tb,'wins','each win')} ${Math.round(br(tb[0])*100)}% of games at tables of four or more`);}
+  {const last5=k=>rec[k].slice(-5).filter(Boolean).length,rk=Object.keys(rec).filter(k=>rec[k].length>=5),tr=tops(rk,last5);
+    if(tr.length&&last5(tr[0])>=4) add(62,'roll','On a roll',`${nl(tr.map(k=>display[k]))} ${verbH(tr,'has','have each')} won ${last5(tr[0])} of their last 5 games`);
+    const cold=k=>{let n=0;for(let i=rec[k].length-1;i>=0&&!rec[k][i];i--) n++;return n;},ck=Object.keys(rec).filter(k=>rec[k].length>=8),tc=tops(ck,cold);
+    if(tc.length&&cold(tc[0])>=6) add(42,'cold','Cold streak',`${nl(tc.map(k=>display[k]))} ${verbH(tc,'has not','have not')} won in their last ${cold(tc[0])} games`);}
   {const sk=k=>lk[k].lw/lk[k].lp,ks=Object.keys(lk).filter(k=>lk[k].lp>=5&&lk[k].lw>0),tp=tops(ks,sk);
     if(tp.length) add(47,'bulb','Skill player',`${nl(tp.map(k=>display[k]))} ${verbH(tp,'wins','each win')} ${Math.round(sk(tp[0])*100)}% of the low-luck games`);
     const lc=k=>lk[k].hw/lk[k].hp,ks2=Object.keys(lk).filter(k=>lk[k].hp>=5&&lk[k].hw>0),tp2=tops(ks2,lc);
@@ -2460,7 +2490,7 @@ function statsList(){
     if(fv.length&&gcount[fv[0]]>=3) add(36,'dice','Family favourite',fv.length===1?`${fv[0]} has been played ${gcount[fv[0]]} times`:`${nl(fv)} have each been played ${gcount[fv[0]]} times`);}
   out.sort((a,b)=>b.p-a.p);
   const seen=new Set(),kc={},uniq=[];out.forEach(x=>{const kind=x.icon;kc[kind]=(kc[kind]||0)+1;if(!seen.has(x.head)&&kc[kind]<=(x.icon==='target'||x.icon==='bolt'?2:1)){seen.add(x.head);uniq.push(x);}});
-  return uniq.slice(0,16);
+  return uniq;
 }
 const STAT_STAR=(n,a,b)=>{let d='';for(let k=0;k<n*2;k++){const r=k%2?b:a,t=k*Math.PI/n-Math.PI/2;d+=(k?'L':'M')+(32+r*Math.cos(t)).toFixed(1)+' '+(32+r*Math.sin(t)).toFixed(1);}return d+'Z';};
 const STAT_ICON={
@@ -2500,13 +2530,15 @@ Object.assign(STAT_ICON,{
   clover:'<circle cx="24" cy="21" r="11" fill="#7ED9A6"/><circle cx="40" cy="21" r="11" fill="#7ED9A6"/><circle cx="24" cy="37" r="11" fill="#7ED9A6"/><circle cx="40" cy="37" r="11" fill="#7ED9A6"/><path d="M32 40l7 17" fill="none" stroke-width="5"/>',
   cal:'<rect x="9" y="12" width="46" height="44" rx="8" fill="#fff"/><path d="M9 26h46M20 6v12M44 6v12" fill="none"/><circle cx="32" cy="41" r="6" fill="#FF8A78"/>'
 });
-const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-coral',close:'c-blue',sweep:'c-green',star:'c-yellow',chart:'c-blue',book:'c-purple',target:'c-green',bolt:'c-purple',up:'c-green',medal:'c-blue',dice:'c-coral',clock:'c-purple',hourglass:'c-blue',weight:'c-coral',people:'c-green',climb:'c-green',silver:'c-blue',rivals:'c-coral',spoon:'c-yellow',podium:'c-blue',wait:'c-blue',reign:'c-coral',drought:'c-yellow',sparkle:'c-yellow',attend:'c-green',steady:'c-blue',gking:'c-purple',bulb:'c-yellow',clover:'c-green',cal:'c-coral'};
+Object.assign(STAT_ICON,{improve:STAT_ICON.up,busy:STAT_ICON.chart,yking:STAT_ICON.trophy,duel:STAT_ICON.close,tabl:STAT_ICON.people,vet:STAT_ICON.book,avgf:STAT_ICON.medal,seed:STAT_ICON.star,heart:STAT_ICON.hourglass,biggest:STAT_ICON.people,roll:STAT_ICON.flame,brk:STAT_ICON.bolt,slayer:STAT_ICON.burst,
+  cold:'<path d="M32 6v52M9 19l46 26M9 45l46-26" fill="none" stroke-width="5"/><circle cx="32" cy="32" r="8" fill="#7CC6F5"/>'});
+const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-coral',close:'c-blue',sweep:'c-green',star:'c-yellow',chart:'c-blue',book:'c-purple',target:'c-green',bolt:'c-purple',up:'c-green',medal:'c-blue',dice:'c-coral',clock:'c-purple',hourglass:'c-blue',weight:'c-coral',people:'c-green',climb:'c-green',silver:'c-blue',improve:'c-green',busy:'c-blue',yking:'c-yellow',duel:'c-coral',tabl:'c-green',vet:'c-purple',avgf:'c-blue',seed:'c-yellow',heart:'c-coral',biggest:'c-green',roll:'c-coral',brk:'c-purple',slayer:'c-coral',cold:'c-blue',rivals:'c-coral',spoon:'c-yellow',podium:'c-blue',wait:'c-blue',reign:'c-coral',drought:'c-yellow',sparkle:'c-yellow',attend:'c-green',steady:'c-blue',gking:'c-purple',bulb:'c-yellow',clover:'c-green',cal:'c-coral'};
 const statIcon=(n,sz)=>`<svg class="sico" width="${sz}" height="${sz}" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="#3B3540" stroke-width="3.500" stroke-linejoin="round" stroke-linecap="round">${STAT_ICON[n]||''}</svg>`;
 function statInner(){
   const L=ui.statList||[],n=L.length;
   if(!n) return `<div class="shead2"><span class="hofl">Hall of fame</span></div><p class="muted">Records and fun stats show up here once you have finished a few rounds and saved a gauntlet.</p>`;
   const i=(ui.statIdx||0)%n,x=L[i],el=Math.min(9.5,(Date.now()-(ui.statT||Date.now()))/1000);
-  return `<div class="shead2"><span class="hofl">Hall of fame</span><span class="sdots" aria-hidden="true">${L.map((_,j)=>`<i${j===i?' class="on"':''}></i>`).join('')}</span></div>
+  return `<div class="shead2"><span class="hofl">Hall of fame</span><span class="scount" aria-label="Card ${i+1} of ${n}">${i+1} / ${n}</span></div>
     <div class="sbody">${statIcon(x.icon,60)}<div class="stxt"><span class="chip ${STAT_COL[x.icon]||'c-purple'}">${esc(x.head)}</span><div class="sval">${esc(x.body)}</div></div></div>
     <div class="sbar" aria-hidden="true"><i style="animation-delay:-${el.toFixed(2)}s"></i></div>`;
 }
@@ -3599,7 +3631,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792989492';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792990068';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -4114,7 +4146,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792989492';let shown=false,last=0;
+  const B='1792990068';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
