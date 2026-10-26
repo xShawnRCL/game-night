@@ -587,7 +587,10 @@ body.view .rost{display:none}
 .share details.host>summary{cursor:pointer}
 .share .rfoot{margin-top:10px;justify-content:flex-start}
 .share .hint{margin-top:8px}
-.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}#home{position:fixed;inset:0;min-height:100%;overscroll-behavior:contain;z-index:80;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}#vlook{position:fixed;inset:0;min-height:100%;overscroll-behavior:contain;z-index:85;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+#vlook .vin{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+body.vlon{overflow:hidden}
+#home{position:fixed;inset:0;min-height:100%;overscroll-behavior:contain;z-index:80;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
 body.homeon .wrap,body.homeon .sndbtn{display:none}
 body.homeon{overflow:hidden;background:var(--bg)}
 #home .hin{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
@@ -3255,7 +3258,7 @@ function act(name,a,el){
     case 'look':ui.lookFor=ui.lookFor===a[0]?null:a[0];break;
     case 'lookc':case 'lookh':case 'looki':case 'lookp':case 'looks':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];if(name==='lookp'&&PAT_STAR(k)>bestStars()) break;
       p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else if(name==='lookp')p.look.p=k;else if(name==='looks')p.look.s=k;else p.look.i=k;
-      const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e){e.look={...p.look};e.t=Date.now();}propagateLook(p.name,p.look);touch();break;}
+      const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e){e.look={...p.look};e.t=Date.now();}p.lookT=Date.now();propagateLook(p.name,p.look);touch();break;}
     case 'lookdel':{const p=S.players.find(q=>q.id===a[0]);if(p&&p.rid){const dd=rdelGet();dd.push({n:((S.roster||[]).find(r=>r.rid===p.rid)||{name:p.name}).name,t:Date.now()});rdelSet(dd);S.roster=(S.roster||[]).filter(r=>r.rid!==p.rid);delete p.rid;ui.lookFor=null;touch();}break;}
     case 'pickr':{const p=S.players.find(q=>q.id===a[0]),r=(S.roster||[]).find(q=>q.rid===a[1]);if(p&&r&&!S.players.some(q=>q!==p&&q.rid===r.rid)){p.name=r.name;p.rid=r.rid;if(r.look) p.look={...r.look};else delete p.look;touch();}break;}
     case 'addrost':{const r=(S.roster||[]).find(q=>q.rid===a[0]);if(!r||S.started||S.players.some(q=>q.rid===r.rid)) break;
@@ -3539,7 +3542,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792988163';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792988392';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3603,7 +3606,8 @@ async function sbChan(code,onPing){
   if(sbCh&&sbCh._code===code) return sbCh;
   if(sbCh){try{sbCli.removeChannel(sbCh);}catch(e){}sbCh=null;}
   const ch=sbCli.channel('g-'+code,{config:{broadcast:{self:false,ack:false}}});
-  if(onPing) ch.on('broadcast',{event:'ping'},()=>onPing());
+  const cb=onPing||(!VIEW?()=>lookPull():null);
+  if(cb) ch.on('broadcast',{event:'ping'},()=>cb());
   ch._code=code;
   await new Promise((res,rej)=>{ch.subscribe(st=>{if(st==='SUBSCRIBED')res();else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT')rej(new Error(st));});});
   sbCh=ch;return ch;
@@ -3903,6 +3907,75 @@ document.addEventListener('click',async e=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-vhome]');if(b){homeOpen=true;homeSync();}
 });
+/* ---------- Viewers can restyle their own game piece; the host's copy picks the change up ---------- */
+let lkBusy=false;
+async function lookPull(){
+  if(VIEW||!S.share||!S.share.ok||lkBusy) return;
+  lkBusy=true;
+  try{
+    const lk=await sbRpc('get_looks',{p_code:S.share.code})||{};let ch=false;
+    Object.keys(lk).forEach(pid=>{
+      const v=lk[pid],p=S.players.find(x=>x.id===pid);
+      if(!p||!v||!v.look||(v.t||0)<=(p.lookT||0)) return;
+      const nl={...v.look};p.lookT=v.t;
+      if(JSON.stringify(p.look||{})===JSON.stringify(nl)) return;
+      p.look=nl;const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e){e.look={...nl};e.t=Date.now();}
+      propagateLook(p.name,nl);ch=true;
+    });
+    if(ch){touch();if(!document.activeElement||document.activeElement.tagName!=='INPUT') render();}
+  }catch(e){}
+  lkBusy=false;
+}
+if(!VIEW){setInterval(()=>{if(!document.hidden) lookPull();},30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden) lookPull();});}
+const vlKey=()=>'ubg-me-'+JOIN;
+let vl={on:false,pid:null,look:null},vLooks={},vSig='',vlTimer=null;
+const vlFind=id=>(S.players||[]).find(p=>p.id===id);
+function applyLooks(o,lk){Object.keys(lk||{}).forEach(pid=>{const p=(o.players||[]).find(x=>x.id===pid),v=lk[pid];if(p&&v&&v.look&&(v.t||0)>(p.lookT||0)) p.look={...v.look};});}
+function vlSync(){
+  let el=document.getElementById('vlook');
+  document.body.classList.toggle('vlon',!!vl.on);
+  if(!vl.on){if(el)el.remove();return;}
+  if(!el){el=document.createElement('div');el.id='vlook';el.setAttribute('role','dialog');el.setAttribute('aria-label','Update your game piece');document.body.appendChild(el);}
+  const top=el.scrollTop,pl=S.players||[];
+  if(!vl.pid){
+    el.innerHTML=`<div class="vin"><h2 class="chip c-purple" style="align-self:flex-start">Update your game piece</h2><p class="hint">Pick your name, then choose how your piece looks. Everyone watching sees the change, and so does the host.</p><div class="dm">${pl.map(p=>`<div class="dmr"><div style="display:flex;align-items:center;gap:10px">${pdot(p.id)}<b>${esc(p.name)}</b></div><span class="dmb"><button type="button" class="btn sm primary" data-vk="pick" data-va="${p.id}">This is me</button></span></div>`).join('')}</div><p><button type="button" class="btn ghost" data-vk="close">Back</button></p></div>`;
+  }else{
+    const p=vlFind(vl.pid)||{id:vl.pid,name:'Player'};
+    const html=lookEditor({id:p.id,name:p.name,look:vl.look}).replace(/data-act="(look[a-z]*)" data-a=/g,'data-vk="$1" data-va=');
+    el.innerHTML=`<div class="vin"><ul style="list-style:none;padding:0;margin:0">${html}</ul><p class="hint" style="margin:0">Not you? <button type="button" class="linkb" data-vk="swap">Pick a different player</button></p></div>`;
+  }
+  el.scrollTop=top;
+}
+function vlFlush(){
+  if(!vlTimer) return;clearTimeout(vlTimer);vlTimer=null;
+  const pid=vl.pid,look=vl.look;if(!pid||!look) return;
+  sbRpc('set_player_look',{p_code:JOIN,p_pid:pid,p_look:look}).then(()=>{
+    sbChan(JOIN).then(ch=>ch.send({type:'broadcast',event:'ping',payload:{l:1}})).catch(()=>{});
+  }).catch(()=>{toast('Could not save your game piece. Check the connection and try again.');});
+}
+document.addEventListener('click',e=>{
+  if(!VIEW) return;
+  const o=e.target.closest('[data-vlookopen]');
+  if(o){
+    if(!(S.players&&S.players.length)){toast('The host has not added players yet.');return;}
+    let me=null;try{me=localStorage.getItem(vlKey());}catch(err){}
+    const p=me&&vlFind(me);vl.on=true;vl.pid=p?p.id:null;vl.look=p?{...(p.look||{})}:null;vlSync();return;
+  }
+  const b=e.target.closest('[data-vk]');if(!b) return;
+  const k=b.dataset.vk,a=b.dataset.va||'';
+  if(k==='close'||k==='look'){vlFlush();vl.on=false;vlSync();return;}
+  if(k==='pick'){const p=vlFind(a);if(!p) return;vl.pid=a;vl.look={...(p.look||{})};try{localStorage.setItem(vlKey(),a);}catch(err){}vlSync();return;}
+  if(k==='swap'){vlFlush();vl.pid=null;vl.look=null;vlSync();return;}
+  if(/^look[chips]$/.test(k)&&vl.pid){
+    const n=+a.split('|')[1];if(!Number.isFinite(n)) return;
+    if(k==='lookp'&&PAT_STAR(n)>bestStars()) return;
+    vl.look[{lookc:'c',lookh:'h',looki:'i',lookp:'p',looks:'s'}[k]]=n;
+    const p=vlFind(vl.pid);if(p){p.look={...vl.look};p.lookT=Date.now();}
+    vLooks[vl.pid]={look:{...vl.look},t:Date.now()};
+    clearTimeout(vlTimer);vlTimer=setTimeout(()=>vlFlush(),600);
+    vlSync();renderSafe();
+  }
+});
 let viewBusy=false;
 async function viewPoll(){
   if(JOIN){
@@ -3914,7 +3987,10 @@ async function viewPoll(){
         const o=rows[0].data;
         if(o&&o.v===1){
           viewMsg='Updated '+new Date(rows[0].updated_at).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})+'. This page refreshes by itself.';
-          if(o.t!==S.t){S=ensureDefaults(o);renderSafe();}
+          let lk={};try{lk=await sbRpc('get_looks',{p_code:JOIN})||{};}catch(err){}
+          applyLooks(o,lk);const sig=JSON.stringify(lk);
+          if(vlTimer) {/* a change is being saved: keep the local copy */}
+          else if(o.t!==S.t||sig!==vSig){vSig=sig;S=ensureDefaults(o);renderSafe();if(vl.on) vlSync();}
         }
       }
     }catch(e){viewMsg='Could not reach the live copy right now. Trying again.';}
@@ -3937,7 +4013,8 @@ function startGh(){
   document.body.classList.toggle('view',VIEW);
   if(VIEW){
     document.title='Game Night Gauntlet · live';
-    const hb=document.getElementById('hbtns');if(hb){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-vhome','1');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Home';hb.prepend(v);}
+    const hb=document.getElementById('hbtns');if(hb){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-vhome','1');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Home';hb.prepend(v);
+      const g=document.createElement('button');g.type='button';g.className='gmb';g.setAttribute('data-vlookopen','1');g.innerHTML='<svg width="18" height="18" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linejoin="round" aria-hidden="true"><circle cx="32" cy="18" r="9"/><path d="M14 56c0-14 8-22 18-22s18 8 18 22z"/></svg><span>My game piece</span>';hb.appendChild(g);}
     const hbx=document.getElementById('hbtns');
     if(hbx){const t2=document.createElement('p');t2.className='tipl vtip';t2.innerHTML='Enjoying the live view? <a href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Support the creator</a>';hbx.parentNode.insertBefore(t2,hbx.nextSibling);}
     viewPoll();setInterval(viewPoll,JOIN?15000:45000);
@@ -3980,7 +4057,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792988163';let shown=false,last=0;
+  const B='1792988392';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
