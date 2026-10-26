@@ -2319,7 +2319,7 @@ function resultLines(t,w){
 function statsList(){
   const arch=S.archive.slice().reverse(),T=arch.map(a=>a.data&&{...a.data,imp:/^past-/.test(a.id||'')}).filter(Boolean),out=[];
   const R=T.filter(t=>!t.imp); /* typed-in past gauntlets only carry a winner and crown, so they count for titles, streaks and crowns, not for points, margins, rounds or runner-ups. Their one logged round (winner plus everyone tied 2nd) does count for game records. */
-  const add=(p,icon,head,body)=>out.push({p,icon,head,body});
+  const add=(p,icon,head,body,src)=>out.push({p,icon,head,body,src});
   const key=n=>String(n||'').trim().toLowerCase();
   const dstr2=ts=>{try{return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}catch(e){return '';}};
   const nl=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
@@ -2371,23 +2371,23 @@ function statsList(){
     add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${R.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
   }
   /* round records, from every saved tournament plus the one in progress */
-  const seq=[];arch.forEach(a=>{if(a.data&&a.data.log) seq.push(a.data.log);});
-  if(S.started){const cur=roundLog(S);if(cur.length) seq.push(cur);}
+  const seq=[],lab=[];arch.forEach(a=>{if(a.data&&a.data.log){seq.push(a.data.log);lab.push(dstr2(a.data.date)+(/^past-/.test(a.id||'')?' (typed in)':''));}});
+  if(S.started){const cur=roundLog(S);if(cur.length){seq.push(cur);lab.push('this gauntlet, in progress');}}
   const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[];let bestRound=null;
-  seq.forEach(tour=>tour.forEach(rd=>{
+  seq.forEach((tour,ti)=>tour.forEach(rd=>{
     gcount[rd.g]=(gcount[rd.g]||0)+rd.t.length;
     rd.t.forEach(tab=>{if(!tab.length) return;const top=Math.min(...tab.map(x=>x.p));
       tab.forEach(x=>{const k=key(x.n);display[k]=x.n;
         plays[k]=(plays[k]||0)+1;const w=x.p===top;if(w) wins[k]=(wins[k]||0)+1;
         if(rd.w===3){const h=hv[k]=hv[k]||{p:0,w:0};h.p++;if(w)h.w++;}
-        const pk=k+'|'+rd.g;(pg[pk]=pg[pk]||{k,g:rd.g,seq:[]}).seq.push(w);
+        const pk=k+'|'+rd.g;{const o=(pg[pk]=pg[pk]||{k,g:rd.g,seq:[],lb:[]});o.seq.push(w);o.lb.push(lab[ti]);}
         bestRounds.push({n:x.n,v:x.v,g:rd.g});if(!bestRound||x.v>bestRound.v) bestRound={n:x.n,v:x.v,g:rd.g};});});
   }));
   Object.values(pg).forEach(e=>{
     const pl=e.seq.length,wn=e.seq.filter(Boolean).length,rate=wn/pl;
     if(pl>=3&&rate>=0.6&&wn>=2) add(50+Math.min(pl,10)*2+rate*25,'target',`${e.g} specialist`,`${display[e.k]} wins ${Math.round(rate*100)}% of the time: ${wn} of ${pl} games`);
-    let best=0,run=0;e.seq.forEach(w=>{run=w?run+1:0;if(run>best)best=run;});
-    if(best>=2){const live=run===best&&run>0;add(Math.min(94,55+best*5),'bolt',`${e.g} win streak`,`${display[e.k]} has won ${best} ${e.g} games in a row${live?' and counting':''}`);}
+    let best=0,run=0,bEnd=0;e.seq.forEach((w,ix)=>{run=w?run+1:0;if(run>best){best=run;bEnd=ix;}});
+    if(best>=2){const live=run===best&&run>0;add(Math.min(94,55+best*5),'bolt',`${e.g} win streak`,`${display[e.k]} has won ${best} ${e.g} games in a row${live?' and counting':''}`,'From: '+e.lb.slice(bEnd-best+1,bEnd+1).join(', '));}
   });
   if(bestRound&&bestRound.v>0){const bt=bestRounds.filter(x=>Math.abs(x.v-bestRound.v)<1e-9),nm=uniqNames(bt.map(x=>x.n));
     add(66,'up','Best single round',bt.length===1?`${bestRound.n} scored +${bestRound.v.toFixed(1)} in ${bestRound.g}`:`${nl(nm)} ${nm.length===1?'each scored':'each scored'} +${bestRound.v.toFixed(1)} in a single round`);}
@@ -2435,7 +2435,7 @@ function statInner(){
   if(!n) return `<div class="shead2"><span class="hofl">Hall of fame</span></div><p class="muted">Records and fun stats show up here once you have finished a few rounds and saved a gauntlet.</p>`;
   const i=(ui.statIdx||0)%n,x=L[i],el=Math.min(9.5,(Date.now()-(ui.statT||Date.now()))/1000);
   return `<div class="shead2"><span class="hofl">Hall of fame</span><span class="sdots" aria-hidden="true">${L.map((_,j)=>`<i${j===i?' class="on"':''}></i>`).join('')}</span></div>
-    <div class="sbody">${statIcon(x.icon,60)}<div class="stxt"><span class="chip ${STAT_COL[x.icon]||'c-purple'}">${esc(x.head)}</span><div class="sval">${esc(x.body)}</div></div></div>
+    <div class="sbody">${statIcon(x.icon,60)}<div class="stxt"><span class="chip ${STAT_COL[x.icon]||'c-purple'}">${esc(x.head)}</span><div class="sval">${esc(x.body)}</div>${x.src?`<div class="muted" style="font-size:.78rem;margin-top:6px;line-height:1.35">${esc(x.src)}</div>`:''}</div></div>
     <div class="sbar" aria-hidden="true"><i style="animation-delay:-${el.toFixed(2)}s"></i></div>`;
 }
 function statNext(d){
@@ -3527,7 +3527,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792986205';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792986340';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3948,7 +3948,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792986205';let shown=false,last=0;
+  const B='1792986340';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
