@@ -574,7 +574,19 @@ body.view .rost{display:none}
 .share details.host>summary{cursor:pointer}
 .share .rfoot{margin-top:10px;justify-content:flex-start}
 .share .hint{margin-top:8px}
-.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}#vlook{position:fixed;inset:0;min-height:100%;overscroll-behavior:contain;z-index:85;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+.updbar{position:fixed;left:50%;transform:translateX(-50%);top:max(10px,env(safe-area-inset-top));z-index:60;display:flex;gap:12px;align-items:center;background:var(--surface);color:var(--ink);border:2px solid var(--edge);border-radius:14px;box-shadow:0 3px 0 var(--shadow);padding:6px 6px 6px 14px;font-weight:700;font-size:.9rem;white-space:nowrap}#splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+#splash .sl{width:110px;height:110px}
+#splash .sn{font:800 1.5rem/1 var(--f-display);letter-spacing:-.02em;color:var(--ink)}
+#splash .sb{display:flex;gap:6px}
+#splash .sb i{width:22px;height:16px;border-radius:6px;border:2px solid var(--edge);background:var(--surface)}
+@media (prefers-reduced-motion:no-preference){
+  #splash .sl{animation:slIn .6s cubic-bezier(.3,1.5,.5,1) both}
+  #splash .sn{animation:vIn .5s .15s ease-out both}
+  #splash .sb i{animation:sbf 1.2s ease-in-out infinite;animation-delay:calc(var(--k)*.12s)}
+  @keyframes slIn{from{opacity:0;transform:scale(.6) rotate(-12deg)}to{opacity:1;transform:none}}
+  @keyframes sbf{0%,100%{background:var(--surface);transform:translateY(0)}35%{background:var(--c);transform:translateY(-5px)}}
+}
+#vlook{position:fixed;inset:0;min-height:100%;overscroll-behavior:contain;z-index:85;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
 #vlook .vin{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 body.vlon{overflow:hidden}
 #home{position:fixed;inset:0;min-height:100%;overscroll-behavior:contain;z-index:80;background:var(--bg);overflow:auto;padding:max(20px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
@@ -3610,7 +3622,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792992010';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792992348';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3867,6 +3879,16 @@ let rlAt=0;try{rlAt=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}
 const homeForce=/[?&]start(&|=|$)/.test(location.search),homeGuest=/[?&]guest(&|=|$)/.test(location.search);
 let homeOpen=VIEW||(!homeHas()||homeForce||(!homeSeen()&&Date.now()-rlAt>15000)),homeErr='';
 if(!homeOpen) homeMark();
+/* Loading screen: plays whenever the start page opens, then cuts straight to it (no cross-fade, so the two logos never overlap) */
+function runSplash(ms){
+  const old=document.getElementById('splash');if(old) old.remove();
+  const lg=document.querySelector('.brand .logo');
+  const sp=document.createElement('div');sp.id='splash';sp.setAttribute('aria-hidden','true');
+  sp.innerHTML='<svg class="sl" viewBox="1 2 62 60">'+(lg?lg.innerHTML:'')+'</svg><div class="sn">Game Night Gauntlet</div><div class="sb">'+['coral','blue','yellow','green','purple','orange'].map((c,k)=>'<i style="--k:'+k+';--c:var(--c-'+c+')"></i>').join('')+'</div>';
+  document.body.appendChild(sp);
+  clearTimeout(runSplash.t);runSplash.t=setTimeout(()=>sp.remove(),ms);
+}
+if(homeOpen) runSplash(2300);
 if(homeForce){try{history.replaceState(null,'',location.pathname);}catch(e){}}
 const homeLive=o=>!o.started||phaseOf(o)!=='champion';
 const homeSub=o=>{const n=o.players.length;return o.started?gStatus(o)+(o.gname?' · '+dstr(o.born||o.t||Date.now()):''):n+' players · still being set up';};
@@ -3914,7 +3936,7 @@ document.addEventListener('click',async e=>{
   const k=b.dataset.homeb;if(k!=='delslot'&&k!=='rdel') homeDel=null;
   const fail=t=>{homeErr=t;const el=document.getElementById('home-msg');if(el)el.textContent=t;};
   if(k==='vopen'){homeOpen=false;homeMark();homeSync();}
-  else if(k==='open'){ui.gmenu=false;homeOpen=true;homeErr='';render();homeSync();}
+  else if(k==='open'){ui.gmenu=false;homeOpen=true;homeErr='';render();homeSync();runSplash(1500);}
   else if(k==='cont'){homeOpen=false;homeMark();homeSync();}
   else if(k==='delslot'){
     const id=b.dataset.a;
@@ -3973,7 +3995,7 @@ document.addEventListener('click',async e=>{
   }
 });
 document.addEventListener('click',e=>{
-  const b=e.target.closest('[data-vhome]');if(b){homeOpen=true;homeSync();}
+  const b=e.target.closest('[data-vhome]');if(b){homeOpen=true;homeSync();runSplash(1500);}
 });
 /* ---------- Viewers can restyle their own game piece; the host's copy picks the change up ---------- */
 let lkBusy=false;
@@ -4126,7 +4148,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792992010';let shown=false,last=0;
+  const B='1792992348';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
