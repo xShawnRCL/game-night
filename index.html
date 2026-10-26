@@ -2316,7 +2316,8 @@ function resultLines(t,w){
 
 /* ---------- Hall of Fame: fun records from every saved tournament, rotating every 10 seconds ---------- */
 function statsList(){
-  const arch=S.archive.slice().reverse(),T=arch.map(a=>a.data).filter(Boolean),out=[];
+  const arch=S.archive.slice().reverse(),T=arch.map(a=>a.data&&{...a.data,imp:/^past-/.test(a.id||'')}).filter(Boolean),out=[];
+  const R=T.filter(t=>!t.imp); /* typed-in past gauntlets only carry a winner and crown, so they count for titles, streaks and crowns, not for points, margins, rounds or runner-ups */
   const add=(p,icon,head,body)=>out.push({p,icon,head,body});
   const key=n=>String(n||'').trim().toLowerCase();
   const dstr2=ts=>{try{return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}catch(e){return '';}};
@@ -2338,38 +2339,38 @@ function statsList(){
       const best=Math.max(...runs.map(r=>r.len)),tr=runs.filter(r=>r.len===best);
       if(best>=2){const names=uniqNames(tr.map(r=>r.n)),liveN=uniqNames(tr.filter(r=>r.end===T.length-1).map(r=>r.n));
         add(95+best,'flame','Title streak',names.length===1?`${names[0]} won ${best} gauntlets in a row${liveN.length?' and is still going':''}`:`${nl(names)} each won ${best} gauntlets in a row${liveN.length?` (${nl(liveN)} still going)`:''}`);}}
-    {const w=T.filter(t=>t.margin>0),mm=topT(w,t=>t.margin);
+    {const w=R.filter(t=>t.margin>0),mm=topT(w,t=>t.margin);
       if(mm.length){const m=mm[0],nm=uniqNames(mm.map(t=>t.champ.name));
         add(85+Math.min(10,m.margin/5),'burst','Biggest winning margin',mm.length===1?`${m.champ.name} won by ${m.margin.toFixed(1)} points${m.runner?' over '+m.runner:''} on ${dstr2(m.date)}`:`${nl(nm)} ${nm.length===1?'won':'each won'} by ${m.margin.toFixed(1)} points, tied for the biggest margin`);}
-      if(T.length>=3&&w.length){const cl=topT(w,t=>-t.margin),c=cl[0],nm=uniqNames(cl.map(t=>t.champ.name));
+      if(R.length>=3&&w.length){const cl=topT(w,t=>-t.margin),c=cl[0],nm=uniqNames(cl.map(t=>t.champ.name));
         add(58,'close','Closest finish',cl.length===1?`${c.champ.name} edged ${c.runner||'the field'} by just ${c.margin.toFixed(1)} points`:`${nl(nm)} ${nm.length===1?'won':'each won'} by just ${c.margin.toFixed(1)} points, tied for the closest finish`);}}
-    {const sws=T.filter(t=>t.champ.played>=3&&t.champ.wins===t.champ.played);
+    {const sws=R.filter(t=>t.champ.played>=3&&t.champ.wins===t.champ.played);
       if(sws.length){const nm=uniqNames(sws.map(t=>t.champ.name));
         add(88,'sweep','Clean sweep',sws.length===1?`${sws[0].champ.name} won every one of ${sws[0].champ.played} rounds`:nm.length===1?`${nm[0]} has swept a gauntlet ${sws.length} times, winning every round`:`${nl(nm)} have each won every round of a gauntlet`);}}
-    {const hsA=T.filter(t=>t.stars>=3);
+    {const hsA=R.filter(t=>t.stars>=3);
       if(hsA.length){const ms=Math.max(...hsA.map(t=>t.stars)),mr=Math.max(...hsA.filter(t=>t.stars===ms).map(t=>t.rounds||0)),hh=hsA.filter(t=>t.stars===ms&&(t.rounds||0)===mr),nm=uniqNames(hh.map(t=>t.champ.name)),h0=hh[0];
         add(60+ms*5,'star','Toughest gauntlet',hh.length===1?`${'★'.repeat(ms)} ${h0.rounds} rounds, ${h0.players} players, won by ${h0.champ.name}`:`${'★'.repeat(ms)} ${h0.rounds} rounds, matched by ${hh.length} gauntlets, won by ${nl(nm)}`);}}
-    {const hp=topT(T,t=>t.champ.pts),nm=uniqNames(hp.map(t=>t.champ.name));
-      add(62,'chart','Highest points total',hp.length===1?`${nm[0]} piled up ${hp[0].champ.pts.toFixed(1)} points in one gauntlet`:`${nl(nm)} ${nm.length===1?'each piled':'each piled'} up ${hp[0].champ.pts.toFixed(1)} points in one gauntlet`);}
-    {const cbA=T.filter(t=>t.champ.rank>1),cbT=topT(cbA,t=>t.champ.rank);
+    {const hp=topT(R,t=>t.champ.pts),nm=uniqNames(hp.map(t=>t.champ.name));
+      if(hp.length) add(62,'chart','Highest points total',hp.length===1?`${nm[0]} piled up ${hp[0].champ.pts.toFixed(1)} points in one gauntlet`:`${nl(nm)} ${nm.length===1?'each piled':'each piled'} up ${hp[0].champ.pts.toFixed(1)} points in one gauntlet`);}
+    {const cbA=R.filter(t=>t.champ.rank>1),cbT=topT(cbA,t=>t.champ.rank);
       if(cbT.length){const nm=uniqNames(cbT.map(t=>t.champ.name)),r=cbT[0].champ.rank;
         add(70+Math.min(10,r*3),'climb','Comeback champion',nm.length===1?`${nm[0]} was ranked #${r} after the rounds and still won the title`:`${nl(nm)} were each ranked #${r} after the rounds and still won the title`);}}
-    const sw=T.filter(t=>t.champ.played>=3&&t.champ.wins===t.champ.played)[0];
-    {const mwA=T.filter(t=>t.champ.wins>=3),mwT=topT(mwA,t=>t.champ.wins);
+    const sw=R.filter(t=>t.champ.played>=3&&t.champ.wins===t.champ.played)[0];
+    {const mwA=R.filter(t=>t.champ.wins>=3),mwT=topT(mwA,t=>t.champ.wins);
       if(mwT.length&&!sw){const nm=uniqNames(mwT.map(t=>t.champ.name)),w=mwT[0].champ.wins;
         add(63,'burst','Most round wins in one gauntlet',mwT.length===1?`${mwT[0].champ.name} won ${w} of ${mwT[0].champ.played} rounds on the way to the title`:`${nl(nm)} each won ${w} rounds in a single gauntlet on the way to the title`);}}
-    const ru={},rd2={};T.forEach(t=>{if(t.runner){const k=key(t.runner);ru[k]=(ru[k]||0)+1;rd2[k]=t.runner;}});
+    const ru={},rd2={};R.forEach(t=>{if(t.runner){const k=key(t.runner);ru[k]=(ru[k]||0)+1;rd2[k]=t.runner;}});
     {const rkk=tops(Object.keys(ru),k=>ru[k]);
       if(rkk.length&&ru[rkk[0]]>=2){const n=ru[rkk[0]],nm=nl(rkk.map(k=>rd2[k]));add(54+n,'silver','Always the bridesmaid',rkk.length===1?`${nm} has finished runner-up ${n} times`:`${nm} have each finished runner-up ${n} times`);}}
     const hrs=t=>t.mins>0?t.mins/60:(t.rounds||0)*0.6;
-    const lg=T.slice().sort((a,b)=>hrs(b)-hrs(a))[0];
+    const lg=R.slice().sort((a,b)=>hrs(b)-hrs(a))[0];
     if(lg&&hrs(lg)>=2) add(56,'clock','Marathon',`The longest gauntlet ran ${lg.rounds} rounds, about ${Math.round(hrs(lg))} hours of play`);
-    const tot=T.reduce((a,t)=>a+hrs(t),0);
-    if(T.length>=2&&tot>=4) add(34,'hourglass','Time at the table',`About ${Math.round(tot)} hours of game night so far`);
-    add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${T.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
+    const tot=R.reduce((a,t)=>a+hrs(t),0);
+    if(R.length>=2&&tot>=4) add(34,'hourglass','Time at the table',`About ${Math.round(tot)} hours of game night so far`);
+    add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${R.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
   }
   /* round records, from every saved tournament plus the one in progress */
-  const seq=[];arch.forEach(a=>{if(a.data&&a.data.log) seq.push(a.data.log);});
+  const seq=[];arch.forEach(a=>{if(a.data&&a.data.log&&!/^past-/.test(a.id||'')) seq.push(a.data.log);});
   if(S.started){const cur=roundLog(S);if(cur.length) seq.push(cur);}
   const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[];let bestRound=null;
   seq.forEach(tour=>tour.forEach(rd=>{
@@ -3525,7 +3526,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792985888';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792986013';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3946,7 +3947,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792985888';let shown=false,last=0;
+  const B='1792986013';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
