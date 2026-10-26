@@ -3635,7 +3635,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792990374';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792991163';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -4069,7 +4069,7 @@ document.addEventListener('click',e=>{
     vlSync();renderSafe();
   }
 });
-let viewBusy=false;
+let viewBusy=false,viewLoaded=false;
 async function viewPoll(){
   if(JOIN){
     if(viewBusy) return;viewBusy=true;
@@ -4083,7 +4083,8 @@ async function viewPoll(){
           let lk={};try{lk=await sbRpc('get_looks',{p_code:JOIN})||{};}catch(err){}
           applyLooks(o,lk);const sig=JSON.stringify(lk);
           if(vlTimer) {/* a change is being saved: keep the local copy */}
-          else if(o.t!==S.t||sig!==vSig){vSig=sig;S=ensureDefaults(o);renderSafe();if(vl.on) vlSync();}
+          else if(o.t!==S.t||sig!==vSig){vSig=sig;if(!viewLoaded){viewLoaded=true;ui.fxPhase=undefined;ui.fxDone=null;} /* the first load is not a live moment: no confetti or fanfare for a gauntlet that finished earlier */
+            S=ensureDefaults(o);renderSafe();if(vl.on) vlSync();}
         }
       }
     }catch(e){viewMsg='Could not reach the live copy right now. Trying again.';}
@@ -4150,7 +4151,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792990374';let shown=false,last=0;
+  const B='1792991163';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
