@@ -3539,7 +3539,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792988036';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792988163';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3889,6 +3889,17 @@ document.addEventListener('click',async e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target&&e.target.id==='home-code'){const j=document.querySelector('[data-homeb=join]');if(j) j.click();}
 });
+document.addEventListener('click',async e=>{
+  const vc=e.target.closest('[data-vcopy]');
+  if(vc&&!VIEW){
+    const lab=vc.querySelector('span'),old='Copy viewer link',say=t=>{lab.textContent=t;clearTimeout(vc._t);vc._t=setTimeout(()=>{lab.textContent=old;},2200);};
+    if(!(S.t>0)){say('Set up a gauntlet first');return;}
+    ensureShare();sbSchedule();
+    try{await navigator.clipboard.writeText(joinLink());say('Link copied');}
+    catch(err){say('Could not copy');}
+    return;
+  }
+});
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-vhome]');if(b){homeOpen=true;homeSync();}
 });
@@ -3926,14 +3937,15 @@ function startGh(){
   document.body.classList.toggle('view',VIEW);
   if(VIEW){
     document.title='Game Night Gauntlet · live';
-    const hb=document.getElementById('hbtns');if(hb){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-vhome','1');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Start screen';hb.prepend(v);}
+    const hb=document.getElementById('hbtns');if(hb){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-vhome','1');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Home';hb.prepend(v);}
     const hbx=document.getElementById('hbtns');
     if(hbx){const t2=document.createElement('p');t2.className='tipl vtip';t2.innerHTML='Enjoying the live view? <a href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Support the creator</a>';hbx.parentNode.insertBefore(t2,hbx.nextSibling);}
     viewPoll();setInterval(viewPoll,JOIN?15000:45000);
     if(JOIN) sbChan(JOIN,()=>viewPoll()).catch(()=>{});
     document.addEventListener('visibilitychange',()=>{if(!document.hidden) viewPoll();});
   }else{
-    const hb2=document.getElementById('hbtns');if(hb2&&!hb2.querySelector('.vhome')){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-homeb','open');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Start screen';hb2.prepend(v);}
+    const hb2=document.getElementById('hbtns');if(hb2&&!hb2.querySelector('.vhome')){const v=document.createElement('button');v.type='button';v.className='gmb vhome';v.setAttribute('data-homeb','open');v.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z" fill="currentColor" fill-opacity=".18"/><path d="M10 20v-6h4v6"/></svg>Home';hb2.prepend(v);
+      const c=document.createElement('button');c.type='button';c.className='gmb vcopy';c.setAttribute('data-vcopy','1');c.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.700l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/></svg><span>Copy viewer link</span>';hb2.appendChild(c);}
     try{if(navigator.storage&&navigator.storage.persist) navigator.storage.persist();}catch(e){}
     setStatus();
     /* auto-load: if the published copy is newer than this device's copy (new phone, cleared data, another device), take it */
@@ -3968,7 +3980,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792988036';let shown=false,last=0;
+  const B='1792988163';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
