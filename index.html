@@ -2317,7 +2317,7 @@ function resultLines(t,w){
 /* ---------- Hall of Fame: fun records from every saved tournament, rotating every 10 seconds ---------- */
 function statsList(){
   const arch=S.archive.slice().reverse(),T=arch.map(a=>a.data&&{...a.data,imp:/^past-/.test(a.id||'')}).filter(Boolean),out=[];
-  const R=T.filter(t=>!t.imp); /* typed-in past gauntlets only carry a winner and crown, so they count for titles, streaks and crowns, not for points, margins, rounds or runner-ups */
+  const R=T.filter(t=>!t.imp); /* typed-in past gauntlets only carry a winner and crown, so they count for titles, streaks and crowns, not for points, margins, rounds or runner-ups. Their one logged round (winner plus everyone tied 2nd) does count for game records. */
   const add=(p,icon,head,body)=>out.push({p,icon,head,body});
   const key=n=>String(n||'').trim().toLowerCase();
   const dstr2=ts=>{try{return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}catch(e){return '';}};
@@ -2370,7 +2370,7 @@ function statsList(){
     add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${R.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
   }
   /* round records, from every saved tournament plus the one in progress */
-  const seq=[];arch.forEach(a=>{if(a.data&&a.data.log&&!/^past-/.test(a.id||'')) seq.push(a.data.log);});
+  const seq=[];arch.forEach(a=>{if(a.data&&a.data.log) seq.push(a.data.log);});
   if(S.started){const cur=roundLog(S);if(cur.length) seq.push(cur);}
   const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[];let bestRound=null;
   seq.forEach(tour=>tour.forEach(rd=>{
@@ -3526,7 +3526,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792986055';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792986159';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3947,7 +3947,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792986055';let shown=false,last=0;
+  const B='1792986159';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
