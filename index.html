@@ -2387,12 +2387,19 @@ function statsList(){
         const pk=k+'|'+rd.g;{const o=(pg[pk]=pg[pk]||{k,g:rd.g,seq:[],lb:[]});o.seq.push(w);o.lb.push(lab[ti]);}
         bestRounds.push({n:x.n,v:x.v,g:rd.g});if(!bestRound||x.v>bestRound.v) bestRound={n:x.n,v:x.v,g:rd.g};});});
   }));
-  Object.values(pg).forEach(e=>{
-    const pl=e.seq.length,wn=e.seq.filter(Boolean).length,rate=wn/pl;
-    if(pl>=3&&rate>=0.6&&wn>=2) add(50+Math.min(pl,10)*2+rate*25,'target',`${e.g} specialist`,`${display[e.k]} wins ${Math.round(rate*100)}% of the time: ${wn} of ${pl} games`);
-    let best=0,run=0,bEnd=0;e.seq.forEach((w,ix)=>{run=w?run+1:0;if(run>best){best=run;bEnd=ix;}});
-    if(best>=2){const live=run===best&&run>0;add(Math.min(94,55+best*5),'bolt',`${e.g} win streak`,`${display[e.k]} has won ${best} ${e.g} games in a row${live?' and counting':''}`,'');}
-  });
+  {const byG={};Object.values(pg).forEach(e=>{
+    const pl=e.seq.length,wn=e.seq.filter(Boolean).length;
+    let best=0,run=0;e.seq.forEach(w=>{run=w?run+1:0;if(run>best)best=run;});
+    (byG[e.g]=byG[e.g]||[]).push({k:e.k,pl,wn,rate:wn/pl,best,live:run===best&&run>0});});
+  Object.keys(byG).forEach(g=>{const L=byG[g];
+    const sp=L.filter(x=>x.pl>=3&&x.rate>=0.6&&x.wn>=2);
+    if(sp.length){const mx=Math.max(...sp.map(x=>x.rate)),tp=sp.filter(x=>Math.abs(x.rate-mx)<1e-9),nm=nl(tp.map(x=>display[x.k])),x0=tp.reduce((a,x)=>x.pl>a.pl?x:a,tp[0]);
+      const same=tp.every(x=>x.pl===tp[0].pl&&x.wn===tp[0].wn);
+      add(50+Math.min(x0.pl,10)*2+mx*25,'target',`${g} specialist`,tp.length===1?`${nm} wins ${Math.round(mx*100)}% of the time: ${x0.wn} of ${x0.pl} games`:`${nm} each win ${Math.round(mx*100)}% of the time${same?`: ${x0.wn} of ${x0.pl} games`:''}`);}
+    const bm=Math.max(...L.map(x=>x.best));
+    if(bm>=2){const tp=L.filter(x=>x.best===bm),nm=nl(tp.map(x=>display[x.k])),lv=tp.filter(x=>x.live).map(x=>display[x.k]);
+      add(Math.min(94,55+bm*5),'bolt',`${g} win streak`,tp.length===1?`${nm} has won ${bm} ${g} games in a row${lv.length?' and counting':''}`:`${nm} have each won ${bm} ${g} games in a row${lv.length?(lv.length===tp.length?' and are still going':` (${nl(lv)} still going)`):''}`);}
+  });}
   if(bestRound&&bestRound.v>0){const bt=bestRounds.filter(x=>Math.abs(x.v-bestRound.v)<1e-9),nm=uniqNames(bt.map(x=>x.n));
     add(66,'up','Best single round',bt.length===1?`${bestRound.n} scored +${bestRound.v.toFixed(1)} in ${bestRound.g}`:`${nl(nm)} ${nm.length===1?'each scored':'each scored'} +${bestRound.v.toFixed(1)} in a single round`);}
   {const rate=k=>(wins[k]||0)/plays[k],ld=tops(Object.keys(plays).filter(k=>plays[k]>=6),rate);
@@ -3531,7 +3538,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792986754';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792987089';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3952,7 +3959,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792986754';let shown=false,last=0;
+  const B='1792987089';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
