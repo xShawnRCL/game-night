@@ -668,6 +668,15 @@ const pcol=id=>{
 };
 /* Meeple looks: a colour, a hat and something to hold. Drawn in the same chunky outline as the meeple itself. */
 const HAT_N=['None','Cap','Top hat','Party hat','Wizard hat','Crown','Cowboy hat','Chef hat','Beanie','Propeller cap','Viking helmet','Cat ears','Bunny ears'],ITEM_N=['Nothing','Flag','Balloon','Wand','Dice','Sword','Mug','Book','Ice cream','Magnifying glass','Umbrella','Playing card','Pizza slice'];
+const SHAPE_N=['Meeple','Pawn','Ghost','Peg doll','Cactus','Star'];
+const BODY_SHAPES=[null,
+  {d:'M32 5.5A8.3 8.3 0 0 1 38 19.7Q44 21 44 24.5Q44 26 42 26.5H40.5C40.5 35 45.5 42 49.5 47.5Q52 51 48.5 53.5H15.5Q12 51 14.5 47.5C18.5 42 23.5 35 23.5 26.5H22Q20 26 20 24.5Q20 21 26 19.7A8.3 8.3 0 0 1 32 5.5Z',dx:-7},
+  {d:'M32 4C42 4 49 11 49 21V54L44 49L38 54L32 49L26 54L20 49L15 54V21C15 11 22 4 32 4Z',dx:0},
+  {d:'M32 5a8 8 0 1 0 0 16a8 8 0 1 0 0-16ZM27 24H37Q42 24 44.5 29L50 46Q52 54 44 54H20Q12 54 14 46L19.5 29Q22 24 27 24Z',dx:-6},
+  {d:'M32 4Q40 4 40 12V28H46V21Q46 17.5 49.5 17.5Q53 17.5 53 21V34Q53 38 49 38H40V50Q40 54 36 54H28Q24 54 24 50V42H17Q11 42 11 38V29Q11 25.5 14.5 25.5Q18 25.5 18 29V35H24V12Q24 4 32 4Z',dx:3},
+  {d:'M32.0 4.0L39.1 21.3L57.7 22.7L43.4 34.7L47.9 52.8L32.0 43.0L16.1 52.8L20.6 34.7L6.3 22.7L24.9 21.3Z',dx:0}];
+const bodyD=look=>look&&look.s&&BODY_SHAPES[look.s]?BODY_SHAPES[look.s].d:MEEPLE_D;
+const bodyDx=look=>look&&look.s&&BODY_SHAPES[look.s]?BODY_SHAPES[look.s].dx:0;
 const PAT_N=['Plain','Polka dots','Stars','Horizontal lines','Vertical lines','Chevrons','Diagonal stripes','Checks'];
 const HAT_SHAPES=[null,
   [{d:'M22.5 12.8C22.5 3.4 41.5 3.4 41.5 12.8Z',f:'a'},{d:'M38.5 10.6H51Q52.4 13.6 50 14.4H38.5Z',f:'a'}],
@@ -713,26 +722,26 @@ const PATS=(()=>{
 })();
 const patColor=c=>{const h=String(c).replace('#','');const r=parseInt(h.slice(0,2),16)||0,g=parseInt(h.slice(2,4),16)||0,b=parseInt(h.slice(4,6),16)||0;return (0.299*r+0.587*g+0.114*b)/255>0.78?'rgba(59,53,64,.30)':'rgba(255,255,255,.65)';};
 let MKC=0;
-const lookOf=(id,SS)=>{const p=((SS||S).players||[]).find(x=>x.id===id);const l=(p&&p.look)||{};return {h:Math.max(0,Math.min(HAT_SHAPES.length-1,l.h|0)),i:Math.max(0,Math.min(ITEM_SHAPES.length-1,l.i|0)),p:Math.max(0,Math.min(PATS.length-1,l.p|0))};};
+const lookOf=(id,SS)=>{const p=((SS||S).players||[]).find(x=>x.id===id);const l=(p&&p.look)||{};return {h:Math.max(0,Math.min(HAT_SHAPES.length-1,l.h|0)),i:Math.max(0,Math.min(ITEM_SHAPES.length-1,l.i|0)),p:Math.max(0,Math.min(PATS.length-1,l.p|0)),s:Math.max(0,Math.min(BODY_SHAPES.length-1,l.s|0))};};
 const lookAccent=c=>String(c).toUpperCase()==='#FFD84D'?'#7CC6F5':'#FFD84D';
 function patSvg(look,color,sw){
   if(!look||!look.p||!PATS[look.p]) return '';
   const id='mk'+(++MKC),pc=patColor(color);
   const sh=PATS[look.p].map(q=>q.fill?`<path d="${q.d}" fill="${pc}"/>`:`<path d="${q.d}" fill="none" stroke="${pc}" stroke-width="${q.w}"/>`).join('');
-  return `<clipPath id="${id}"><path d="${MEEPLE_D}"/></clipPath><g clip-path="url(#${id})">${sh}</g><path d="${MEEPLE_D}" fill="none" stroke="var(--edge)" stroke-width="${sw||3}" stroke-linejoin="round"/>`;
+  return `<clipPath id="${id}"><path d="${bodyD(look)}"/></clipPath><g clip-path="url(#${id})">${sh}</g><path d="${bodyD(look)}" fill="none" stroke="var(--edge)" stroke-width="${sw||3}" stroke-linejoin="round"/>`;
 }
 function lookSvg(look,color,sw){
   if(!look||(!look.h&&!look.i&&!look.p)) return '';
   const ac=lookAccent(color),fill={a:ac,e:'#3B3540',w:'#FFFFFF',n:'none'};
   const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${q.w||3.2}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
-  return patSvg(look,color,sw)+(look.i&&ITEM_SHAPES[look.i]?one(ITEM_SHAPES[look.i]):'')+(look.h&&HAT_SHAPES[look.h]?one(HAT_SHAPES[look.h]):'');
+  const dx=bodyDx(look);return patSvg(look,color,sw)+(look.i&&ITEM_SHAPES[look.i]?(dx?`<g transform="translate(${dx} 0)">${one(ITEM_SHAPES[look.i])}</g>`:one(ITEM_SHAPES[look.i])):'')+(look.h&&HAT_SHAPES[look.h]?one(HAT_SHAPES[look.h]):'');
 }
 function lookCanvas(x,look,color,lw){
   if(!look||(!look.h&&!look.i&&!look.p)) return;
-  if(look.p&&PATS[look.p]){const bp=new Path2D(MEEPLE_D),pc=patColor(color);x.save();x.clip(bp);PATS[look.p].forEach(q=>{const p=new Path2D(q.d);if(q.fill){x.fillStyle=pc;x.fill(p);}else{x.lineWidth=q.w;x.strokeStyle=pc;x.stroke(p);}});x.restore();x.lineWidth=lw||3;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(bp);}
+  if(look.p&&PATS[look.p]){const bp=new Path2D(bodyD(look)),pc=patColor(color);x.save();x.clip(bp);PATS[look.p].forEach(q=>{const p=new Path2D(q.d);if(q.fill){x.fillStyle=pc;x.fill(p);}else{x.lineWidth=q.w;x.strokeStyle=pc;x.stroke(p);}});x.restore();x.lineWidth=lw||3;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(bp);}
   const ac=lookAccent(color),fill={a:ac,e:'#3B3540',w:'#FFFFFF'};
   const one=sh=>sh.forEach(q=>{const p=new Path2D(q.d);if(q.f!=='n'){x.fillStyle=fill[q.f];x.fill(p);}x.lineWidth=q.w||3.2;x.lineJoin='round';x.lineCap='round';x.strokeStyle='#3B3540';x.stroke(p);});
-  if(look.i&&ITEM_SHAPES[look.i]) one(ITEM_SHAPES[look.i]);if(look.h&&HAT_SHAPES[look.h]) one(HAT_SHAPES[look.h]);
+  if(look.i&&ITEM_SHAPES[look.i]){x.save();x.translate(bodyDx(look),0);one(ITEM_SHAPES[look.i]);x.restore();}if(look.h&&HAT_SHAPES[look.h]) one(HAT_SHAPES[look.h]);
 }
 const r1=x=>Math.round(x*10)/10;
 const fmt=x=>r1(x).toFixed(1);
@@ -1722,10 +1731,10 @@ const app=document.getElementById('app');
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pname=id=>{const p=S.players.find(p=>p.id===id);return p?p.name:'?';};
 const dots=l=>'●'.repeat(l)+'○'.repeat(5-l);
-const pdot=id=>`<svg class="pawn" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${pcol(id)}" stroke="var(--edge)" stroke-width="5" stroke-linejoin="round"/>${lookSvg(lookOf(id),pcol(id),5)}</svg>`;
+const pdot=id=>`<svg class="pawn" viewBox="0 0 64 64" aria-hidden="true"><path d="${bodyD(lookOf(id))}" fill="${pcol(id)}" stroke="var(--edge)" stroke-width="5" stroke-linejoin="round"/>${lookSvg(lookOf(id),pcol(id),5)}</svg>`;
 const BR=['var(--c-coral)','var(--c-blue)','var(--c-yellow)','var(--c-green)','var(--c-purple)','var(--c-orange)'];
 const MEEPLE_D='M32 5c5.2 0 8.6 3.6 8.6 8.2 0 2.6-1 4.6-2.7 6.2C45.6 21.4 52 25.6 56.6 32c2 2.9.9 6-2.2 7l-8.6 2.4c.4 3 1.6 6.2 3.6 9.2 1 1.6.1 3.4-1.9 3.4H16.5c-2 0-2.9-1.8-1.9-3.4 2-3 3.2-6.2 3.6-9.2L9.6 39c-3.1-1-4.2-4.1-2.2-7C12 25.6 18.4 21.4 26.1 19.4c-1.7-1.6-2.7-3.6-2.7-6.2C23.4 8.6 26.8 5 32 5z';
-const meeple=(c,s,look)=>`<svg class="meeple" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${c}" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/>${lookSvg(look,c,3)}</svg>`;
+const meeple=(c,s,look)=>`<svg class="meeple" width="${s}" height="${s}" viewBox="0 0 64 64" aria-hidden="true"><path d="${bodyD(look)}" fill="${c}" stroke="var(--edge)" stroke-width="3" stroke-linejoin="round"/>${lookSvg(look,c,3)}</svg>`;
 const hm=m=>m>=60?Math.floor(m/60)+'h'+(m%60?' '+(m%60)+'m':''):m+' min';
 const dstr=(ts,withTime)=>{try{return new Date(ts).toLocaleString('en-US',withTime?{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}:{year:'numeric',month:'long',day:'numeric'});}catch(e){return '';}};
 
@@ -1888,6 +1897,7 @@ function hsBullets(m,q){
 function lookIcon(kind,k,col){
   const ac=lookAccent(col),fill={a:ac,e:'#3B3540',w:'#FFFFFF',n:'none'};
   const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${q.w||3.2}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
+  if(kind==='s'){return `<svg width="32" height="32" viewBox="2 2 60 60" aria-hidden="true"><path d="${k?BODY_SHAPES[k].d:MEEPLE_D}" fill="${col}" stroke="#3B3540" stroke-width="3.4" stroke-linejoin="round"/></svg>`;}
   if(kind==='p'){
     const id='mk'+(++MKC),pc=patColor(col);
     const sh=k&&PATS[k]?PATS[k].map(q=>q.fill?`<path d="${q.d}" fill="${pc}"/>`:`<path d="${q.d}" fill="none" stroke="${pc}" stroke-width="${q.w}"/>`).join(''):'';
@@ -1898,13 +1908,15 @@ function lookIcon(kind,k,col){
   if(!k) return none; return `<svg width="24" height="38" viewBox="42 2 30 52" aria-hidden="true">${one(ITEM_SHAPES[k])}</svg>`;
 }
 function lookEditor(p){
-  const l=p.look||{},cur=Number.isInteger(l.c)?l.c:((parseInt(String(p.id).slice(1),10)||1)-1)%PAWN.length,col=PAWN[cur%PAWN.length],hi=l.h|0,ii=l.i|0,pi=l.p|0;
+  const l=p.look||{},cur=Number.isInteger(l.c)?l.c:((parseInt(String(p.id).slice(1),10)||1)-1)%PAWN.length,col=PAWN[cur%PAWN.length],hi=l.h|0,ii=l.i|0,pi=l.p|0,si=l.s|0;
   const sw=PAWN.map((c,k)=>`<button type="button" class="swc${k===cur?' on':''}" style="background:${c}" data-act="lookc" data-a="${p.id}|${k}" aria-label="Colour ${k+1}" aria-pressed="${k===cur}"></button>`).join('');
+  const shps=SHAPE_N.map((nm,k)=>`<button type="button" class="opt${k===si?' on':''}" data-act="looks" data-a="${p.id}|${k}" aria-pressed="${k===si}" aria-label="${nm}" title="${nm}">${lookIcon('s',k,col)}</button>`).join('');
   const pats=PAT_N.map((nm,k)=>`<button type="button" class="opt${k===pi?' on':''}" data-act="lookp" data-a="${p.id}|${k}" aria-pressed="${k===pi}" aria-label="${nm}" title="${nm}">${lookIcon('p',k,col)}</button>`).join('');
   const hats=HAT_N.map((nm,k)=>`<button type="button" class="opt${k===hi?' on':''}" data-act="lookh" data-a="${p.id}|${k}" aria-pressed="${k===hi}" aria-label="${nm}" title="${nm}">${lookIcon('h',k,col)}</button>`).join('');
   const items=ITEM_N.map((nm,k)=>`<button type="button" class="opt${k===ii?' on':''}" data-act="looki" data-a="${p.id}|${k}" aria-pressed="${k===ii}" aria-label="${nm}" title="${nm}">${lookIcon('i',k,col)}</button>`).join('');
-  return `<li class="looked"><div class="lk-head"><span class="lk-pre">${meeple(col,64,{h:hi,i:ii,p:pi})}</span><div><b>${esc(p.name)}</b><div class="muted">Tap anything to try it on.</div></div></div>
+  return `<li class="looked"><div class="lk-head"><span class="lk-pre">${meeple(col,64,{h:hi,i:ii,p:pi,s:si})}</span><div><b>${esc(p.name)}</b><div class="muted">Tap anything to try it on.</div></div></div>
     <div class="lk-sec"><span class="lk-lbl">Colour</span><div class="swrow">${sw}</div></div>
+    <div class="lk-sec"><span class="lk-lbl">Shape</span><div class="optrow">${shps}</div></div>
     <div class="lk-sec"><span class="lk-lbl">Pattern</span><div class="optrow">${pats}</div></div>
     <div class="lk-sec"><span class="lk-lbl">Hat</span><div class="optrow">${hats}</div></div>
     <div class="lk-sec"><span class="lk-lbl">Holding</span><div class="optrow">${items}</div></div>
@@ -2397,7 +2409,7 @@ function viewHistory(){
   const cur=items.length?items.map(x=>x.html).join(''):`<p class="muted">Finished rounds show up here, newest first, with who placed where and the points they earned.</p>`;
   const crownSvg=(T,w,k)=>`<svg class="pcrown" width="${w}" viewBox="64 116 384 274" aria-hidden="true"><defs><mask id="cc${k}" maskUnits="userSpaceOnUse" x="0" y="0" width="520" height="520"><path d="${CROWN_D}" fill="#fff" stroke="#fff" stroke-width="22" stroke-linejoin="round"/></mask><linearGradient id="cg${k}" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".25" stop-color="#fff" stop-opacity=".12"/><stop offset=".5" stop-color="#fff" stop-opacity=".5"/><stop offset=".75" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="${CROWN_D}" fill="${crownColor(T)}" stroke="var(--edge)" stroke-width="22" stroke-linejoin="round"/><g mask="url(#cc${k})"><rect class="crsh" x="0" y="100" width="330" height="320" fill="url(#cg${k})" style="--d:${(k%6)*-0.7}s"/></g></svg>`;
   const past=S.archive.length?`<div class="pgrid">`+S.archive.map((a,i)=>{const T=a.data,op=ui.open['p'+i];
-    const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${MEEPLE_D}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color,4)}</svg>`).join('');
+    const crew=T.standings.map(s=>`<svg class="pm" width="18" height="18" viewBox="0 0 64 64" aria-hidden="true"><path d="${bodyD(s.look)}" fill="${s.color}" stroke="var(--edge)" stroke-width="4" stroke-linejoin="round"/>${lookSvg(s.look,s.color,4)}</svg>`).join('');
     return `<article class="pcard${op?' open':''}"><button type="button" class="pbtn" data-act="ptoggle" data-a="${i}" aria-expanded="${op?'true':'false'}">${crownSvg(T,op?64:84,i)}<span class="pname">${esc(T.champ.name)}</span>${T.stars?`<span class="stars" aria-label="${T.stars}-star gauntlet">${'★'.repeat(T.stars)}</span>`:''}${T.crown?`<span class="pcv mono">${CROWNSVG} Crown victory</span>`:''}<span class="pdate mono">${esc(dstr(T.date))}</span><span class="pcrew">${crew}</span></button>
       ${op?`<div class="pdet"><div class="twrap"><img class="trophy" data-pimg="${i}" alt="Trophy for ${esc(T.champ.name)}. Tap to share or save." data-act="pphoto" data-a="${i}" role="button" tabindex="0" style="cursor:pointer" hidden><div class="tglint" hidden></div></div><p class="muted">${T.finalGame?esc(T.finalGame)+' final · ':''}${T.players} players · ${T.rounds} rounds</p><div class="rfoot"><button type="button" class="btn sm primary shine" data-act="pshare" data-a="${i}">Share trophy</button></div></div>`:''}</article>`;}).join('')+`</div>`:`<p class="muted">Finished gauntlets are saved here with their trophies.</p>`;
   ui.statList=statsList();if((ui.statIdx||0)>=ui.statList.length) ui.statIdx=0;if(!ui.statT) ui.statT=Date.now();
@@ -2415,7 +2427,7 @@ function histCard(tag,g,ts,tables,w,byes,eid){
 const CROWN_D='M104 378 L76 170 L188 262 L256 128 L324 262 L436 170 L408 378 Z';
 const CROWNC=['#FFD84D','#FF8A78','#7CC6F5','#7ED9A6','#C4A8F7','#FFB05C'];
 const crownColor=T=>{let i=(T.cw||0)%CROWNC.length;if(CROWNC[i]===T.champ.color)i=(i+1)%CROWNC.length;return CROWNC[i];};
-function drawMeeple(x,px,py,size,color,lw,look){x.save();x.translate(px,py);x.scale(size/64,size/64);const p=new Path2D(MEEPLE_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);lookCanvas(x,look,color,lw);x.restore();}
+function drawMeeple(x,px,py,size,color,lw,look){x.save();x.translate(px,py);x.scale(size/64,size/64);const p=new Path2D(bodyD(look));x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);lookCanvas(x,look,color,lw);x.restore();}
 function drawCrown(x,px,py,size,color,lw){x.save();x.translate(px,py);x.scale(size/512,size/512);const p=new Path2D(CROWN_D);x.fillStyle=color;x.fill(p);x.lineWidth=lw;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(p);x.restore();}
 function drawChamp(x,px,py,size,T){
   const cs=size*1.3;
@@ -3173,8 +3185,8 @@ function act(name,a,el){
     case 'open':{const r=S.rounds.find(r=>r.id===a[0]);const cur=S.rounds.findIndex(x=>!roundDone(x));const idx=S.rounds.indexOf(r);const now=ui.open[a[0]]!==undefined?ui.open[a[0]]:idx===cur;ui.open[a[0]]=!now;const art=el&&el.closest&&el.closest('.round');if(art){art.classList.toggle('open',!now);el.setAttribute('aria-expanded',String(!now));return false;}break;}
     case 'addplayer':if(S.players.length<MAXP){const id='p'+(S.pseq++);S.players.push({id,name:'Player '+(S.players.length+1)});syncCount();touch();}break;
     case 'look':ui.lookFor=ui.lookFor===a[0]?null:a[0];break;
-    case 'lookc':case 'lookh':case 'looki':case 'lookp':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
-      p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else if(name==='lookp')p.look.p=k;else p.look.i=k;
+    case 'lookc':case 'lookh':case 'looki':case 'lookp':case 'looks':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
+      p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else if(name==='lookp')p.look.p=k;else if(name==='looks')p.look.s=k;else p.look.i=k;
       const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e) e.look={...p.look};touch();break;}
     case 'lookdel':{const p=S.players.find(q=>q.id===a[0]);if(p&&p.rid){S.roster=(S.roster||[]).filter(r=>r.rid!==p.rid);delete p.rid;ui.lookFor=null;touch();}break;}
     case 'pickr':{const p=S.players.find(q=>q.id===a[0]),r=(S.roster||[]).find(q=>q.rid===a[1]);if(p&&r&&!S.players.some(q=>q!==p&&q.rid===r.rid)){p.name=r.name;p.rid=r.rid;if(r.look) p.look={...r.look};else delete p.look;touch();}break;}
@@ -3459,7 +3471,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792983657';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792984274';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3837,7 +3849,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792983657';let shown=false,last=0;
+  const B='1792984274';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
