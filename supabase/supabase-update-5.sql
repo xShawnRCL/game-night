@@ -40,3 +40,13 @@ begin
 end $$;
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- Remove one of your own online gauntlets from the account list (and delete its online copy).
+create or replace function public.delete_my_gauntlet(p_code text) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  delete from public.gauntlets where code = upper(p_code) and owner_id = auth.uid();
+end $$;
+revoke all on function public.delete_my_gauntlet(text) from public, anon;
+grant execute on function public.delete_my_gauntlet(text) to authenticated;
