@@ -2951,10 +2951,6 @@ function dataMgmtHTML(){
     <h3>Past gauntlets</h3>
     <div class="dm">${past||'<p class="muted">None saved yet.</p>'}</div>
     <p class="hint">Deleting a past gauntlet also removes its numbers from the Hall of Fame.</p>
-    <h3>Add past gauntlets</h3>
-    <p class="hint">Paste the code Claude gave you for an older gauntlet, then tap Add. It goes into History in date order and into the Hall of Fame.</p>
-    <textarea class="inp" id="pg-in" rows="3" placeholder="Paste past gauntlet code here" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;font-family:var(--f-mono);font-size:.8rem"></textarea>
-    <p style="margin-top:8px"><button type="button" class="btn sm" data-act="addpast">Add to History</button></p><p class="hint" id="pg-msg" role="status">${esc(ui.pastMsg||'')}</p>
     <h3>Recently deleted</h3>
     <div class="dm">${tr||'<p class="muted">Nothing deleted in the last 7 days.</p>'}</div>`;
 }
@@ -3230,12 +3226,6 @@ function act(name,a,el){
     case 'newt':startOver();touch();break;
     case 'dmcancel':ui.confirm=null;break;
     case 'crownv':{if(typeof VIEW!=='undefined'&&VIEW) return false;S.crownOv=!crownNow(S);touch();break;}
-    case 'addpast':{const el=document.getElementById('pg-in');let arr;try{arr=JSON.parse((el&&el.value||'').trim());}catch(e){arr=null;}
-      if(arr&&!Array.isArray(arr)) arr=[arr];
-      const ok=x=>x&&x.id&&x.data&&x.data.champ&&x.data.champ.name&&typeof x.data.date==='number'&&Array.isArray(x.data.standings);
-      if(!arr||!arr.length||!arr.every(ok)){ui.pastMsg='That code did not look right. Paste the whole thing, from the first [ to the last ].';ui.sbOpen=true;break;}
-      let n=0;arr.forEach(x=>{if(!S.archive.some(a=>a.id===x.id)){S.archive.push({id:String(x.id),data:x.data});n++;}});
-      sortArchive();ui.pastMsg=n?('Added '+n+' past gauntlet'+(n===1?'':'s')+'.'):'Already in History.';ui.sbOpen=true;touch();break;}
     case 'gnew':gNew();touch();break;
     case 'gopen':gOpen(a[0]);touch();break;
     case 'delslot':{if(!arm('delslot:'+a[0])) break;ui.confirm=null;const i=(S.slots||[]).findIndex(x=>x.id===a[0]);if(i>=0){const e=S.slots.splice(i,1)[0];trashPush('slot',e.name||gLabel(e.snap),{slot:e});touch();toast('Deleted. Restore it from Recently deleted for 7 days.');}break;}
@@ -3469,7 +3459,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792983622';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792983657';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3847,7 +3837,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792983622';let shown=false,last=0;
+  const B='1792983657';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
