@@ -3622,7 +3622,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792992395';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792992516';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3906,7 +3906,7 @@ function homeHtml(){
   if(VIEW) return `<div class="hin"><div class="hbrand">${logo?'<svg class="logo" width="132" height="132" viewBox="1 2 62 60" aria-hidden="true">'+logo.innerHTML+'</svg>':''}<h1>Game Night <span class="hl">Gauntlet</span></h1><p class="hsub">You're watching a gauntlet live</p></div>
     <button type="button" class="btn big primary hnew" data-homeb="vopen">Open the live gauntlet</button>
     <section class="card"><div class="cardhead"><h2 class="chip c-blue">Run your own?</h2></div><p class="hint">Game Night Gauntlet is free. Set up your own family board game championship in a couple of minutes.</p><p><a class="btn shine" style="color:inherit;text-decoration:none" href="${location.pathname}?start&guest">Start your own gauntlet</a></p></section>
-    <p class="hby">Created by Shawn RCL · <a class="linkb" href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Support the creator</a></p></div>`;
+    <p class="hby">Created by Shawn RCL · <a class="linkb" href="https://ko-fi.com/gamenightgauntlet" target="_blank" rel="noopener">Support the creator</a> · <a class="linkb" href="privacy.html" target="_blank" rel="noopener">Privacy</a></p></div>`;
   const has=homeHas();
   const row=(o,btn,id)=>`<div class="dmr"><div><b>${esc(o.gname||gLabel({born:o.born,t:o.t}))}</b><span class="muted">${esc(homeSub(o))}</span>${id?`<button type="button" class="linkb homedel${homeDel===id?' armed':''}" data-homeb="delslot" data-a="${id}">${homeDel===id?'Tap again to delete':'Delete'}</button>`:''}</div><span class="dmb">${btn}</span></div>`;
   const cur=has&&homeLive(S)?row(S,`<button type="button" class="btn primary homeopen" data-homeb="cont">Open</button>`):'';
@@ -4148,7 +4148,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792992395';let shown=false,last=0;
+  const B='1792992516';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
