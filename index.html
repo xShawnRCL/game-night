@@ -3635,7 +3635,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792991163';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792991341';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3892,6 +3892,7 @@ let rlAt=0;try{rlAt=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}
 const homeForce=/[?&]start(&|=|$)/.test(location.search),homeGuest=/[?&]guest(&|=|$)/.test(location.search);
 let homeOpen=VIEW||(!homeHas()||homeForce||(!homeSeen()&&Date.now()-rlAt>15000)),homeErr='';
 if(!homeOpen) homeMark();
+if(homeOpen){const _sp=document.getElementById('splash');if(_sp) _sp.remove();} /* the start page has its own big logo; the intro splash would overlap it */
 if(homeForce){try{history.replaceState(null,'',location.pathname);}catch(e){}}
 const homeLive=o=>!o.started||phaseOf(o)!=='champion';
 const homeSub=o=>{const n=o.players.length;return o.started?gStatus(o)+(o.gname?' · '+dstr(o.born||o.t||Date.now()):''):n+' players · still being set up';};
@@ -4151,7 +4152,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792991163';let shown=false,last=0;
+  const B='1792991341';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
