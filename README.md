@@ -44,7 +44,9 @@ It was made for one family that owns single copies of most of its games, so peop
 | **Picks the games for you** | Say about how many hours you have and tap Auto-pick. The app chooses games from a catalog of 625 family games, fitted to your player count. Or build the lineup yourself, with as many rounds of each game as you like. |
 | **Watch live** | Family can follow along from their own phones with a short code. They can only watch. |
 | **Saved automatically** | Everything lives on your phone, with an online copy so a lost phone does not lose the gauntlet. |
-| **Trophies and history** | Finished gauntlets are kept with a printable trophy, a star rating and fun records. |
+| **Trophies and history** | Finished gauntlets are kept with a printable trophy, a star rating and crown victories. |
+| **Hall of Fame** | A rotating set of records and fun stats built from every finished gauntlet: title streaks, rivalries, game kings, longest reign and more. |
+| **Your own meeple** | Each player can pick a colour, body shape, pattern, hat and held item. Special patterns unlock with Gauntlet Rank stars. |
 
 ---
 
@@ -55,8 +57,10 @@ The app starts on a **start screen**. From there you have three ways in.
 | I want to... | Do this |
 |---|---|
 | **Run a gauntlet** | Tap **Start a new gauntlet**. Name the players, check the game lineup, then tap **Start gauntlet**. |
-| **Carry on with one I already started** | Pick it from **Your gauntlets**. It opens right where you left off. |
-| **Watch someone else's** | Type the host's code under **Have a code?**, or open the link they sent you. |
+| **Carry on with one I already started** | Pick it from **Your gauntlets**. It opens right where you left off. Only unfinished gauntlets are listed here. Finished ones live in History. |
+| **Watch someone else's** | Type the host's code under **Have a code?**, or open the link they sent you. A viewer link opens a start page first, then **Open the live gauntlet**. |
+
+The **Home** button at the bottom of every page brings you back to the start screen, and the loading screen plays each time it opens.
 
 > [!TIP]
 > Add the app to your home screen from your browser's share menu. It then opens like a normal app and works without a connection.
@@ -92,7 +96,7 @@ The strip of boxes at the top is the **round bar**. Each box is a round. The sta
 
 Setup is three collapsible cards, then the **Start gauntlet** button. Each card shows a short summary when it is closed.
 
-1. **Who's playing?** From 2 to 12 players. Every player needs a name, and no two can match, or Start stays locked. Tap a meeple to pick a colour, a hat and something to hold.
+1. **Who's playing?** From 2 to 12 players. Every player needs a name, and no two can match, or Start stays locked. Tap a meeple to customise it: 18 colours, 6 body shapes, patterns, 12 hats and 12 things to hold. Names you have used before appear as **Saved players**, and sign-in keeps them on every device.
 2. **Rounds.** Your lineup of games.
    - Use **− and +** on each game to set how many rounds it gets. 0 leaves it out. Play Uno for 8 rounds, or run a single-game tournament.
    - **Auto-pick games** fills the lineup for about the number of hours you set. Each press gives a fresh mix, and you can then add, remove or change anything.
@@ -146,6 +150,10 @@ When a round has more players than one table seats, the app splits everyone into
 | **Small bonus** | Players who ranked higher in the rounds start with a few extra points. |
 | **Keep points** | All the round points carry into the final, and the final adds its own points on top. The final's top payout grows with the gap between finalists, so the title is never decided before the final. |
 
+### Crown victories
+
+When the champion of the previous gauntlet wins again, that is a **crown victory**. It is worked out automatically, and the host can tick or untick it on the champion screen. Crown victories show in History, on the printed trophy and in the Hall of Fame.
+
 ### Stars
 
 Each finished gauntlet earns **0 to 5 stars**. They rate how big it was. More rounds, heavier games, more players and playing a final all add up. Repeating the same game counts for less each time, so eight rounds of Uno does not earn a big rating. Roughly:
@@ -158,7 +166,11 @@ Each finished gauntlet earns **0 to 5 stars**. They rate how big it was. More ro
 | 4 | about 6 hours, a holiday afternoon |
 | 5 | 8 hours or more, a full day or a few weeks of weeknights |
 
-The rating depends on how much is played, not on how it is split into nights.
+The rating depends on how much is played, not on how it is split into nights. The best rating across your history also unlocks special meeple patterns: Argyle at 1 star, Waves at 2, Confetti at 3, Night sky at 4 and Prestige at 5.
+
+### Hall of Fame
+
+The Hall of Fame sits at the top of **History** and rotates through records, with a counter such as "5 / 22". Tap the right side for the next card or the left side for the previous one, or swipe. The most interesting cards come first and the order is shuffled within each group. When players tie for a record, all of them are named. Cards only appear once there is enough history to support them.
 
 ---
 
@@ -184,6 +196,8 @@ flowchart TB
 > [!IMPORTANT]
 > Keep the admin code private. Anyone who has it can change the scores. It is under **Setup**, then **Share & backup**, then **Admin access**.
 
+The host can copy the viewer link with **Copy viewer link** at the bottom of the app. Viewers can tap **My game piece** to pick their name and restyle their own meeple. The host's copy picks the change up automatically.
+
 ### Good to know
 
 - **Each gauntlet is separate.** Start a second gauntlet with a different group and it gets its own pair of codes. The first one keeps its viewers.
@@ -199,6 +213,7 @@ flowchart TB
 |---|---|
 | **On your phone** | The whole app state, saved after every change. This is the main copy. |
 | **Online copy** | One copy per gauntlet, updated automatically, so viewers can watch and a lost phone can be recovered with the admin code. |
+| **Your account** | If you sign in, your saved players and their meeple designs follow you across devices. |
 | **Backup file** | **Setup, Share & backup, Export progress** saves a file you can load back later. Worth doing after each game night. |
 
 What goes online is the gauntlet itself. Your other saved gauntlets, your deleted items and your admin codes are never included in what viewers can fetch.
@@ -214,11 +229,11 @@ The choices are on purpose. This is the reasoning.
 
 **One HTML file, no framework.** The whole app is a single file of plain JavaScript. It is easy to host anywhere, loads fast on a phone, works offline, and is simple to keep working for years.
 
-**No accounts.** Making people sign up before a board game night is a bad start. A short code does the job. An optional email to recover gauntlets could be added later.
+**No accounts required.** Making people sign up before a board game night is a bad start. A short code does the job. An optional email sign-in is there for recovering gauntlets and saved players on a new phone.
 
 **Two separate codes.** A viewer code that was also the admin code would let any viewer edit the scores. Splitting them means sharing a link is always safe.
 
-**A locked online table.** The online store is not open for anyone to browse. Direct access to the table is switched off, and the app can only use four fixed functions: save, read, find by admin code, and delete. Saving or deleting needs the matching admin code. Only a fingerprint of the admin code is stored, never the code itself.
+**A locked online table.** The online store is not open for anyone to browse. Direct access to the tables is switched off, and the app can only use a short list of fixed functions: save, read, find by admin code, delete, account recovery, saved players and viewer meeple changes. Saving or deleting a gauntlet needs the matching admin code. Only a fingerprint of the admin code is stored, never the code itself.
 
 **A tiny "changed" ping for live updates.** The host's phone sends a message with no data in it. Viewers' phones then fetch the new data through the normal secured route. A fake message cannot put fake scores on anyone's screen, and viewers also check every 15 seconds as a backup.
 
@@ -249,11 +264,11 @@ flowchart LR
 
 1. **Make a repo** and put the site files in it: `index.html`, `manifest.webmanifest`, `version.json` and the icon images.
 2. **Turn on GitHub Pages** for the repo, from the main branch. The site is then at `https://YOURNAME.github.io/REPO/`.
-3. **Optional, for live sharing:** create a free Supabase project. In its SQL editor, run the setup SQL that creates the locked table and the four functions. Then put the project's address and its public (publishable) key at the top of the app's script.
+3. **Optional, for live sharing:** create a free Supabase project. In its SQL editor, run the files in the `supabase` folder one at a time, in order: `supabase-setup.sql`, then `supabase-update-2.sql` through `supabase-update-6.sql`. Then put the project's address and its public (publishable) key at the top of the app's script.
 4. **Updating:** replace the files and commit. Open copies update themselves.
 
 > [!NOTE]
-> The publishable key is meant to be public. It can only call the four functions above. Never put a `service_role` or secret key in the app.
+> The publishable key is meant to be public. It can only call the fixed functions above. Never put a `service_role` or secret key in the app.
 
 ### Files
 
@@ -262,15 +277,18 @@ flowchart LR
 | `index.html` | The whole app. |
 | `version.json` | A small file the app checks to find out when a newer version is out. |
 | `manifest.webmanifest` | Lets the app be added to a phone's home screen. |
-| `icon-*.png`, `icon.svg`, `favicon-*.png` | The crossed-swords icons. |
+| `icon-*.png`, `icon.svg`, `favicon-*.png`, `og.png` | The crossed-swords icons and the link preview image. |
+| `privacy.html` | The privacy page linked from the start screens. |
+| `supabase/` | The database setup and update SQL files, run in order. |
+| `.github/workflows/keepalive.yml` | Pings the database so the free project does not pause. |
 
 ---
 
 ## What may come next
 
 - Rules and scoring help for games that do not normally have them, such as pen-and-paper games.
-- Optional email sign-in to find your gauntlets on any device.
-- Player stats across many gauntlets.
+- Round length tracking: a Start round tap, with the round ending when placements are entered.
+- Full player stats across many gauntlets.
 - A wide-screen layout for laptops and iPads that shows more at once, instead of the phone layout stretched wider.
 
 ---
@@ -283,7 +301,7 @@ flowchart LR
 
 ## Optional email sign-in
 
-On the start screen or in Share & backup, you can sign in with your email. We email a one-time code (no password). Your gauntlets are then linked to the account, so after losing a phone or clearing the browser you can sign in and open them again; opening one on a new phone replaces the old phone's admin code. Signing in is optional and games work without it. Only the email address is stored. Database setup lives in `supabase/supabase-update-3.sql`.
+On the start screen or in Share & backup, you can sign in with your email. We email a one-time code (no password). Your gauntlets are then linked to the account, so after losing a phone or clearing the browser you can sign in and open them again; opening one on a new phone replaces the old phone's admin code. Signing in is optional and games work without it. Only the email address is stored, plus your saved players and their designs if you use them. Database setup lives in `supabase/supabase-update-3.sql` (sign-in) and `supabase/supabase-update-5.sql` (saved players).
 
 
 ## Running costs and limits
@@ -294,4 +312,5 @@ The app runs on free tiers (GitHub Pages and Supabase). The things that matter:
 - **Storage:** the free database holds 500 MB. A typical gauntlet is only a few kilobytes, so that is many thousands of gauntlets. New gauntlets stop being accepted at 350 MB so the database never fills.
 - **Spam guard:** one connection can create at most 30 new live gauntlets per hour (`supabase/supabase-update-4.sql`). Editing an existing gauntlet is never limited.
 - **Live viewers:** about 200 phones can be connected at the same moment on the free plan.
+- **Support:** if you enjoy the app, you can [support the creator on Ko-fi](https://ko-fi.com/gamenightgauntlet).
 - **Privacy:** see [privacy.html](privacy.html). Signed-in users can delete their account and all linked gauntlets from Share & backup.
