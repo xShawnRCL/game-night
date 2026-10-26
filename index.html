@@ -1072,7 +1072,7 @@ function trophyData(S){
   return {title:'Game Night Gauntlet',date:S.finishedAt||Date.now(),
     crown:crownNow(S),champ:{name:nm(champ),color:pcol(champ),pts:me.pts,wins:me.wins,rank:me.rank,played:me.played},
     played,rlist,cw:cw%6,best,finalGame:fg?fg.name:'',solo,stars:gauntletStars(S,!solo),runner:rows[1]?rows[1].name:'',margin:rows[1]?r1(me.pts-rows[1].pts):0,scored:!solo&&S.headStart>0,carry:hsCarry(S),final:fin,
-    standings:rows.map(r=>({name:r.name,pts:r.pts,rank:r.rank,color:pcol(r.id),look:lookOf(r.id,S),champ:r.id===champ})),log:roundLog(S),
+    standings:rows.map(r=>{const fp=fin.find(f=>f.name===r.name);return {name:r.name,pts:r.pts,rank:r.rank,place:fp&&Number.isFinite(fp.place)?fp.place:r.rank,fin:!!fp,color:pcol(r.id),look:lookOf(r.id,S),champ:r.id===champ};}),log:roundLog(S),
     rounds:S.rounds.length,players:S.players.length,games:names.length,
     mins:S.rounds.reduce((a,r)=>{const g=gameOf(S,r.gameId);return a+(g?roundMinutes(g,r.tables.length,r.tables.some(t=>t.ids.length>g.max)):0);},0)};
 }
@@ -1082,7 +1082,8 @@ function ensureDefaults(S){
   /* typed-in past gauntlets: the one logged round must credit the real champion (an earlier version credited the wrong player on some) */
   (S.archive||[]).forEach(a=>{const T=a&&a.data;if(!a||!/^past-/.test(a.id||'')||!T||!T.champ||!T.standings||!T.log||!T.log.length) return;
     const g=T.log[0].g,cn=String(T.champ.name).trim().toLowerCase();
-    T.log=[{g:g,w:T.log[0].w||1,t:[T.standings.map(q=>{const win=String(q.name).trim().toLowerCase()===cn;return {n:q.name,p:win?1:2,v:win?10:4.2};})]}];});
+    T.log=[{g:g,w:T.log[0].w||1,t:[T.standings.map(q=>{const win=String(q.name).trim().toLowerCase()===cn;return {n:q.name,p:win?1:2,v:win?10:4.2};})]}];
+    T.standings.forEach(q=>{q.place=String(q.name).trim().toLowerCase()===cn?1:2;});});
   S.slots=(S.slots||[]).filter(x=>x&&x.snap).slice(0,12);
   S.trash=(S.trash||[]).filter(t=>t&&t.payload&&Date.now()-t.at<6048e5).slice(0,20);
   if(!S.rv){S.rv=1;
@@ -2330,6 +2331,7 @@ function statsList(){
   const add=(p,icon,head,body,src)=>out.push({p,icon,head,body,src});
   const key=n=>String(n||'').trim().toLowerCase();
   const dstr2=ts=>{try{return new Date(ts).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}catch(e){return '';}};
+  const verbH=(a,one,many)=>a.length===1?one:many;
   const nl=a=>a.length<2?a.join(''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
   const tops=(keys,f)=>{let m=-Infinity;keys.forEach(k=>{const v=f(k);if(v>m)m=v;});return keys.filter(k=>Math.abs(f(k)-m)<1e-9);};
   const topT=(arr,f)=>{let m=-Infinity;arr.forEach(t=>{const v=f(t);if(v>m)m=v;});return arr.filter(t=>Math.abs(f(t)-m)<1e-9);};
@@ -2376,16 +2378,47 @@ function statsList(){
     if(lg&&hrs(lg)>=2) add(56,'clock','Marathon',`The longest gauntlet ran ${lg.rounds} rounds, about ${Math.round(hrs(lg))} hours of play`);
     const tot=R.reduce((a,t)=>a+hrs(t),0);
     if(R.length>=2&&tot>=4) add(34,'hourglass','Time at the table',`About ${Math.round(tot)} hours of game night so far`);
+    /* placement-based cards use only real gauntlets (R); typed-in ones do not know everyone's finish */
+    const placeOf=(q,t)=>Number.isFinite(q.place)?q.place:(q.champ?1:Math.max(2,q.rank||2));
+    const dstD=ms=>Math.round(ms/864e5),nmOf={};
+    const part={},ttl={},pl2={},att={};
+    R.forEach(t=>(t.standings||[]).forEach(q=>{const k=key(q.name);nmOf[k]=q.name;part[k]=(part[k]||0)+1;}));
+    T.forEach(t=>{const k=key(t.champ.name);nmOf[k]=nmOf[k]||t.champ.name;ttl[k]=(ttl[k]||0)+1;});
+    {const w=Object.keys(part).filter(k=>!ttl[k]&&part[k]>=3),tp=tops(w,k=>part[k]);
+      if(tp.length) add(66,'wait','Still waiting for a title',`${nl(tp.map(k=>nmOf[k]))} ${verbH(tp,'has','have each')} played ${part[tp[0]]} gauntlets without a title yet`);}
+    {const pc={},sp={};R.forEach(t=>{const st=t.standings||[];if(st.length<4) return;const mx=Math.max(...st.map(q=>placeOf(q,t)));st.forEach(q=>{const k=key(q.name),pp=placeOf(q,t);if(pp<=3) pc[k]=(pc[k]||0)+1;if(pp===mx&&mx>=4) sp[k]=(sp[k]||0)+1;});});
+      const pt=tops(Object.keys(pc),k=>pc[k]);if(pt.length&&pc[pt[0]]>=2) add(61,'podium','Podium regular',`${nl(pt.map(k=>nmOf[k]))} ${verbH(pt,'has','have each')} finished in the top 3 ${pc[pt[0]]} times`);
+      const st2=tops(Object.keys(sp),k=>sp[k]);if(st2.length&&sp[st2[0]]>=2) add(55,'spoon','Wooden spoon',`${nl(st2.map(k=>nmOf[k]))} ${verbH(st2,'has','have each')} finished last ${sp[st2[0]]} times`);}
+    {const seen=new Set();let lf=null;T.forEach((t,i)=>{const k=key(t.champ.name);if(!seen.has(k)&&i>0) lf=t;seen.add(k);});
+      if(lf) add(59,'sparkle','First-time champion',`${lf.champ.name} won their very first gauntlet on ${dstr2(lf.date)}`);}
+    {const segs=[];T.forEach((t,i)=>{const k=key(t.champ.name);if(i>0&&key(T[i-1].champ.name)===k) return;segs.push({k,n:t.champ.name,start:t.date||0});});
+      segs.forEach((g,i)=>{g.end=i<segs.length-1?segs[i+1].start:Date.now();g.live=i===segs.length-1;g.days=dstD(g.end-g.start);});
+      const lg2=segs.filter(g=>g.days>0&&g.start>0);
+      if(lg2.length>=2){const mx=Math.max(...lg2.map(g=>g.days)),tp=lg2.filter(g=>g.days===mx),nm=uniqNames(tp.map(g=>g.n));
+        add(64,'reign','Longest reign',`${nl(nm)} ${tp.length===1&&tp[0].live?'has held':'held'} the title for ${mx} days${tp.length===1?` (${dstr2(tp[0].start)}${tp[0].live?', and counting':' to '+dstr2(tp[0].end)})`:''}`);}
+      const last2={};segs.forEach(g=>{last2[g.k]=g;});const dr=Object.keys(last2).filter(k=>!last2[k].live&&last2[k].end>0),tpd=tops(dr,k=>Date.now()-last2[k].end);
+      if(tpd.length){const gd=last2[tpd[0]];const dd=dstD(Date.now()-gd.end);if(dd>=30) add(52,'drought','Title drought',`${nl(tpd.map(k=>last2[k].n))} ${verbH(tpd,'has not','have not')} held the title for ${dd} days`);}}
+    {const hist={};R.forEach((t,ti)=>{const here=new Set((t.standings||[]).map(q=>key(q.name)));Object.keys(nmOf).forEach(k=>{const h=hist[k]=hist[k]||{run:0,best:0};if(here.has(k)){h.run++;if(h.run>h.best)h.best=h.run;}else h.run=0;});});
+      const tp=tops(Object.keys(hist),k=>hist[k].best);if(tp.length&&hist[tp[0]].best>=3) add(48,'attend','Never misses a night',`${nl(tp.map(k=>nmOf[k]))} ${verbH(tp,'has','have each')} played ${hist[tp[0]].best} gauntlets in a row`);}
+    {const pls={};R.forEach(t=>{const st=t.standings||[];if(st.length<4) return;st.forEach(q=>{const k=key(q.name);(pls[k]=pls[k]||[]).push(placeOf(q,t));});});
+      const sd={};Object.keys(pls).forEach(k=>{const a=pls[k];if(a.length<4) return;const m=a.reduce((x,y)=>x+y,0)/a.length;sd[k]={s:Math.sqrt(a.reduce((x,y)=>x+(y-m)*(y-m),0)/a.length),m:m};});
+      const ks=Object.keys(sd);if(ks.length){const mn=Math.min(...ks.map(k=>sd[k].s)),tp=ks.filter(k=>Math.abs(sd[k].s-mn)<1e-9);
+        if(mn<1.2) add(46,'steady','Mr. Consistent',tp.length===1?`${nmOf[tp[0]]} lands in almost the same spot every time (average finish ${sd[tp[0]].m.toFixed(1)})`:`${nl(tp.map(k=>nmOf[k]))} each land in almost the same spot every time`);}}
+    {const hit=T.filter(t=>{if(!t.date) return false;const d=new Date(t.date),n=new Date();if(d.getFullYear()>=n.getFullYear()) return false;const m=new Date(n.getFullYear(),d.getMonth(),d.getDate());return Math.abs(m-n)<=3*864e5;}).pop();
+      if(hit){const yrs=new Date().getFullYear()-new Date(hit.date).getFullYear();add(60,'cal','This week in history',`${yrs} year${yrs===1?'':'s'} ago, ${hit.champ.name} won the gauntlet on ${dstr2(hit.date)}`);}}
     add(30,'book','Gauntlet history',`${T.length} gauntlet${T.length===1?'':'s'} crowned and ${R.reduce((a,t)=>a+(t.rounds||0),0)} rounds played`);
   }
   /* round records, from every saved tournament plus the one in progress */
   const seq=[],lab=[];arch.forEach(a=>{if(a.data&&a.data.log){seq.push(a.data.log);lab.push(dstr2(a.data.date)+(/^past-/.test(a.id||'')?' (typed in)':''));}});
   if(S.started){const cur=roundLog(S);if(cur.length){seq.push(cur);lab.push('this gauntlet, in progress');}}
-  const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[],lastLi={};let bestRound=null;
+  const pg={},plays={},wins={},gcount={},display={},hv={},bestRounds=[],lastLi={},pairs={},lk={};let bestRound=null;
   seq.forEach((tour,ti)=>tour.forEach(rd=>{
     gcount[rd.g]=(gcount[rd.g]||0)+rd.t.length;
     rd.t.forEach(tab=>{if(!tab.length) return;const top=Math.min(...tab.map(x=>x.p));
+      for(let i=0;i<tab.length;i++)for(let j=i+1;j<tab.length;j++){const a=tab[i],b=tab[j];if(a.p===b.p) continue;const ka=key(a.n),kb=key(b.n),sw=ka>kb,pk=sw?kb+'|'+ka:ka+'|'+kb,e2=pairs[pk]=pairs[pk]||{a:sw?kb:ka,b:sw?ka:kb,aw:0,bw:0,n:0};const aWins=a.p<b.p;if(aWins!==sw) e2.aw++;else e2.bw++;e2.n++;}
+      const lu=(S.games.find(g=>g.name===rd.g)||{}).luck;
       tab.forEach(x=>{const k=key(x.n);display[k]=x.n;
+        if(lu!==undefined){const z=lk[k]=lk[k]||{lp:0,lw:0,hp:0,hw:0};if(lu<=1){z.lp++;if(x.p===top) z.lw++;}else if(lu>=4){z.hp++;if(x.p===top) z.hw++;}}
         plays[k]=(plays[k]||0)+1;const w=x.p===top;if(w) wins[k]=(wins[k]||0)+1;
         if(rd.w===3){const h=hv[k]=hv[k]||{p:0,w:0};h.p++;if(w)h.w++;}
         const pk=k+'|'+rd.g;{const o=(pg[pk]=pg[pk]||{k,g:rd.g,seq:[],lb:[]});o.seq.push(w);o.lb.push(lab[ti]);o.li=ti;lastLi[rd.g]=ti;}
@@ -2395,6 +2428,8 @@ function statsList(){
     const pl=e.seq.length,wn=e.seq.filter(Boolean).length;
     let best=0,run=0;e.seq.forEach(w=>{run=w?run+1:0;if(run>best)best=run;});
     (byG[e.g]=byG[e.g]||[]).push({k:e.k,pl,wn,rate:wn/pl,best,live:run===best&&run>0});});
+  {let bk=null;Object.keys(byG).forEach(g=>{const L=byG[g],mx=Math.max(...L.map(x=>x.wn));if(mx>=3){const tp=L.filter(x=>x.wn===mx),tot=L.reduce((a,x)=>a+x.pl,0);if(!bk||mx>bk.mx||(mx===bk.mx&&tot>bk.tot)) bk={g,mx,tp,tot};}});
+    if(bk) add(58,'gking','Game king',`${nl(bk.tp.map(x=>display[x.k]))} ${verbH(bk.tp,'has','have each')} ${bk.mx} wins in ${bk.g}, more than anyone else`);}
   Object.keys(byG).forEach(g=>{const L=byG[g];
     const sp=L.filter(x=>x.pl>=3&&x.rate>=0.6&&x.wn>=2);
     if(sp.length){const mx=Math.max(...sp.map(x=>x.rate)),tp=sp.filter(x=>Math.abs(x.rate-mx)<1e-9),nm=nl(tp.map(x=>display[x.k])),x0=tp.reduce((a,x)=>x.pl>a.pl?x:a,tp[0]);
@@ -2404,6 +2439,13 @@ function statsList(){
     if(bm>=2){const tp=L.filter(x=>x.best===bm),nm=nl(tp.map(x=>display[x.k])),lv=tp.filter(x=>x.live).map(x=>display[x.k]);
       add(Math.min(94,55+bm*5),'bolt',`${g} win streak`,tp.length===1?`${nm} has won ${bm} ${g} games in a row${lv.length?' and counting':''}`:`${nm} have each won ${bm} ${g} games in a row${lv.length?(lv.length===tp.length?' and are still going':` (${nl(lv)} still going)`):''}`);}
   });}
+  {const ps=Object.values(pairs).filter(e=>e.n>=6);
+    if(ps.length){const sc=e=>Math.abs(e.aw-e.bw)/e.n,mn=Math.min(...ps.map(sc)),tp=ps.filter(e=>Math.abs(sc(e)-mn)<1e-9),mxn=Math.max(...tp.map(e=>e.n)),t2=tp.filter(e=>e.n===mxn).slice(0,2);
+      add(65,'rivals',mn<=0.2?'Rivalry':'Nemesis',t2.map(e=>mn<=0.2?`${display[e.a]} and ${display[e.b]} are neck and neck in head-to-head games, ${e.aw} to ${e.bw}`:`${display[e.aw>e.bw?e.a:e.b]} has beaten ${display[e.aw>e.bw?e.b:e.a]} ${Math.max(e.aw,e.bw)} times to ${Math.min(e.aw,e.bw)} in head-to-head games`).join('. '));}}
+  {const sk=k=>lk[k].lw/lk[k].lp,ks=Object.keys(lk).filter(k=>lk[k].lp>=5&&lk[k].lw>0),tp=tops(ks,sk);
+    if(tp.length) add(47,'bulb','Skill player',`${nl(tp.map(k=>display[k]))} ${verbH(tp,'wins','each win')} ${Math.round(sk(tp[0])*100)}% of the low-luck games`);
+    const lc=k=>lk[k].hw/lk[k].hp,ks2=Object.keys(lk).filter(k=>lk[k].hp>=5&&lk[k].hw>0),tp2=tops(ks2,lc);
+    if(tp2.length) add(45,'clover','Lucky charm',`${nl(tp2.map(k=>display[k]))} ${verbH(tp2,'wins','each win')} ${Math.round(lc(tp2[0])*100)}% of the high-luck games`);}
   if(bestRound&&bestRound.v>0){const bt=bestRounds.filter(x=>Math.abs(x.v-bestRound.v)<1e-9),nm=uniqNames(bt.map(x=>x.n));
     add(66,'up','Best single round',bt.length===1?`${bestRound.n} scored +${bestRound.v.toFixed(1)} in ${bestRound.g}`:`${nl(nm)} ${nm.length===1?'each scored':'each scored'} +${bestRound.v.toFixed(1)} in a single round`);}
   {const rate=k=>(wins[k]||0)/plays[k],ld=tops(Object.keys(plays).filter(k=>plays[k]>=6),rate);
@@ -2418,7 +2460,7 @@ function statsList(){
     if(fv.length&&gcount[fv[0]]>=3) add(36,'dice','Family favourite',fv.length===1?`${fv[0]} has been played ${gcount[fv[0]]} times`:`${nl(fv)} have each been played ${gcount[fv[0]]} times`);}
   out.sort((a,b)=>b.p-a.p);
   const seen=new Set(),kc={},uniq=[];out.forEach(x=>{const kind=x.icon;kc[kind]=(kc[kind]||0)+1;if(!seen.has(x.head)&&kc[kind]<=(x.icon==='target'||x.icon==='bolt'?2:1)){seen.add(x.head);uniq.push(x);}});
-  return uniq.slice(0,12);
+  return uniq.slice(0,16);
 }
 const STAT_STAR=(n,a,b)=>{let d='';for(let k=0;k<n*2;k++){const r=k%2?b:a,t=k*Math.PI/n-Math.PI/2;d+=(k?'L':'M')+(32+r*Math.cos(t)).toFixed(1)+' '+(32+r*Math.sin(t)).toFixed(1);}return d+'Z';};
 const STAT_ICON={
@@ -2443,7 +2485,22 @@ const STAT_ICON={
   dice:'<rect x="9" y="9" width="46" height="46" rx="9" fill="#fff"/><path d="M22 22h.1M42 22h.1M32 32h.1M22 42h.1M42 42h.1" fill="none" stroke-width="6"/>'
 };
 STAT_ICON.silver=STAT_ICON.medal.replace('#FFD84D','#D5D0E0');
-const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-coral',close:'c-blue',sweep:'c-green',star:'c-yellow',chart:'c-blue',book:'c-purple',target:'c-green',bolt:'c-purple',up:'c-green',medal:'c-blue',dice:'c-coral',clock:'c-purple',hourglass:'c-blue',weight:'c-coral',people:'c-green',climb:'c-green',silver:'c-blue'};
+Object.assign(STAT_ICON,{
+  rivals:'<path d="M8 22h38M36 11l11 11-11 11" fill="none" stroke-width="5"/><path d="M56 44H18M28 33L17 44l11 11" fill="none" stroke-width="5"/>',
+  spoon:'<ellipse cx="32" cy="20" rx="13" ry="16" fill="#E0C9A0"/><path d="M32 36v21" fill="none" stroke-width="7"/>',
+  podium:'<rect x="7" y="30" width="15" height="25" fill="#D5D0E0"/><rect x="24.500" y="14" width="15" height="41" fill="#FFD84D"/><rect x="42" y="38" width="15" height="17" fill="#E8A97E"/>',
+  wait:'<circle cx="32" cy="32" r="25" fill="#7CC6F5"/><path d="M32 18v15l-9 8" fill="none" stroke-width="5"/><path d="M52 8l4 8-8 2z" fill="#FFD84D"/>',
+  reign:'<path d="M9 48L14 17L26 31L32 11L38 31L50 17L55 48Z" fill="#FF8A78"/><path d="M9 54h46" fill="none"/>',
+  drought:'<circle cx="32" cy="32" r="13" fill="#FFB05C"/><path d="M32 6v9M32 49v9M6 32h9M49 32h9M14 14l6 6M44 44l6 6M14 50l6-6M44 20l6-6" fill="none" stroke-width="4.500"/>',
+  sparkle:'<path d="'+STAT_STAR(4,27,9)+'" fill="#FFD84D"/><path d="M50 8v10M45 13h10" fill="none" stroke-width="4"/>',
+  attend:'<rect x="9" y="12" width="46" height="44" rx="8" fill="#fff"/><path d="M9 26h46M20 6v12M44 6v12" fill="none"/><path d="M22 41l7 7 13-14" fill="none" stroke-width="5"/>',
+  steady:'<path d="M8 32h48" fill="none" stroke-width="6"/><circle cx="32" cy="32" r="11" fill="#7CC6F5"/>',
+  gking:'<path d="M9 40L14 15L26 27L32 9L38 27L50 15L55 40Z" fill="#C4A8F7"/><path d="M9 48h46M9 55h46" fill="none"/>',
+  bulb:'<path d="M32 6a17 17 0 0 0-8 32v8h16v-8a17 17 0 0 0-8-32z" fill="#FFD84D"/><path d="M26 54h12" fill="none"/>',
+  clover:'<circle cx="24" cy="21" r="11" fill="#7ED9A6"/><circle cx="40" cy="21" r="11" fill="#7ED9A6"/><circle cx="24" cy="37" r="11" fill="#7ED9A6"/><circle cx="40" cy="37" r="11" fill="#7ED9A6"/><path d="M32 40l7 17" fill="none" stroke-width="5"/>',
+  cal:'<rect x="9" y="12" width="46" height="44" rx="8" fill="#fff"/><path d="M9 26h46M20 6v12M44 6v12" fill="none"/><circle cx="32" cy="41" r="6" fill="#FF8A78"/>'
+});
+const STAT_COL={trophy:'c-yellow',crown:'c-yellow',flame:'c-coral',burst:'c-coral',close:'c-blue',sweep:'c-green',star:'c-yellow',chart:'c-blue',book:'c-purple',target:'c-green',bolt:'c-purple',up:'c-green',medal:'c-blue',dice:'c-coral',clock:'c-purple',hourglass:'c-blue',weight:'c-coral',people:'c-green',climb:'c-green',silver:'c-blue',rivals:'c-coral',spoon:'c-yellow',podium:'c-blue',wait:'c-blue',reign:'c-coral',drought:'c-yellow',sparkle:'c-yellow',attend:'c-green',steady:'c-blue',gking:'c-purple',bulb:'c-yellow',clover:'c-green',cal:'c-coral'};
 const statIcon=(n,sz)=>`<svg class="sico" width="${sz}" height="${sz}" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="#3B3540" stroke-width="3.500" stroke-linejoin="round" stroke-linecap="round">${STAT_ICON[n]||''}</svg>`;
 function statInner(){
   const L=ui.statList||[],n=L.length;
@@ -3542,7 +3599,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792988694';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792989280';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -4057,7 +4114,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792988694';let shown=false,last=0;
+  const B='1792989280';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
