@@ -2490,7 +2490,11 @@ function statsList(){
     if(fv.length&&gcount[fv[0]]>=3) add(36,'dice','Family favourite',fv.length===1?`${fv[0]} has been played ${gcount[fv[0]]} times`:`${nl(fv)} have each been played ${gcount[fv[0]]} times`);}
   out.sort((a,b)=>b.p-a.p);
   const seen=new Set(),kc={},uniq=[];out.forEach(x=>{const kind=x.icon;kc[kind]=(kc[kind]||0)+1;if(!seen.has(x.head)&&kc[kind]<=(x.icon==='target'||x.icon==='bolt'?2:1)){seen.add(x.head);uniq.push(x);}});
-  return uniq;
+  /* most interesting cards first (in three tiers), shuffled within each tier; the shuffle is fixed for the session so the carousel never jumps around */
+  ui.sr=ui.sr||{};
+  const tier=x=>x.p>=85?0:x.p>=60?1:2;
+  uniq.forEach(x=>{if(ui.sr[x.head]===undefined) ui.sr[x.head]=Math.random();});
+  return uniq.sort((a,b)=>tier(a)-tier(b)||ui.sr[a.head]-ui.sr[b.head]);
 }
 const STAT_STAR=(n,a,b)=>{let d='';for(let k=0;k<n*2;k++){const r=k%2?b:a,t=k*Math.PI/n-Math.PI/2;d+=(k?'L':'M')+(32+r*Math.cos(t)).toFixed(1)+' '+(32+r*Math.sin(t)).toFixed(1);}return d+'Z';};
 const STAT_ICON={
@@ -3631,7 +3635,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792990068';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792990374';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -4146,7 +4150,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792990068';let shown=false,last=0;
+  const B='1792990374';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
