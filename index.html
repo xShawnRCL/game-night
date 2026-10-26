@@ -661,6 +661,9 @@ const DEFAULT_GAMES=[
   {id:'risk',name:'Risk',short:'Risk',min:2,max:6,weight:3,mins:90,luck:4,on:false},
   {id:'clue',name:'Clue',short:'Clue',min:3,max:6,weight:2,mins:45,luck:3,on:true}
 ].map(g=>({copies:1,...g}));
+const ALW=0.72,RDK='ubg-rdel';
+function rdelGet(){try{return JSON.parse(localStorage.getItem(RDK))||[];}catch(e){return [];}}
+function rdelSet(a){try{localStorage.setItem(RDK,JSON.stringify(a.slice(-100)));}catch(e){}}
 const PAWN=['#FF8A78','#7CC6F5','#FFD84D','#7ED9A6','#C4A8F7','#FFB05C','#F7A8CF','#5FD3C6','#B9DB6A','#9FA9F7','#F5A98B','#86D3EB','#E6E1D6','#8791A0','#E86A6A','#4F8FE0','#3FAE7B','#8E5FD6'];
 const pcol=id=>{
   try{const p=typeof S!=='undefined'&&S&&S.players?S.players.find(x=>x.id===id):null;if(p&&p.look&&Number.isInteger(p.look.c)) return PAWN[((p.look.c%PAWN.length)+PAWN.length)%PAWN.length];}catch(e){}
@@ -733,14 +736,14 @@ function patSvg(look,color,sw){
 function lookSvg(look,color,sw){
   if(!look||(!look.h&&!look.i&&!look.p)) return '';
   const ac=lookAccent(color),fill={a:ac,e:'#3B3540',w:'#FFFFFF',n:'none'};
-  const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${q.w||3.2}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
+  const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${(q.w||3.2)*ALW}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
   const dx=bodyDx(look);return patSvg(look,color,sw)+(look.i&&ITEM_SHAPES[look.i]?(dx?`<g transform="translate(${dx} 0)">${one(ITEM_SHAPES[look.i])}</g>`:one(ITEM_SHAPES[look.i])):'')+(look.h&&HAT_SHAPES[look.h]?one(HAT_SHAPES[look.h]):'');
 }
 function lookCanvas(x,look,color,lw){
   if(!look||(!look.h&&!look.i&&!look.p)) return;
   if(look.p&&PATS[look.p]){const bp=new Path2D(bodyD(look)),pc=patColor(color);x.save();x.clip(bp);PATS[look.p].forEach(q=>{const p=new Path2D(q.d);if(q.fill){x.fillStyle=pc;x.fill(p);}else{x.lineWidth=q.w;x.strokeStyle=pc;x.stroke(p);}});x.restore();x.lineWidth=lw||3;x.lineJoin='round';x.strokeStyle='#3B3540';x.stroke(bp);}
   const ac=lookAccent(color),fill={a:ac,e:'#3B3540',w:'#FFFFFF'};
-  const one=sh=>sh.forEach(q=>{const p=new Path2D(q.d);if(q.f!=='n'){x.fillStyle=fill[q.f];x.fill(p);}x.lineWidth=q.w||3.2;x.lineJoin='round';x.lineCap='round';x.strokeStyle='#3B3540';x.stroke(p);});
+  const one=sh=>sh.forEach(q=>{const p=new Path2D(q.d);if(q.f!=='n'){x.fillStyle=fill[q.f];x.fill(p);}x.lineWidth=(q.w||3.2)*ALW;x.lineJoin='round';x.lineCap='round';x.strokeStyle='#3B3540';x.stroke(p);});
   if(look.i&&ITEM_SHAPES[look.i]){x.save();x.translate(bodyDx(look),0);one(ITEM_SHAPES[look.i]);x.restore();}if(look.h&&HAT_SHAPES[look.h]) one(HAT_SHAPES[look.h]);
 }
 const r1=x=>Math.round(x*10)/10;
@@ -1753,6 +1756,7 @@ function touch(){
   try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}
   ghSchedule();sbSchedule();
   if(docRef){dirty=true;clearTimeout(timer);timer=setTimeout(flush,500);}
+  if(typeof rosterPush==='function') rosterPush();
 }
 async function flush(){
   if(writing||!docRef||!dirty) return;
@@ -1896,7 +1900,7 @@ function hsBullets(m,q){
 /* ---------- setup ---------- */
 function lookIcon(kind,k,col){
   const ac=lookAccent(col),fill={a:ac,e:'#3B3540',w:'#FFFFFF',n:'none'};
-  const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${q.w||3.2}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
+  const one=sh=>sh.map(q=>`<path d="${q.d}" fill="${fill[q.f]}" stroke="#3B3540" stroke-width="${(q.w||3.2)*ALW}" stroke-linejoin="round" stroke-linecap="round"/>`).join('');
   if(kind==='s'){return `<svg width="32" height="32" viewBox="2 2 60 60" aria-hidden="true"><path d="${k?BODY_SHAPES[k].d:MEEPLE_D}" fill="${col}" stroke="#3B3540" stroke-width="3.4" stroke-linejoin="round"/></svg>`;}
   if(kind==='p'){
     const id='mk'+(++MKC),pc=patColor(col);
@@ -1925,7 +1929,15 @@ function lookEditor(p){
 function rosterChips(){
   const used=new Set(S.players.map(p=>p.rid).filter(Boolean)),left=(S.roster||[]).filter(r=>!used.has(r.rid));
   if(!left.length||S.started) return '';
-  return `<div class="rost"><span class="lk-lbl">Saved players</span><div class="rchips">${left.map(r=>`<button type="button" class="rchip" data-act="addrost" data-a="${r.rid}">${meeple(PAWN[(r.look&&Number.isInteger(r.look.c)?r.look.c:0)%PAWN.length],22,r.look)}<span>${esc(r.name)}</span></button>`).join('')}</div></div>`;
+  return `<div class="rost"><span class="lk-lbl">Saved players</span>${typeof rosterPush==='function'?`<span class="hint" style="font-size:.8rem;margin-left:8px">${AU?'Saved to your account':'Sign in on Home to keep them on every device'}</span>`:''}<div class="rchips">${left.map(r=>`<button type="button" class="rchip" data-act="addrost" data-a="${r.rid}">${meeple(PAWN[(r.look&&Number.isInteger(r.look.c)?r.look.c:0)%PAWN.length],22,r.look)}<span>${esc(r.name)}</span></button>`).join('')}</div></div>`;
+}
+function propagateLook(name,look){
+  if(!look||!name) return;
+  const k=String(name).toLowerCase(),col=Number.isInteger(look.c)?PAWN[((look.c%PAWN.length)+PAWN.length)%PAWN.length]:null;
+  const fixT=T=>{if(!T||!T.standings) return;T.standings.forEach(q=>{if(String(q.name).toLowerCase()!==k) return;q.look={...look};if(col){q.color=col;if(T.champ&&String(T.champ.name).toLowerCase()===k) T.champ.color=col;}});};
+  const fixS=o=>{if(!o) return;(o.players||[]).forEach(p=>{if(String(p.name).toLowerCase()===k) p.look={...look};});(o.archive||[]).forEach(a=>fixT(a&&a.data));};
+  fixS(S);(S.archive||[]).forEach(a=>fixT(a&&a.data));(S.slots||[]).forEach(x=>fixS(x&&x.snap));
+  ui.pimg={};ui.tkey=null;ui.turl=null;
 }
 function rosterSync(p){
   const nm=String(p.name||'').trim();
@@ -1933,11 +1945,11 @@ function rosterSync(p){
   S.roster=S.roster||[];
   const other=S.roster.find(r=>r.name.toLowerCase()===nm.toLowerCase());
   if(other&&!S.players.some(q=>q!==p&&q.rid===other.rid)){
-    p.rid=other.rid;if(other.look&&!p.look) p.look={...other.look};else if(p.look) other.look={...p.look};return;
+    p.rid=other.rid;if(other.look&&!p.look) p.look={...other.look};else if(p.look&&JSON.stringify(p.look)!==JSON.stringify(other.look)){other.look={...p.look};other.t=Date.now();}return;
   }
   const mine=p.rid&&S.roster.find(r=>r.rid===p.rid);
-  if(mine&&!other){mine.name=nm;return;}
-  const e={rid:'r'+(S.rseq=(S.rseq||0)+1),name:nm};if(p.look) e.look={...p.look};S.roster.push(e);p.rid=e.rid;
+  if(mine&&!other){if(mine.name!==nm){const d=rdelGet();d.push({n:mine.name,t:Date.now()});rdelSet(d);mine.name=nm;mine.t=Date.now();}return;}
+  const e={rid:'r'+(S.rseq=(S.rseq||0)+1),name:nm,t:Date.now()};if(p.look) e.look={...p.look};S.roster.push(e);p.rid=e.rid;
 }
 /* ---------- setup v2: Who's playing, How long, Start. Everything else is folded under More settings. ---------- */
 function viewSetup(){
@@ -3187,8 +3199,8 @@ function act(name,a,el){
     case 'look':ui.lookFor=ui.lookFor===a[0]?null:a[0];break;
     case 'lookc':case 'lookh':case 'looki':case 'lookp':case 'looks':{const p=S.players.find(q=>q.id===a[0]);if(!p) break;const k=+a[1];
       p.look=p.look||{};if(name==='lookc')p.look.c=k;else if(name==='lookh')p.look.h=k;else if(name==='lookp')p.look.p=k;else if(name==='looks')p.look.s=k;else p.look.i=k;
-      const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e) e.look={...p.look};touch();break;}
-    case 'lookdel':{const p=S.players.find(q=>q.id===a[0]);if(p&&p.rid){S.roster=(S.roster||[]).filter(r=>r.rid!==p.rid);delete p.rid;ui.lookFor=null;touch();}break;}
+      const e=p.rid&&(S.roster||[]).find(r=>r.rid===p.rid);if(e){e.look={...p.look};e.t=Date.now();}propagateLook(p.name,p.look);touch();break;}
+    case 'lookdel':{const p=S.players.find(q=>q.id===a[0]);if(p&&p.rid){const dd=rdelGet();dd.push({n:((S.roster||[]).find(r=>r.rid===p.rid)||{name:p.name}).name,t:Date.now()});rdelSet(dd);S.roster=(S.roster||[]).filter(r=>r.rid!==p.rid);delete p.rid;ui.lookFor=null;touch();}break;}
     case 'pickr':{const p=S.players.find(q=>q.id===a[0]),r=(S.roster||[]).find(q=>q.rid===a[1]);if(p&&r&&!S.players.some(q=>q!==p&&q.rid===r.rid)){p.name=r.name;p.rid=r.rid;if(r.look) p.look={...r.look};else delete p.look;touch();}break;}
     case 'addrost':{const r=(S.roster||[]).find(q=>q.rid===a[0]);if(!r||S.started||S.players.some(q=>q.rid===r.rid)) break;
       let p=S.players.find(q=>!q.rid&&/^Player \d+$/.test(q.name));
@@ -3471,7 +3483,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792984274';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792984804';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3484,7 +3496,7 @@ async function sbRpc(name,body,tok){
 const sbRand=(n,al)=>{const a=new Uint32Array(n);crypto.getRandomValues(a);return Array.from(a,x=>al[x%al.length]).join('');};
 const sbMeta=()=>({players:S.players.length,rounds:S.rounds.length,started:!!S.started,phase:S.started?phaseOf(S):'setup',name:S.gname||''});
 const SB_AL='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const cleanData=o=>{const c={...o};delete c.slots;delete c.trash;delete c.share;delete c.roster;return c;};
+const cleanData=o=>{const c={...o};delete c.slots;delete c.trash;delete c.share;delete c.roster;delete c.rdel;return c;};
 const baseUrl=()=>location.origin+location.pathname.replace(/index\.html$/,'');
 const joinLink=code=>baseUrl()+'?join='+(code||(S.share&&S.share.code));
 const adminLink=()=>baseUrl()+'?admin='+(S.share&&S.share.secret);
@@ -3564,6 +3576,41 @@ async function auToken(){
 }
 const isLocalCode=c=>(S.share&&S.share.code===c)||(S.slots||[]).some(x=>x.snap&&x.snap.share&&x.snap.share.code===c);
 /* link every gauntlet on this phone to the signed-in account (needs each one's admin code, which only this phone holds) */
+/* Saved players follow the account: merged by name, newest edit wins, deletions remembered. */
+let rsTimer=null,rsBusy=false,rsAgain=false;
+function rosterPush(){
+  if(VIEW||!AU||!S) return;
+  clearTimeout(rsTimer);rsTimer=setTimeout(rosterSyncNow,2000);
+}
+function rosterMerge(rem){
+  const key=x=>String(x).toLowerCase(),dels=new Map();let changed=false;
+  [...rdelGet(),...((rem&&rem.d)||[])].forEach(x=>{if(!x||!x.n) return;const k=key(x.n);if(!dels.has(k)||dels.get(k)<x.t) dels.set(k,x.t||0);});
+  S.roster=S.roster||[];
+  ((rem&&rem.r)||[]).forEach(x=>{
+    if(!x||!x.n) return;const k=key(x.n),dt=dels.get(k)||0;
+    const e=S.roster.find(r=>key(r.name)===k);
+    if(!e){if(dt&&dt>=(x.t||0)) return;const n={rid:'r'+(S.rseq=(S.rseq||0)+1),name:String(x.n),t:x.t||0};if(x.l) n.look=x.l;S.roster.push(n);changed=true;}
+    else if((x.t||0)>(e.t||0)){if(x.l){e.look=x.l;propagateLook(e.name,e.look);}e.t=x.t;changed=true;}
+  });
+  S.roster=S.roster.filter(r=>{const dt=dels.get(key(r.name))||0;if(dt&&dt>=(r.t||0)){S.players.forEach(p=>{if(p.rid===r.rid) delete p.rid;});changed=true;return false;}return true;});
+  const d=[];dels.forEach((t,n)=>d.push({n,t}));rdelSet(d.sort((a,b)=>a.t-b.t));
+  return changed;
+}
+async function rosterSyncNow(){
+  if(VIEW||!AU) return;
+  if(rsBusy){rsAgain=true;return;}
+  rsBusy=true;
+  try{
+    const tok=await auToken();if(!tok) return;
+    const rem=await sbRpc('get_my_roster',{},tok)||{};
+    const changed=rosterMerge(rem);
+    const out={r:S.roster.map(e=>({n:e.name,l:e.look||null,t:e.t||0})),d:rdelGet()};
+    const sig=JSON.stringify(out);
+    if(sig!==JSON.stringify({r:(rem.r||[]),d:(rem.d||[])})) await sbRpc('save_my_roster',{p_data:out},tok);
+    if(changed){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}if(!document.activeElement||document.activeElement.tagName!=='INPUT') render();}
+  }catch(e){}
+  rsBusy=false;if(rsAgain){rsAgain=false;rosterPush();}
+}
 async function claimAll(){
   if(!AU||VIEW) return;
   const tok=await auToken();if(!tok) return;
@@ -3617,7 +3664,7 @@ document.addEventListener('click',async e=>{
       say('Checking…');
       auSet(await auReq('verify',{type:'email',email:auUi.email,token:c}));
       auUi.step='email';auUi.code='';auUi.msg='';homeRemote=null;homeAuOpen=false;
-      await claimAll();auRefresh();
+      await claimAll();rosterSyncNow();auRefresh();
     }else if(k==='back'){auUi.step='email';auUi.msg='';auRefresh();}
     else if(k==='del'){
       if(!auUi.delArm){auUi.delArm=true;auRefresh();return;}
@@ -3834,7 +3881,7 @@ render();
 initDb();
 startGh();
 homeSync();
-if(!VIEW&&AU) claimAll();
+if(!VIEW&&AU){claimAll();rosterSyncNow();}
 if(!VIEW&&S.t>0) sbSchedule();   /* an existing gauntlet gets its codes and live copy as soon as the app opens */
 if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 (function(){
@@ -3849,7 +3896,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792984274';let shown=false,last=0;
+  const B='1792984804';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
