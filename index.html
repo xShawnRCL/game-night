@@ -459,20 +459,6 @@ details.add summary{cursor:pointer;font-weight:700}
   @keyframes crsh{0%,50%{transform:translateX(-350px) skewX(-20deg)}100%{transform:translateX(560px) skewX(-20deg)}}
 }
 
-#splash{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;pointer-events:none;transition:opacity .45s ease}
-#splash.out{opacity:0}
-#splash .sl{width:110px;height:110px}
-#splash .sn{font:800 1.5rem/1 var(--f-display);letter-spacing:-.02em;color:var(--ink)}
-#splash .sb{display:flex;gap:6px}
-#splash .sb i{width:22px;height:16px;border-radius:6px;border:2px solid var(--edge);background:var(--surface)}
-@media (prefers-reduced-motion:no-preference){
-  #splash .sl{animation:slIn .6s cubic-bezier(.3,1.5,.5,1) both}
-  #splash .sn{animation:vIn .5s .15s ease-out both}
-  #splash .sb i{animation:sbf 1.2s ease-in-out infinite;animation-delay:calc(var(--k)*.12s)}
-  @keyframes slIn{from{opacity:0;transform:scale(.6) rotate(-12deg)}to{opacity:1;transform:none}}
-  @keyframes sbf{0%,100%{background:var(--surface);transform:translateY(0)}35%{background:var(--c);transform:translateY(-5px)}}
-}
-
 /* ux v2: header buttons, slim header, setup */
 header{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px}
 header .brand{flex:1 1 0;min-width:0}
@@ -616,7 +602,6 @@ body.homeon{overflow:hidden;background:var(--bg)}
 .vhome{display:inline-flex;align-items:center;gap:6px}
 </style>
 
-<div id="splash" aria-hidden="true"><svg class="sl" id="splogo" viewBox="1 2 62 60"></svg><div class="sn">Game Night Gauntlet</div><div class="sb"><i style="--k:0;--c:var(--c-coral)"></i><i style="--k:1;--c:var(--c-blue)"></i><i style="--k:2;--c:var(--c-yellow)"></i><i style="--k:3;--c:var(--c-green)"></i><i style="--k:4;--c:var(--c-purple)"></i><i style="--k:5;--c:var(--c-orange)"></i></div></div>
 <div class="wrap">
   <header>
     <div class="brand">
@@ -3505,16 +3490,6 @@ document.addEventListener('click',e=>{
   if(note) note.textContent='Filled in '+g.n+' from the catalog. Times and player counts are approximate, so adjust them for your copy, then tap Add to list.';
   const nm=document.getElementById('ng-name'); if(nm&&nm.scrollIntoView) nm.scrollIntoView({block:'center'});
 });
-(function(){
-  const sp=document.getElementById('splash'),lg=document.querySelector('.logo');if(!sp) return;
-  let seen=false;try{seen=localStorage.getItem('ubg-seen')==='1';localStorage.setItem('ubg-seen','1');}catch(e){}
-  if(seen&&!/[?&]splash/.test(location.search)){sp.remove();return;}
-  if(lg) document.getElementById('splogo').innerHTML=lg.innerHTML;
-  const t0=Date.now(),min=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?0:3000;
-  const done=()=>setTimeout(()=>{sp.classList.add('out');setTimeout(()=>sp.remove(),500);},Math.max(0,min-(Date.now()-t0)));
-  (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(done,done);
-  setTimeout(()=>{if(sp.parentNode) done();},6500);
-})();
 
 /* ---------- GitHub Pages layer: the host publishes data.json, viewers read it ---------- */
 const VIEW_OK=['tab','open','share','pshare','ptoggle','photo','goround'];
@@ -3635,7 +3610,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- Live sharing (Supabase): host pushes, family opens a join link ---------- */
 const SB_URL='https://pplbuawbbyvibmorcipi.supabase.co',SB_KEY='sb_publishable_W2pLJQ0uqezB_-Re-zwiJA_IuJ1xejf';
-const SBK='ubg-sb',SB_FMT=1,SB_APP='1792991341';
+const SBK='ubg-sb',SB_FMT=1,SB_APP='1792991845';
 const JOIN=((location.search.match(/[?&]join=([A-Za-z0-9]{6})/)||[])[1]||'').toUpperCase();
 let sbNote='',sbTimer=null,sbBusy=false,sbPending=false;
 const sbMsg=t=>{sbNote=t;const el=document.getElementById('sb-msg');if(el)el.textContent=t;};
@@ -3892,7 +3867,6 @@ let rlAt=0;try{rlAt=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}
 const homeForce=/[?&]start(&|=|$)/.test(location.search),homeGuest=/[?&]guest(&|=|$)/.test(location.search);
 let homeOpen=VIEW||(!homeHas()||homeForce||(!homeSeen()&&Date.now()-rlAt>15000)),homeErr='';
 if(!homeOpen) homeMark();
-if(homeOpen){const _sp=document.getElementById('splash');if(_sp) _sp.remove();} /* the start page has its own big logo; the intro splash would overlap it */
 if(homeForce){try{history.replaceState(null,'',location.pathname);}catch(e){}}
 const homeLive=o=>!o.started||phaseOf(o)!=='champion';
 const homeSub=o=>{const n=o.players.length;return o.started?gStatus(o)+(o.gname?' · '+dstr(o.born||o.t||Date.now()):''):n+' players · still being set up';};
@@ -4152,7 +4126,7 @@ if(!VIEW&&S.share) sbChan(S.share.code).catch(()=>{});
 
 /* update notice: when a newer build is published, offer a refresh */
 (function(){
-  const B='1792991341';let shown=false,last=0;
+  const B='1792991845';let shown=false,last=0;
   const show=()=>{if(shown)return;shown=true;const d=document.createElement('div');d.className='updbar';d.setAttribute('role','status');d.innerHTML='<span>A new version is ready.</span><button type="button" class="btn sm">Refresh</button>';d.querySelector('button').addEventListener('click',()=>location.reload());document.body.appendChild(d);};
   const go=()=>{let t=0;try{t=+sessionStorage.getItem('ubg-rl')||0;}catch(e){}if(Date.now()-t<120000) return false;try{sessionStorage.setItem('ubg-rl',String(Date.now()));}catch(e){}location.reload();return true;};
   const chk=async(auto)=>{if(shown||Date.now()-last<30000)return;last=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const o=await r.json();if(o&&o.v&&o.v!==B){if(auto&&go())return;show();}}catch(e){}};
